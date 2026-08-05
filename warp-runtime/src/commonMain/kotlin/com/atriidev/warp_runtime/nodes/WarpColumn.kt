@@ -4,6 +4,14 @@ import com.atriidev.warp_runtime.nodes.modifier.WarpModifier
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+/**
+ * A vertical layout container — children are stacked top to bottom.
+ *
+ * JSON `"type"` value: `"column"`.
+ *
+ * @property modifier Layout styling applied to this column (padding, etc.).
+ * @property children Nested [WarpNode] instances inside this column.
+ */
 @Serializable
 @SerialName("column")
 data class WarpColumn(
