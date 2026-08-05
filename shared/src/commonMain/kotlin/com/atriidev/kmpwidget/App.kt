@@ -22,11 +22,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
-import androidx.lifecycle.compose.LifecycleStartEffect
 import kotlinx.coroutines.launch
 
-
-const val COUNTER_KEY = "counter"
 
 @Composable
 fun App(
@@ -65,7 +62,7 @@ fun App(
                     FilledTonalButton(
                         onClick = {
                             count--
-                            dataStore.set("counter", count.toString())
+                            dataStore.set(COUNTER_KEY, count.toString())
                         }
                     ) {
                         Text(
@@ -82,7 +79,7 @@ fun App(
                     FilledTonalButton(
                         onClick = {
                             count++
-                            dataStore.set("counter", count.toString())
+                            dataStore.set(COUNTER_KEY, count.toString())
                         }
                     ) {
                         Text(

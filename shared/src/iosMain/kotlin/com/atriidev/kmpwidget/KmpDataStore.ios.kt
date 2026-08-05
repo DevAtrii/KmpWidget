@@ -1,10 +1,13 @@
 package com.atriidev.kmpwidget
 
-import platform.Foundation.NSUserDefaults
-
 actual class KmpDataStore {
 
-    private val defaults = NSUserDefaults.standardUserDefaults()
+    companion object {
+        const val APP_GROUP_ID = "group.com.atriidev.kmpwidget"
+    }
+
+    private val defaults = platform.Foundation.NSUserDefaults(suiteName = APP_GROUP_ID)
+        ?: platform.Foundation.NSUserDefaults.standardUserDefaults()
 
     actual fun get(key: String, defaultValue: String): String {
         return defaults.stringForKey(key) ?: defaultValue
