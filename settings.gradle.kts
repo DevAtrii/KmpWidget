@@ -29,3 +29,5 @@ dependencyResolutionManagement {
 
 include(":androidApp")
 include(":shared")
+
+include(":warp-runtime")

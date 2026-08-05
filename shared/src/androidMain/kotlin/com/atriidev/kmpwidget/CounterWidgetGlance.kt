@@ -1,6 +1,7 @@
 package com.atriidev.kmpwidget
 
 import android.content.Context
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -22,6 +23,8 @@ import androidx.glance.layout.padding
 import androidx.glance.state.GlanceStateDefinition
 import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.text.Text
+import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.seconds
 
 
 class CounterWidgetReceiver : GlanceAppWidgetReceiver() {
