@@ -13,7 +13,7 @@ data class WarpPadding(
 
 @Serializable
 data class WarpModifier(
-    internal val padding: WarpPadding = WarpPadding(0,0,0,0,),
+    val padding: WarpPadding = WarpPadding(0, 0, 0, 0),
 )
 
 
