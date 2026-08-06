@@ -30,6 +30,21 @@ internal object WarpCompositionRoot {
 internal val LocalWarpContainer = staticCompositionLocalOf<WarpContainerHolder?> { null }
 
 /**
+ * Clears and re-builds the holder tree on every recomposition pass.
+ *
+ * Must wrap all WARP composition content so [RootHolder] does not accumulate duplicate
+ * nodes when [androidx.compose.runtime.mutableStateOf] state changes trigger recomposition.
+ */
+@Composable
+internal fun WarpRootContent(content: @Composable () -> Unit) {
+    val root = WarpCompositionRoot.holder
+    root.children.clear()
+    CompositionLocalProvider(LocalWarpContainer provides root) {
+        content()
+    }
+}
+
+/**
  * Returns the container that should receive the next child node.
  *
  * Prefers [LocalWarpContainer] when inside a nested column/row; otherwise uses [WarpCompositionRoot.holder].
