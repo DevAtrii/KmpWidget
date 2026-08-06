@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
 import com.atriidev.warp_runtime.nodes.modifier.WarpModifier
+import com.atriidev.warp_runtime.nodes.actions.WarpAction
 
 /**
  * Holds the root [RootHolder] for the active [composeWarp][com.atriidev.warp_runtime.compose.composeWarp] call.
@@ -111,13 +112,13 @@ internal fun WarpTextComposable(
 @Composable
 internal fun WarpButtonComposable(
     text: String,
-    actionId: String,
+    onClick: WarpAction,
     modifier: WarpModifier,
 ) {
     WarpLeaf(
         WarpButtonHolder(
             text = text,
-            actionId = actionId,
+            onClick = onClick,
             modifier = modifier,
         ),
     )

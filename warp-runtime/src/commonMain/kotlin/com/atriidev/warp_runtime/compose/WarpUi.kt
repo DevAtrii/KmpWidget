@@ -8,6 +8,9 @@
 package com.atriidev.warp_runtime.compose
 
 import androidx.compose.runtime.Composable
+import com.atriidev.warp_runtime.nodes.actions.ClickAction
+import com.atriidev.warp_runtime.nodes.actions.WarpAction
+import com.atriidev.warp_runtime.nodes.actions.actionClick
 import com.atriidev.warp_runtime.compose.internal.WarpButtonComposable
 import com.atriidev.warp_runtime.compose.internal.WarpColumnComposable
 import com.atriidev.warp_runtime.compose.internal.WarpRowComposable
@@ -67,12 +70,26 @@ fun WarpText(
  *
  * Maps to [com.atriidev.warp_runtime.nodes.WarpButton] in the output tree.
  *
- * The [actionId] is stored in JSON — not a Kotlin lambda — so platform code can map
- * `"increment"` → a real callback on Android (Glance) or iOS (WidgetKit).
+ * [onClick] is stored in JSON as a [WarpAction] — use [actionClick] or [ClickAction] directly.
+ * Platform code resolves [ClickAction.id] to native tap handlers.
  *
  * @param text Label shown on the button.
- * @param actionId Stable identifier for the click action (must be serializable).
+ * @param onClick Serializable action for the tap (typically [actionClick] or a [ClickAction]).
  * @param modifier Optional styling such as padding.
+ */
+@Composable
+fun WarpButton(
+    text: String,
+    onClick: WarpAction,
+    modifier: WarpModifier = WarpModifier(),
+) {
+    WarpButtonComposable(text = text, onClick = onClick, modifier = modifier)
+}
+
+/**
+ * Convenience overload when you only have a stable action [id] string.
+ *
+ * Prefer [WarpActionKey.asClickAction] for typed ids in shared code.
  */
 @Composable
 fun WarpButton(
@@ -80,5 +97,5 @@ fun WarpButton(
     actionId: String,
     modifier: WarpModifier = WarpModifier(),
 ) {
-    WarpButtonComposable(text = text, actionId = actionId, modifier = modifier)
+    WarpButton(text = text, onClick = actionClick(actionId), modifier = modifier)
 }

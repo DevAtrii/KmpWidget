@@ -1,5 +1,6 @@
 package com.atriidev.warp_runtime.nodes
 
+import com.atriidev.warp_runtime.nodes.actions.WarpAction
 import com.atriidev.warp_runtime.nodes.modifier.WarpModifier
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -9,17 +10,18 @@ import kotlinx.serialization.Serializable
  *
  * JSON `"type"` value: `"button"`.
  *
- * [actionId] is a stable string stored in JSON — not a Kotlin lambda. Platform renderers
- * map it to native click handlers (for example Glance `ActionCallback` on Android).
+ * [onClick] is a serializable [WarpAction] — not a Kotlin lambda. Platform renderers
+ * map [com.atriidev.warp_runtime.nodes.actions.ClickAction.id] to native handlers
+ * (for example Glance `ActionCallback` on Android).
  *
  * @property text Label displayed on the button.
- * @property actionId Serializable identifier for the button's click action.
+ * @property onClick Action executed when the user taps the button.
  * @property modifier Layout styling applied to this button (padding, etc.).
  */
 @Serializable
 @SerialName("button")
 data class WarpButton(
     val text: String,
-    val actionId: String,
+    val onClick: WarpAction,
     val modifier: WarpModifier = WarpModifier(),
 ) : WarpNode

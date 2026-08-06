@@ -3,6 +3,8 @@ package com.atriidev.warp_runtime.compose
 import com.atriidev.warp_runtime.nodes.WarpText
 import com.atriidev.warp_runtime.nodes.WarpColumn
 import com.atriidev.warp_runtime.nodes.WarpButton
+import com.atriidev.warp_runtime.nodes.actions.ClickAction
+import com.atriidev.warp_runtime.nodes.actions.clickIdOrNull
 import com.atriidev.warp_runtime.nodes.WarpRow
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -30,7 +32,9 @@ class ComposeWarpTest {
         val row = column.children[1] as WarpRow
         assertEquals(3, row.children.size)
         assertEquals("-", (row.children[0] as WarpButton).text)
-        assertEquals("increment", (row.children[2] as WarpButton).actionId)
+        val incrementButton = row.children[2] as WarpButton
+        assertIs<ClickAction>(incrementButton.onClick)
+        assertEquals("increment", incrementButton.onClick.clickIdOrNull())
     }
 
     /** Verifies JSON output includes type discriminators and expected content. */

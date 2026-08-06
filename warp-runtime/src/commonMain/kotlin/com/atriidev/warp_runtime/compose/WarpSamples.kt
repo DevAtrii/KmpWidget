@@ -8,6 +8,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import com.atriidev.warp_runtime.nodes.modifier.WarpModifier
 import com.atriidev.warp_runtime.nodes.modifier.WarpPadding
+import com.atriidev.warp_runtime.nodes.actions.CounterActions
+import com.atriidev.warp_runtime.nodes.actions.asClickAction
 import com.atriidev.warp_runtime.nodes.modifier.padding
 import kotlinx.serialization.Serializable
 
@@ -32,9 +34,9 @@ internal val sampleCounterWidgetUi: @Composable (CounterState) -> Unit = { state
     ) {
         WarpText("Counter")
         WarpRow {
-            WarpButton(text = "-", actionId = "decrement")
+            WarpButton(text = "-", onClick = CounterActions.Decrement.asClickAction())
             WarpText(state.count.toString())
-            WarpButton(text = "+", actionId = "increment")
+            WarpButton(text = "+", onClick = CounterActions.Increment.asClickAction())
         }
     }
 }

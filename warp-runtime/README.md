@@ -35,12 +35,12 @@ Think of it like writing HTML as a data structure instead of drawing pixels imme
 
 ```kotlin
 import com.atriidev.warp_runtime.compose.*
-import com.atriidev.warp_runtime.nodes.modifier.*
+import com.atriidev.warp_runtime.nodes.actions.*
 
 val json = composeWarpToJson {
     WarpColumn {
         WarpText("Hello WARP")
-        WarpButton(text = "Tap me", actionId = "tap")
+        WarpButton(text = "Tap me", onClick = actionClick("tap"))
     }
 }
 
@@ -57,9 +57,9 @@ val json = composeWarpToJson(CounterState(count = 42)) { state ->
     WarpColumn {
         WarpText("Counter")
         WarpRow {
-            WarpButton(text = "-", actionId = "decrement")
+            WarpButton(text = "-", onClick = CounterActions.Decrement.asClickAction())
             WarpText(state.count.toString())
-            WarpButton(text = "+", actionId = "increment")
+            WarpButton(text = "+", onClick = CounterActions.Increment.asClickAction())
         }
     }
 }
@@ -151,7 +151,7 @@ The internal tree is **cleared and rebuilt** on every recomposition pass so hold
 | `WarpColumn { ... }` | `{ "type": "column", "children": [...] }` |
 | `WarpRow { ... }` | `{ "type": "row", "children": [...] }` |
 | `WarpText("Hello")` | `{ "type": "text", "text": "Hello" }` |
-| `WarpButton(text, actionId)` | `{ "type": "button", "text": "...", "actionId": "..." }` |
+| `WarpButton(text, onClick)` | `{ "type": "button", "text": "...", "onClick": { "type": "click", "id": "..." } }` |
 
 All nodes can optionally take a `WarpModifier` (padding is supported today).
 
@@ -183,7 +183,11 @@ For the sample counter widget with `CounterState(count = 42)`:
                 {
                     "type": "button",
                     "text": "-",
-                    "actionId": "decrement"
+                    "onClick": {
+                        "type": "click",
+                        "id": "decrement",
+                        "parameters": {}
+                    }
                 },
                 {
                     "type": "text",
@@ -192,7 +196,11 @@ For the sample counter widget with `CounterState(count = 42)`:
                 {
                     "type": "button",
                     "text": "+",
-                    "actionId": "increment"
+                    "onClick": {
+                        "type": "click",
+                        "id": "increment",
+                        "parameters": {}
+                    }
                 }
             ]
         }
@@ -280,9 +288,9 @@ RootHolder
  └── WarpColumnHolder
       ├── WarpTextHolder("Counter")
       └── WarpRowHolder
-           ├── WarpButtonHolder("-", "decrement")
+           ├── WarpButtonHolder("-", ClickAction("decrement"))
            ├── WarpTextHolder("42")
-           └── WarpButtonHolder("+", "increment")
+           └── WarpButtonHolder("+", ClickAction("increment"))
 ```
 
 Holders are **internal** and **not** serialized. They exist only during composition.
@@ -300,7 +308,7 @@ Each holder has a `toWarpNode()` function that creates the public, immutable, se
 ```
 WarpColumnHolder  →  WarpColumn(modifier, children)
 WarpTextHolder    →  WarpText(text, modifier)
-WarpButtonHolder  →  WarpButton(text, actionId, modifier)
+WarpButtonHolder  →  WarpButton(text, onClick, modifier)
 ```
 
 You now hold a `WarpNode` tree made of regular data classes.
@@ -414,13 +422,31 @@ data class CounterState(val count: Int = 0)
 
 Pass them to `composeWarp(state) { ... }` or `WarpComposition`. This mirrors how Glance uses `GlanceStateDefinition` — state lives outside the UI tree, composition reads it.
 
-### Buttons use action IDs, not click lambdas
+### Buttons use serializable actions, not click lambdas
+
+Widget taps must survive JSON. Use `WarpAction` types on buttons — not Kotlin lambdas.
 
 ```kotlin
-WarpButton(text = "+", actionId = "increment")
+// Simple id
+WarpButton(text = "+", onClick = actionClick("increment"))
+
+// Typed ids in common code
+WarpButton(text = "+", onClick = CounterActions.Increment.asClickAction())
+
+// With parameters (strings only — JSON-safe)
+WarpButton(
+    text = "Open",
+    onClick = actionClick("open_item", "itemId" to "42"),
+)
 ```
 
-Click handlers **cannot** go into JSON. Only the string `"increment"` is stored. A future platform layer will map that ID to a real callback on Android or iOS.
+`actionId` string overload still exists for quick prototypes:
+
+```kotlin
+WarpButton(text = "+", actionId = "increment")  // → actionClick("increment")
+```
+
+Platform renderers read `onClick.type` and map `ClickAction.id` to native handlers (Glance `ActionCallback`, WidgetKit intents, etc.). Future action types (`StartActivityAction`, deep links) implement the same `WarpAction` sealed interface.
 
 ### No platform renderer yet
 

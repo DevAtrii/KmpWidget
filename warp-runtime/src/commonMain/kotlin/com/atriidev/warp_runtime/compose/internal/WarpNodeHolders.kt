@@ -7,6 +7,7 @@
 package com.atriidev.warp_runtime.compose.internal
 
 import com.atriidev.warp_runtime.nodes.WarpButton
+import com.atriidev.warp_runtime.nodes.actions.WarpAction
 import com.atriidev.warp_runtime.nodes.WarpColumn
 import com.atriidev.warp_runtime.nodes.WarpNode
 import com.atriidev.warp_runtime.nodes.WarpRow
@@ -90,17 +91,17 @@ internal class WarpTextHolder(
  * Mutable holder for a [WarpButton] leaf node.
  *
  * @property text Button label from the composable call.
- * @property actionId Serializable action identifier from the composable call.
+ * @property onClick Serializable action from the composable call.
  * @property modifier Button modifier from the composable call.
  */
 internal class WarpButtonHolder(
     var text: String,
-    var actionId: String,
+    var onClick: WarpAction,
     var modifier: WarpModifier = WarpModifier(),
 ) : WarpNodeHolder {
     override fun toWarpNode(): WarpNode = WarpButton(
         text = text,
-        actionId = actionId,
+        onClick = onClick,
         modifier = modifier,
     )
 }
