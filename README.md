@@ -49,6 +49,7 @@ See [example/counter/CounterWidget.kt](./warp-runtime/src/commonMain/kotlin/com/
 |--------|------|
 | [warp-runtime](./warp-runtime/) | Author widget UI (`WarpColumn`, `WarpText`, `WarpButton`), compose to tree/JSON, click wire format |
 | [warp-ui](./warp-ui/) | Platform renderers — Glance (Android), iOS via [spm4Kmp](https://github.com/frankois944/spm4Kmp) |
+| [warp-widget](./warp-widget/) | Shared `WarpWidget` definition, session/env, prefs store, host API (`WarpWidgetHost`) |
 | [warpWidgetKit](./warpWidgetKit/) | **SPM** SwiftUI / WidgetKit package (`import warpWidgetKit`) — local now, remote later |
 | [shared](./shared/) | App + demo widgets (counter), shared click handlers, DataStore |
 | [androidApp](./androidApp/) | Android host app + Glance widget |
@@ -59,6 +60,7 @@ See [example/counter/CounterWidget.kt](./warp-runtime/src/commonMain/kotlin/com/
 - [warp-runtime README](./warp-runtime/README.md) — composing widgets, JSON, click actions
 - [warp-runtime click guide](./warp-runtime/README_CLICK.md) — handler registry & dispatch
 - [warp-ui README](./warp-ui/README.md) — `WarpRender`, `warpRender`, iOS WidgetKit setup
+- [warp-widget README](./warp-widget/README.md) — `WarpWidget`, session, state, Glance / WidgetKit hosts
 
 ### Status
 

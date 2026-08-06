@@ -6,24 +6,21 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
+import com.atriidev.warp_widget.api.PlatformContext
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
+        installCounterWarpWidget()
+
         setContent {
             val context = LocalContext.current
-            val dataStore = remember(context) {
-                KmpDataStore(context)
+            val platformContext = remember(context) {
+                PlatformContext(context)
             }
-            val widgetUpdater = remember(context) {
-                WidgetUpdater(context)
-            }
-            App(
-                dataStore = dataStore,
-                widgetUpdater = widgetUpdater
-            )
+            App(platformContext = platformContext)
         }
     }
 }

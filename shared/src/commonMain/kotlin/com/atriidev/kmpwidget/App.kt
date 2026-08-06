@@ -23,89 +23,109 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
+import com.atriidev.warp_widget.WarpWidgetHost
+import com.atriidev.warp_widget.WarpWidgetStateStore
+import com.atriidev.warp_widget.api.PlatformContext
+import com.atriidev.warp_widget.api.WarpWidgetFamily
+import com.atriidev.warp_widget.api.makeWidgetEnvironment
+import com.atriidev.warp_widget.updateWarpWidgetState
 import kotlinx.coroutines.launch
-
+import kotlinx.coroutines.runBlocking
 
 const val COUNTER_KEY = "counter"
 
 @Composable
 fun App(
-    dataStore: KmpDataStore,
-    widgetUpdater: WidgetUpdater,
+    platformContext: PlatformContext,
 ) {
-
     MaterialTheme {
         var count by remember { mutableIntStateOf(0) }
-
-        LifecycleResumeEffect(Unit) {
-            count = dataStore.get(COUNTER_KEY, "0").toIntOrNull() ?: 0
-
-            onPauseOrDispose { }
-        }
         val scope = rememberCoroutineScope()
 
-
-        LaunchedEffect(count) {
-            val widget = renderWarpWidget(count)
-            println("WARP_WIDGET: ${widget.currentNode()}")
-            //widget.updateState(count)
+        fun refreshCount() {
+            count = runBlocking {
+                WarpWidgetStateStore.read(platformContext, CounterWarpWidget.id)[CounterKeys.Count]
+                    ?: 0
+            }
         }
 
+        LifecycleResumeEffect(Unit) {
+            refreshCount()
+            onPauseOrDispose { }
+        }
+
+        LaunchedEffect(count) {
+            val session = counterWidgetSession(
+                context = platformContext,
+                environment = makeWidgetEnvironment(
+                    family = WarpWidgetFamily.SYSTEM_SMALL,
+                    isPreview = true,
+                ),
+                preferences = com.atriidev.warp_widget.WarpWidgetPreferences(
+                    mapOf(COUNTER_KEY to count.toString()),
+                ),
+            )
+            val node = WarpWidgetHost.compose(CounterWarpWidget, session)
+            println("WARP_WIDGET: $node")
+        }
+
+        suspend fun persist(next: Int) {
+            updateWarpWidgetState(platformContext, CounterWarpWidget) {
+                this[CounterKeys.Count] = next
+            }
+        }
 
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.primaryContainer)
                 .safeContentPadding(),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
         ) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(32.dp)
+                    horizontalArrangement = Arrangement.spacedBy(32.dp),
                 ) {
-
                     FilledTonalButton(
                         onClick = {
-                            count--
-                            dataStore.set(COUNTER_KEY, count.toString())
-                            scope.launch { widgetUpdater.update(count) }
-                        }
+                            val next = count - 1
+                            count = next
+                            scope.launch { persist(next) }
+                        },
                     ) {
                         Text(
                             text = "−",
-                            style = MaterialTheme.typography.headlineMedium
+                            style = MaterialTheme.typography.headlineMedium,
                         )
                     }
 
                     Text(
                         text = count.toString(),
-                        style = MaterialTheme.typography.displayLarge
+                        style = MaterialTheme.typography.displayLarge,
                     )
 
                     FilledTonalButton(
                         onClick = {
-                            count++
-                            dataStore.set(COUNTER_KEY, count.toString())
-                            scope.launch { widgetUpdater.update(count) }
-                        }
+                            val next = count + 1
+                            count = next
+                            scope.launch { persist(next) }
+                        },
                     ) {
                         Text(
                             text = "+",
-                            style = MaterialTheme.typography.headlineMedium
+                            style = MaterialTheme.typography.headlineMedium,
                         )
                     }
                 }
 
                 Button(
                     onClick = {
-                        scope.launch {
-                            widgetUpdater.update(count)
-                        }
-                    }
+                        scope.launch { persist(count) }
+                    },
                 ) {
                     Text("Update Widget")
                 }

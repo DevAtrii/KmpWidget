@@ -1,17 +1,19 @@
 package com.atriidev.kmpwidget
 
-import kotlinx.cinterop.ExperimentalForeignApi
-import warpWidgetKit.WarpWidgetBridge
+import com.atriidev.warp_widget.api.DEFAULT_IOS_APP_GROUP_ID
+import com.atriidev.warp_widget.api.PlatformContext
+import com.atriidev.warp_widget.updateWarpWidgetState
 
 /**
- * iOS [WidgetUpdater]: asks WidgetKit to reload timelines after counter changes.
- *
- * Swift: `WarpWidgetBridge.shared.reloadTimelines()` → `WidgetCenter.reloadAllTimelines()`.
- * Works from the **app** process (after UI +/-) and from the **extension** (after AppIntent).
+ * iOS [WidgetUpdater]: writes [CounterWarpWidget] prefs + reloads WidgetKit timeline.
  */
 actual class WidgetUpdater {
-    @OptIn(ExperimentalForeignApi::class)
     actual suspend fun update(counter: Int) {
-        WarpWidgetBridge.shared().reloadTimelines()
+        updateWarpWidgetState(
+            PlatformContext(appGroupId = DEFAULT_IOS_APP_GROUP_ID),
+            CounterWarpWidget,
+        ) {
+            this[CounterKeys.Count] = counter
+        }
     }
 }

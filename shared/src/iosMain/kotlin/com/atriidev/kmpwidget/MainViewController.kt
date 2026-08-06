@@ -20,54 +20,63 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.UIKitView
 import androidx.compose.ui.window.ComposeUIViewController
 import androidx.lifecycle.compose.LifecycleResumeEffect
-import com.atriidev.warp_runtime.compose.composeWarp
-import com.atriidev.warp_runtime.example.counter.CounterWidget
-import com.atriidev.warp_ui.WarpClickHandler
 import com.atriidev.warp_ui.previewView
 import com.atriidev.warp_ui.warpRender
+import com.atriidev.warp_widget.WarpWidgetHost
+import com.atriidev.warp_widget.WarpWidgetPreferences
+import com.atriidev.warp_widget.WarpWidgetStateStore
+import com.atriidev.warp_widget.api.DEFAULT_IOS_APP_GROUP_ID
+import com.atriidev.warp_widget.api.PlatformContext
+import com.atriidev.warp_widget.api.WarpWidgetFamily
+import com.atriidev.warp_widget.api.makeWidgetEnvironment
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.runBlocking
 import platform.UIKit.UIView
 
 fun MainViewController() = ComposeUIViewController {
-    val dataStore = remember { KmpDataStore() }
-    val widgetUpdater = remember { WidgetUpdater() }
+    val platformContext = remember {
+        PlatformContext(appGroupId = DEFAULT_IOS_APP_GROUP_ID)
+    }
     var count by remember { mutableIntStateOf(0) }
 
+    fun refreshCount() {
+        count = runBlocking {
+            WarpWidgetStateStore.read(platformContext, CounterWarpWidget.id)[CounterKeys.Count]
+                ?: 0
+        }
+    }
+
     LifecycleResumeEffect(Unit) {
-        count = dataStore.get(COUNTER_KEY, "0").toIntOrNull() ?: 0
+        refreshCount()
         onPauseOrDispose { }
     }
 
-    LaunchedEffect(dataStore) {
+    LaunchedEffect(platformContext) {
         while (isActive) {
-            val latest = dataStore.get(COUNTER_KEY, "0").toIntOrNull() ?: 0
+            val latest = runBlocking {
+                WarpWidgetStateStore.read(platformContext, CounterWarpWidget.id)[CounterKeys.Count]
+                    ?: 0
+            }
             if (latest != count) count = latest
             delay(200)
         }
     }
 
-    val handlers = remember(dataStore, widgetUpdater) {
-        counterWidgetClickHandlers(dataStore, widgetUpdater)
-    }
-
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .safeContentPadding()
+            .safeContentPadding(),
     ) {
         WarpUiKitPreview(
             count = count,
-            handlers = handlers,
+            platformContext = platformContext,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp),
         )
-        App(
-            dataStore = dataStore,
-            widgetUpdater = widgetUpdater,
-        )
+        App(platformContext = platformContext)
     }
 }
 
@@ -75,7 +84,7 @@ fun MainViewController() = ComposeUIViewController {
 @Composable
 private fun WarpUiKitPreview(
     count: Int,
-    handlers: List<WarpClickHandler<*>>,
+    platformContext: PlatformContext,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
@@ -85,10 +94,22 @@ private fun WarpUiKitPreview(
             modifier = Modifier.padding(bottom = 8.dp),
         )
         key(count) {
-            val holder = remember(handlers) {
+            val session = remember(count, platformContext) {
+                counterWidgetSession(
+                    context = platformContext,
+                    environment = makeWidgetEnvironment(
+                        family = WarpWidgetFamily.SYSTEM_SMALL,
+                        isPreview = true,
+                    ),
+                    preferences = WarpWidgetPreferences(
+                        mapOf(COUNTER_KEY to count.toString()),
+                    ),
+                )
+            }
+            val holder = remember(session) {
                 warpRender(
-                    node = composeWarp(CounterWidget.State(count = count), CounterWidget.ui),
-                    handlers = handlers,
+                    node = WarpWidgetHost.compose(CounterWarpWidget, session),
+                    handlers = WarpWidgetHost.handlers(CounterWarpWidget, session),
                 )
             }
             UIKitView(

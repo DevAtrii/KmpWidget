@@ -49,10 +49,12 @@ expect object WarpWidgetStateStore {
  * Update widget prefs from the **app** or a click handler, then reload the surface.
  *
  * ```
- * updateWarpWidgetState(context, "counter") {
+ * updateWarpWidgetState(context, CounterWarpWidget) {
  *     this[CounterKeys.Count] = 42
  * }
  * ```
+ *
+ * Android: requires [WarpWidgetAndroidRegistry] registration for [widgetId].
  */
 suspend fun updateWarpWidgetState(
     context: PlatformContext,
@@ -63,17 +65,20 @@ suspend fun updateWarpWidgetState(
     WarpWidgetStateStore.reload(context, widgetId)
 }
 
+/** [updateWarpWidgetState] using [WarpWidget.id]. */
 suspend fun updateWarpWidgetState(
     context: PlatformContext,
     widget: WarpWidget,
     transform: MutableWarpWidgetPreferences.() -> Unit,
 ) = updateWarpWidgetState(context, widget.id, transform)
 
+/** Reload home-screen UI without changing prefs. */
 suspend fun reloadWarpWidget(
     context: PlatformContext,
     widgetId: String,
 ) = WarpWidgetStateStore.reload(context, widgetId)
 
+/** [reloadWarpWidget] using [WarpWidget.id]. */
 suspend fun reloadWarpWidget(
     context: PlatformContext,
     widget: WarpWidget,

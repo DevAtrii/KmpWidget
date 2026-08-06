@@ -5,20 +5,23 @@ import com.atriidev.warp_runtime.compose.composeWarp
 import com.atriidev.warp_runtime.compose.toJson
 import com.atriidev.warp_runtime.nodes.WarpNode
 import com.atriidev.warp_ui.WarpClickHandler
-import com.atriidev.warp_ui.WarpClicksRegistry
 import com.atriidev.warp_widget.api.PlatformContext
 import com.atriidev.warp_widget.api.WidgetEnvironment
-import com.atriidev.warp_widget.api.WidgetFamily
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 
 /**
  * One render / click pass from a platform host.
  *
- * - [context] — Android `Context` / iOS host handle
- * - [environment] — Glance ∩ WidgetKit snapshot
- * - [preferences] — optional preloaded prefs (Glance hosts pass `currentState<Preferences>()`
- *   mapped here; if null, [WarpWidgetHost] loads via [WarpWidgetStateStore])
+ * Hosts **must** supply [environment] and [context] (never invented by [WarpWidgetHost]):
+ *
+ * - **Android:** [rememberGlanceWidgetSession] / [glanceWidgetEnvironment]
+ * - **iOS:** `WarpWidgetKitEnv.from(context:).makeSession()` after [installWarpWidgetKitBridge]
+ *
+ * @property context Platform I/O handle ([PlatformContext])
+ * @property environment Glance ∩ WidgetKit snapshot for this render
+ * @property preferences Optional preloaded prefs; when null, [WarpWidgetHost] reads
+ *   [WarpWidgetStateStore]
  */
 data class WarpWidgetSession(
     val context: PlatformContext,
@@ -27,106 +30,69 @@ data class WarpWidgetSession(
 )
 
 /**
- * Shared widget definition (no generic state type — use [currentState] like Glance).
+ * Shared widget definition for Glance and WidgetKit.
  *
- * ```
- * object CounterKeys {
- *     val Count = WarpStateKey.int("count")
- * }
+ * Implement once in `commonMain`. Platforms only build a [WarpWidgetSession] and call
+ * [WarpWidgetHost].
  *
- * object CounterWarpWidget : WarpWidget {
- *     override val id = "counter"
+ * ### Content
+ * Use warp-runtime composables (`WarpColumn`, `WarpText`, `WarpButton`, …).
+ * Read state with [currentState] / [currentPreferences]. Branch on [WidgetEnvironment]
+ * (family, theme, size, preview) — not on platform APIs.
  *
- *     @Composable
- *     override fun Content(env: WidgetEnvironment) {
- *         val count = currentState(CounterKeys.Count) ?: 0
- *         WarpColumn {
- *             WarpText("$count")
- *             WarpButton("+", CounterActions.Increment.asClickAction())
- *         }
- *     }
+ * ### Size classes
+ * Declared on the **host** (WidgetKit `.supportedFamilies`, Glance provider sizes).
+ * [WidgetEnvironment.family] is the family for **this** render only.
  *
- *     override fun clickHandlers(session: WarpWidgetSession) = listOf(
- *         object : WarpClickHandler<CounterActions>(…) {
- *             override suspend fun onClick(actionId: CounterActions, parameters: Map<String, String>) {
- *                 updateWarpWidgetState(session.context, this@CounterWarpWidget) {
- *                     val cur = this[CounterKeys.Count] ?: 0
- *                     this[CounterKeys.Count] = when (actionId) {
- *                         CounterActions.Increment -> cur + 1
- *                         CounterActions.Decrement -> cur - 1
- *                     }
- *                 }
- *             }
- *         },
- *     )
- * }
+ * ### iOS (Swift)
+ * ```swift
+ * WarpWidgetKitMappingKt.installWarpWidgetKitBridge()
+ * let session: WarpWidgetSession = WarpWidgetKitEnv.from(context: context).makeSession()
+ * WarpWidgetHost.shared.prepare(widget: CounterWarpWidget.shared, session: session)
+ * let json = WarpWidgetHost.shared.composeJson(widget: CounterWarpWidget.shared, session: session)
  * ```
  *
- * ### Persist
- * - **Android:** Glance preferences (`PreferencesGlanceStateDefinition`)
- * - **iOS:** App Group `UserDefaults`
- *
- * ### Update from app (outside widget)
- * ```
- * updateWarpWidgetState(platformContext, CounterWarpWidget) {
- *     this[CounterKeys.Count] = 0
- * }
- * ```
- *
- * ### Android Glance host
- * ```
- * provideContent {
- *     val glancePrefs = currentState<Preferences>()
- *     val session = WarpWidgetSession(
- *         context = PlatformContext(context),
- *         environment = env,
- *         preferences = glancePrefs.toWarpPreferences(), // host mapper
- *     )
- *     WarpRender(
- *         node = WarpWidgetHost.compose(CounterWarpWidget, session),
- *         handlers = WarpWidgetHost.handlers(CounterWarpWidget, session),
- *     )
- * }
- * ```
- *
- * ### iOS WidgetKit host
- * ```
- * WarpWidgetHost.prepare(CounterWarpWidget, session)
- * val json = WarpWidgetHost.composeJson(CounterWarpWidget, session)
- * // Swift: WarpSwiftUIRootView(json:)
+ * ### Android (Glance)
+ * ```kotlin
+ * val session = rememberGlanceWidgetSession(context)
+ * WarpRender(
+ *     node = WarpWidgetHost.compose(CounterWarpWidget, session),
+ *     handlers = WarpWidgetHost.handlers(CounterWarpWidget, session),
+ * )
  * ```
  */
 interface WarpWidget {
-    /** Stable widget kind id (timeline kind, Glance registry, AppIntent routing). */
+    /**
+     * Stable widget kind id.
+     *
+     * Used for timeline kind / AppIntent routing, Glance registry lookup, and iOS
+     * `WidgetCenter.reloadTimelines(ofKind:)` — keep in sync with WidgetKit `kind`.
+     */
     val id: String
 
-    val supportedFamilies: Set<WidgetFamily>
-        get() = setOf(
-            WidgetFamily.SYSTEM_SMALL,
-            WidgetFamily.SYSTEM_MEDIUM,
-            WidgetFamily.SYSTEM_LARGE,
-        )
-
     /**
-     * Declarative UI. Read prefs with [currentState] / [currentPreferences] (Glance-style).
-     *
-     * Use warp-runtime composables only. Branch on [env], not platform APIs.
+     * Declarative UI for the current [env] and prefs from [currentState].
      */
     @Composable
     fun Content(env: WidgetEnvironment)
 
     /**
-     * Click handlers. Persist via [updateWarpWidgetState] (Glance prefs / UserDefaults + reload).
+     * Click handlers for wire `actionId`s used in [Content].
+     *
+     * Prefer [updateWarpWidgetState] inside handlers so prefs + reload stay portable.
      */
     fun clickHandlers(session: WarpWidgetSession): List<WarpClickHandler<*>>
 }
 
 /**
- * Serializable timeline / debug payload from [WarpWidgetHost.snapshot].
+ * Serializable payload for timeline entries or debugging.
+ *
+ * Produced by [WarpWidgetHost.snapshot].
  */
 @Serializable
 data class WarpWidgetSnapshot(
     val widgetId: String,
+    /** Pretty-printed [WarpNode] JSON for SwiftUI / debug. */
     val nodeJson: String,
     val environment: WidgetEnvironment,
     val preferences: WarpWidgetPreferences = WarpWidgetPreferences(),
@@ -134,22 +100,29 @@ data class WarpWidgetSnapshot(
 
 /**
  * Platform consumption surface for a [WarpWidget].
+ *
+ * Hosts should not call `composeWarp` / [com.atriidev.warp_ui.WarpClicksRegistry] directly.
+ * Every entry point requires an explicit [WarpWidgetSession].
  */
 object WarpWidgetHost {
+    private var lastWidget: WarpWidget? = null
+    private var lastSession: WarpWidgetSession? = null
+
     /**
-     * Resolve prefs: session override → [WarpWidgetStateStore.read].
+     * Resolve prefs for a compose pass: [WarpWidgetSession.preferences] if set, else
+     * [WarpWidgetStateStore.read].
      *
-     * Prefer setting [WarpWidgetSession.preferences] inside Glance `provideContent`
-     * (`currentState<Preferences>().toWarpPreferences()`).
+     * Glance hosts should pass `currentState<Preferences>().toWarpPreferences()` on the
+     * session so composition matches the Glance datastore.
      */
     fun preferences(widget: WarpWidget, session: WarpWidgetSession): WarpWidgetPreferences =
         session.preferences
             ?: runBlocking { WarpWidgetStateStore.read(session.context, widget.id) }
 
     /**
-     * Compose [WarpWidget.Content] → [WarpNode].
+     * Run [WarpWidget.Content] under [ProvideWarpWidgetPreferences] → [WarpNode].
      *
-     * Provides [currentState] / [currentPreferences] for the duration of composition.
+     * Use as input to Glance [com.atriidev.warp_ui.WarpRender].
      */
     fun compose(widget: WarpWidget, session: WarpWidgetSession): WarpNode {
         val prefs = preferences(widget, session)
@@ -160,20 +133,65 @@ object WarpWidgetHost {
         }
     }
 
-    /** Compose → JSON (WidgetKit Swift bridge). */
+    /**
+     * [compose] then serialize to JSON for WidgetKit (`WarpSwiftUIRootView`).
+     */
     fun composeJson(widget: WarpWidget, session: WarpWidgetSession): String =
         compose(widget, session).toJson()
 
+    /** [WarpWidget.clickHandlers] for [session] (Glance `WarpRender` / iOS prepare). */
     fun handlers(
         widget: WarpWidget,
         session: WarpWidgetSession,
     ): List<WarpClickHandler<*>> = widget.clickHandlers(session)
 
-    /** Register clicks for WidgetKit / AppIntent cold start. */
+    /**
+     * Register click handlers and remember [widget] + [session] for AppIntent cold start.
+     *
+     * - **iOS:** [com.atriidev.warp_ui.registerWarpClicks] + [WarpClickBridge] prepare → [reprepare];
+     *   also installs [installWarpWidgetKitBridge]
+     * - **Android:** [com.atriidev.warp_ui.WarpClicksRegistry] (Glance also registers via `WarpRender`)
+     */
     fun prepare(widget: WarpWidget, session: WarpWidgetSession) {
-        WarpClicksRegistry.register(handlers(widget, session))
+        lastWidget = widget
+        lastSession = session
+        platformRegisterClickHandlers(handlers(widget, session))
+        platformInstallPrepareHandler { reprepare() }
     }
 
+    /**
+     * Re-register handlers from the last [prepare] (WidgetKit AppIntent process start).
+     */
+    fun reprepare() {
+        val widget = lastWidget ?: return
+        val session = lastSession ?: return
+        platformRegisterClickHandlers(handlers(widget, session))
+    }
+
+    /**
+     * AppIntent / bridge entry: [prepare] then dispatch wire [actionId].
+     *
+     * @param parametersJson JSON object of string params, or `"{}"`
+     */
+    fun dispatchClick(
+        widget: WarpWidget,
+        session: WarpWidgetSession,
+        actionId: String,
+        parametersJson: String,
+    ) {
+        prepare(widget, session)
+        platformDispatchClick(actionId, parametersJson)
+    }
+
+    /**
+     * Dispatch using the last [prepare]d widget/session (after [reprepare]).
+     */
+    fun dispatchClick(actionId: String, parametersJson: String) {
+        reprepare()
+        platformDispatchClick(actionId, parametersJson)
+    }
+
+    /** Compose + pack [WarpWidgetSnapshot] for persistence / debug. */
     fun snapshot(widget: WarpWidget, session: WarpWidgetSession): WarpWidgetSnapshot {
         val prefs = preferences(widget, session)
         return WarpWidgetSnapshot(

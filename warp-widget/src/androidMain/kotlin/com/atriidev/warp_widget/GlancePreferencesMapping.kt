@@ -4,7 +4,12 @@ import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 
-/** Glance [Preferences] → WARP string bag (all values `toString()`). */
+/**
+ * Glance [Preferences] → WARP string bag (all values via `toString()`).
+ *
+ * Use when building [WarpWidgetSession.preferences] inside Glance `provideContent`,
+ * or rely on [rememberGlanceWidgetSession] which does this for you.
+ */
 fun Preferences.toWarpPreferences(): WarpWidgetPreferences =
     WarpWidgetPreferences(
         values = asMap().entries.associate { (key, value) ->

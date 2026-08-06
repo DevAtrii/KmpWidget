@@ -3,12 +3,19 @@ package com.atriidev.warp_widget
 import androidx.glance.appwidget.GlanceAppWidget
 
 /**
- * Maps WARP [WarpWidget.id] → Glance widget instance factory.
+ * Phone book: WARP [WarpWidget.id] → Glance `GlanceAppWidget` factory.
  *
- * Call once at app / receiver startup before [WarpWidgetStateStore] update/reload:
+ * Shared code updates widgets by string id. Glance needs a concrete
+ * [androidx.glance.appwidget.GlanceAppWidget] to read/write
+ * [PreferencesGlanceStateDefinition](androidx.glance.state.PreferencesGlanceStateDefinition)
+ * and call `update`. Register once at app / receiver startup:
+ *
  * ```
- * WarpWidgetAndroidRegistry.register("counter") { CounterGlanceWidget() }
+ * WarpWidgetAndroidRegistry.register(CounterWarpWidget.id) { CounterGlanceAppWidget() }
  * ```
+ *
+ * Without a registration, [WarpWidgetStateStore] update/reload on Android no-ops
+ * (and logs an error).
  */
 object WarpWidgetAndroidRegistry {
     private val factories = mutableMapOf<String, () -> GlanceAppWidget>()

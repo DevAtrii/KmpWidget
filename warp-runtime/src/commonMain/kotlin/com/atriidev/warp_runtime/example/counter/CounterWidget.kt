@@ -16,6 +16,9 @@ import kotlinx.serialization.Serializable
  * Example counter widget — demonstrates state, typed actions, and click handlers together.
  *
  * Not part of the core WARP API. Copy or adapt this package when building your own widgets.
+ *
+ * Exported to Swift as `CounterWidget` — keep WidgetKit hosts named differently
+ * (e.g. `CounterHomeWidget`) to avoid clashes.
  */
 object CounterWidget {
 

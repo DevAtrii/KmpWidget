@@ -1,43 +1,23 @@
 package com.atriidev.kmpwidget
 
-import com.atriidev.warp_runtime.example.counter.CounterActions
 import com.atriidev.warp_ui.WarpClickHandler
+import com.atriidev.warp_widget.api.PlatformContext
+import com.atriidev.warp_widget.api.WarpWidgetFamily
+import com.atriidev.warp_widget.api.WidgetEnvironment
+import com.atriidev.warp_widget.api.makeWidgetEnvironment
 
 /**
- * Shared counter click handling for app + widget (Android Glance and iOS WidgetKit).
+ * Legacy factory kept for in-app previews that still take a [PlatformContext].
  *
- * Wire ids: [CounterActions.Increment] / [CounterActions.Decrement]
- * (`"increment"` / `"decrement"` in WARP JSON).
- *
- * ### iOS path
- * Swift `AppIntent` → `dispatchCounterWidgetClick` → `WarpClicksRegistry` → here →
- * [KmpDataStore] + [WidgetUpdater].
+ * Prefer [CounterWarpWidget.clickHandlers] / [WarpWidgetHost.handlers].
  */
-class CounterClickHandler(
-    private val dataStore: KmpDataStore,
-    private val widgetUpdater: WidgetUpdater,
-) : WarpClickHandler<CounterActions>(CounterActions::class, CounterActions.entries) {
-
-    override suspend fun onClick(actionId: CounterActions, parameters: Map<String, String>) {
-        println("CounterClickHandler, $actionId, $parameters")
-        when (actionId) {
-            CounterActions.Increment -> updateCount(delta = +1)
-            CounterActions.Decrement -> updateCount(delta = -1)
-        }
-    }
-
-    private suspend fun updateCount(delta: Int) {
-        val value = dataStore.get(COUNTER_KEY, "0").toIntOrNull() ?: 0
-        val newValue = value + delta
-        dataStore.set(COUNTER_KEY, newValue.toString())
-        widgetUpdater.update(newValue)
-    }
-}
-
-/** Handlers list for `registerWarpClicks` (iOS) / [com.atriidev.warp_ui.WarpRender]. */
 fun counterWidgetClickHandlers(
-    dataStore: KmpDataStore,
-    widgetUpdater: WidgetUpdater,
-): List<WarpClickHandler<*>> = listOf(
-    CounterClickHandler(dataStore, widgetUpdater),
-)
+    context: PlatformContext,
+    environment: WidgetEnvironment = makeWidgetEnvironment(
+        family = WarpWidgetFamily.SYSTEM_SMALL,
+        isPreview = true,
+    ),
+): List<WarpClickHandler<*>> =
+    CounterWarpWidget.clickHandlers(
+        counterWidgetSession(context = context, environment = environment),
+    )

@@ -3,7 +3,7 @@ import Shared
 import SwiftUI
 import warpWidgetKit
 
-// MARK: - Extension AppIntent → Kotlin
+// MARK: - Extension AppIntent → WarpWidgetHost
 
 /// WidgetKit interactive tap. **Must live in this extension target**, not Shared.
 ///
@@ -14,9 +14,9 @@ import warpWidgetKit
 /// ```
 /// Button(intent: CounterWidgetClickIntent)
 ///   → perform()
-///   → CounterWidgetIosKt.dispatchCounterWidgetClick
-///   → WarpClicksRegistry → CounterClickHandler
-///   → App Group UserDefaults + WidgetCenter.reload
+///   → WarpWidgetHost.dispatchClick(widget: CounterWarpWidget…)
+///   → WarpClicksRegistry → CounterWarpClickHandler
+///   → updateWarpWidgetState (UserDefaults) + WidgetCenter.reload
 /// ```
 @available(iOS 17.0, *)
 struct CounterWidgetClickIntent: AppIntent {
@@ -42,7 +42,11 @@ struct CounterWidgetClickIntent: AppIntent {
     }
 
     func perform() async throws -> some IntentResult {
-        CounterWidgetIosKt.dispatchCounterWidgetClick(
+        WarpWidgetKitMappingKt.installWarpWidgetKitBridge()
+        let session: WarpWidgetSession = WarpWidgetKitEnv.placeholder().makeSession()
+        WarpWidgetHost.shared.dispatchClick(
+            widget: CounterWarpWidget.shared,
+            session: session,
             actionId: actionId,
             parametersJson: parametersJson
         )

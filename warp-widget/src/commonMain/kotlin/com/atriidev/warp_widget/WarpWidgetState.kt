@@ -9,28 +9,40 @@ import kotlinx.serialization.Serializable
 /**
  * Typed key for widget preference state (Glance-style).
  *
- * Backed by:
+ * Values are stored as strings in [WarpWidgetPreferences] and mapped by platform store:
  * - **Android:** Glance `Preferences` / `PreferencesGlanceStateDefinition`
- * - **iOS:** App Group `UserDefaults`
+ * - **iOS:** App Group `UserDefaults` keys `"$widgetId.$name"`
+ *
+ * ```
+ * object CounterKeys {
+ *     val Count = WarpStateKey.int("counter")
+ * }
+ * ```
  */
 class WarpStateKey<T> internal constructor(
+    /** Wire / datastore key name (not namespaced; iOS store adds widget id prefix). */
     val name: String,
     internal val encode: (T) -> String,
     internal val decode: (String) -> T,
 ) {
     companion object {
+        /** String preference key. */
         fun string(name: String): WarpStateKey<String> =
             WarpStateKey(name, encode = { it }, decode = { it })
 
+        /** [Int] preference key (decimal string). */
         fun int(name: String): WarpStateKey<Int> =
             WarpStateKey(name, encode = { it.toString() }, decode = { it.toInt() })
 
+        /** [Long] preference key (decimal string). */
         fun long(name: String): WarpStateKey<Long> =
             WarpStateKey(name, encode = { it.toString() }, decode = { it.toLong() })
 
+        /** [Boolean] preference key (`true` / `false`). */
         fun boolean(name: String): WarpStateKey<Boolean> =
             WarpStateKey(name, encode = { it.toString() }, decode = { it.toBooleanStrict() })
 
+        /** [Float] preference key. */
         fun float(name: String): WarpStateKey<Float> =
             WarpStateKey(name, encode = { it.toString() }, decode = { it.toFloat() })
     }

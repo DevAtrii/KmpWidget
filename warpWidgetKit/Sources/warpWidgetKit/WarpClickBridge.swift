@@ -7,7 +7,7 @@ import Foundation
 /// → [setHandler] with a closure that calls `WarpClicksRegistry.dispatch`.
 ///
 /// ### Also
-/// [setPrepareHandler] — cold-start re-register (e.g. `prepareCounterWidgetHandlers`)
+/// [setPrepareHandler] — cold-start re-register (`WarpWidgetHost.reprepare`)
 /// before the first [perform] when the extension process just launched.
 ///
 /// ### Warning
@@ -40,8 +40,8 @@ public class WarpClickBridge: NSObject {
     }
 
     /// Invoked from in-app `Button` closures (and legacy paths).
-    /// Widget home-screen taps should go through an extension `AppIntent` → Kotlin
-    /// `dispatchCounterWidgetClick` instead.
+    /// Widget home-screen taps should go through an extension `AppIntent` →
+    /// `WarpWidgetHost.dispatchClick(widget:actionId:parametersJson:)` instead.
     public func perform(actionId: String, parametersJson: String) {
         prepareIfNeeded()
         handler?(actionId, parametersJson)

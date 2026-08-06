@@ -1,16 +1,22 @@
 import Shared
 import SwiftUI
+import WidgetKit
 import warpWidgetKit
 
-/// Kotlin compose + click registration → WARP JSON for the timeline entry.
-///
-/// ```
-/// CounterWidgetIosKt.renderCounterWidget()  // WarpNode + registerWarpClicks
-///   → WarpWidgetView_iosKt.warpWidgetJson   // String for SwiftUI
-/// ```
-func counterWidgetJson() -> String {
-    let node = CounterWidgetIosKt.renderCounterWidget()
-    return WarpWidgetView_iosKt.warpWidgetJson(node: node)
+/// [CounterWarpWidget] via [WarpWidgetHost] + [WarpWidgetKitEnv] (kit → Shared via Kotlin).
+func counterWidgetJson(context: TimelineProvider.Context) -> String {
+    WarpWidgetKitMappingKt.installWarpWidgetKitBridge()
+    let session: WarpWidgetSession = WarpWidgetKitEnv.from(context: context).makeSession()
+    WarpWidgetHost.shared.prepare(widget: CounterWarpWidget.shared, session: session)
+    return WarpWidgetHost.shared.composeJson(widget: CounterWarpWidget.shared, session: session)
+}
+
+/// Cold-start / preview without a timeline context.
+func counterWidgetJsonPlaceholder() -> String {
+    WarpWidgetKitMappingKt.installWarpWidgetKitBridge()
+    let session: WarpWidgetSession = WarpWidgetKitEnv.placeholder().makeSession()
+    WarpWidgetHost.shared.prepare(widget: CounterWarpWidget.shared, session: session)
+    return WarpWidgetHost.shared.composeJson(widget: CounterWarpWidget.shared, session: session)
 }
 
 /// Hosts WARP JSON as pure SwiftUI (`useIntents: true` → extension AppIntent buttons).

@@ -18,6 +18,7 @@ kotlin {
             // Re-export library APIs into Shared.h for Swift widget hosts.
             export(project(":warp-ui"))
             export(project(":warp-runtime"))
+            export(project(":warp-widget"))
         }
     }
 
@@ -47,7 +48,7 @@ kotlin {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.compose.uiTooling)
             implementation(libs.androidx.glance.appwidget)
-            implementation(project(":warp-ui"))
+            api(project(":warp-widget"))
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
@@ -60,6 +61,10 @@ kotlin {
             implementation(libs.androidx.lifecycle.runtimeCompose)
             api(project(":warp-runtime"))
             api(project(":warp-ui"))
+            api(project(":warp-widget"))
+        }
+        iosMain.dependencies {
+            api(project(":warp-widget"))
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

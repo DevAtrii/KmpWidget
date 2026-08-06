@@ -10,6 +10,8 @@
 		3EF6C92030249C47006BFED0 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3EF6C91F30249C47006BFED0 /* WidgetKit.framework */; };
 		3EF6C92230249C47006BFED0 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3EF6C92130249C47006BFED0 /* SwiftUI.framework */; };
 		3EF6C92D30249C48006BFED0 /* CounterWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 3EF6C91D30249C47006BFED0 /* CounterWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		3EF6CABB3024C834006BFED0 /* warpWidgetKit in Frameworks */ = {isa = PBXBuildFile; productRef = AA010003AABBCCDD00110003 /* warpWidgetKit */; };
+		3EF6CABC3024C834006BFED0 /* warpWidgetKit in Frameworks */ = {isa = PBXBuildFile; productRef = AA010002AABBCCDD00110002 /* warpWidgetKit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -89,6 +91,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3EF6CABC3024C834006BFED0 /* warpWidgetKit in Frameworks */,
 				3EF6C92230249C47006BFED0 /* SwiftUI.framework in Frameworks */,
 				3EF6C92030249C47006BFED0 /* WidgetKit.framework in Frameworks */,
 			);
@@ -98,6 +101,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3EF6CABB3024C834006BFED0 /* warpWidgetKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -214,7 +218,7 @@
 			mainGroup = DCFAC3E453E5F9DF24AA0C0E;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				AA010001AABBCCDD00110001 /* XCLocalSwiftPackageReference "warpWidgetKit" */,
+				AA010001AABBCCDD00110001 /* XCLocalSwiftPackageReference "../warpWidgetKit" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 30FEB4B685BB345DD14A45BB /* Products */;
@@ -601,7 +605,7 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		AA010001AABBCCDD00110001 /* XCLocalSwiftPackageReference "warpWidgetKit" */ = {
+		AA010001AABBCCDD00110001 /* XCLocalSwiftPackageReference "../warpWidgetKit" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../warpWidgetKit;
 		};
@@ -610,12 +614,12 @@
 /* Begin XCSwiftPackageProductDependency section */
 		AA010002AABBCCDD00110002 /* warpWidgetKit */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = AA010001AABBCCDD00110001 /* XCLocalSwiftPackageReference "warpWidgetKit" */;
+			package = AA010001AABBCCDD00110001 /* XCLocalSwiftPackageReference "../warpWidgetKit" */;
 			productName = warpWidgetKit;
 		};
 		AA010003AABBCCDD00110003 /* warpWidgetKit */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = AA010001AABBCCDD00110001 /* XCLocalSwiftPackageReference "warpWidgetKit" */;
+			package = AA010001AABBCCDD00110001 /* XCLocalSwiftPackageReference "../warpWidgetKit" */;
 			productName = warpWidgetKit;
 		};
 /* End XCSwiftPackageProductDependency section */

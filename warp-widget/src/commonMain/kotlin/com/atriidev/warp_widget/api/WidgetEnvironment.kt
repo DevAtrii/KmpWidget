@@ -1,5 +1,6 @@
 package com.atriidev.warp_widget.api
 
+import androidx.compose.runtime.Stable
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -11,8 +12,13 @@ import kotlinx.serialization.Serializable
  * - WidgetKit (`TimelineProvider.Context`, `EnvironmentValues`, …)
  *
  * Platform-only extras live on [platformEnvironment].
+ *
+ * Type names use a `Warp` prefix where needed so they do not collide with
+ * WidgetKit / SwiftUI symbols when exported to Swift (`WidgetConfiguration`,
+ * `WidgetFamily`, `LayoutDirection`, …).
  */
 @Serializable
+@Stable
 data class WidgetEnvironment(
     /** Process / OS identity (Android vs iOS). */
     val platform: WidgetPlatform,
@@ -22,14 +28,14 @@ data class WidgetEnvironment(
      * - **WidgetKit:** `context.family`
      * - **Glance:** mapped from [size] / `AppWidgetProviderInfo` min size
      */
-    val family: WidgetFamily,
+    val family: WarpWidgetFamily,
     /**
      * Light / dark appearance.
      *
      * - **WidgetKit:** `EnvironmentValues.colorScheme` / widget rendering
      * - **Glance:** `Configuration.uiMode` night mask via `LocalContext`
      */
-    val theme: WidgetTheme,
+    val theme: WarpWidgetTheme,
     /**
      * BCP 47 locale tag (e.g. `"en-US"`).
      *
@@ -43,7 +49,7 @@ data class WidgetEnvironment(
      * - **WidgetKit:** `EnvironmentValues.layoutDirection`
      * - **Glance:** `Configuration.layoutDirection` via `LocalContext`
      */
-    val layoutDirection: LayoutDirection,
+    val layoutDirection: WarpLayoutDirection,
     /**
      * IANA time zone id (e.g. `"America/New_York"`).
      *
@@ -56,7 +62,7 @@ data class WidgetEnvironment(
      * - **WidgetKit:** `context.displaySize` (points)
      * - **Glance:** `LocalSize.current` (`DpSize`)
      */
-    val size: WidgetSize?,
+    val size: WarpWidgetSize?,
     /**
      * Whether this render is a gallery / editor preview.
      *
@@ -99,7 +105,7 @@ sealed interface WidgetPlatformEnvironment {
         /**
          * Optional configuration / options bag (Glance `LocalAppWidgetOptions` keys).
          */
-        val configuration: WidgetConfiguration? = null,
+        val configuration: WarpWidgetConfiguration? = null,
     ) : WidgetPlatformEnvironment
 
     @Serializable
@@ -109,12 +115,12 @@ sealed interface WidgetPlatformEnvironment {
          * WidgetKit rendering mode (fullColor / accented / vibrant).
          * No Glance equivalent.
          */
-        val renderingMode: WidgetRenderingMode = WidgetRenderingMode.FULL_COLOR,
+        val renderingMode: WarpWidgetRenderingMode = WarpWidgetRenderingMode.FULL_COLOR,
         /**
          * WidgetKit content margins (`EnvironmentValues.widgetContentMargins`).
          * No Glance equivalent.
          */
-        val contentMargins: WidgetPadding = WidgetPadding.Zero,
+        val contentMargins: WarpWidgetPadding = WarpWidgetPadding.Zero,
         /**
          * Whether the system draws a container background behind the widget.
          * WidgetKit (`showsWidgetContainerBackground`); no Glance equivalent.
@@ -123,18 +129,17 @@ sealed interface WidgetPlatformEnvironment {
         /**
          * App Intent / intent-configuration parameters when using configurable widgets.
          */
-        val configuration: WidgetConfiguration? = null,
+        val configuration: WarpWidgetConfiguration? = null,
     ) : WidgetPlatformEnvironment
 }
 
 /**
  * Widget size class shared across hosts.
  *
- * WidgetKit exposes these as `WidgetFamily`. On Glance they are inferred from
- * [WidgetSize] (and provider min width/height), not an OS enum.
+ * Maps from WidgetKit `WidgetFamily`. On Glance inferred from [WarpWidgetSize].
  */
 @Serializable
-enum class WidgetFamily {
+enum class WarpWidgetFamily {
     SYSTEM_SMALL,
     SYSTEM_MEDIUM,
     SYSTEM_LARGE,
@@ -145,17 +150,17 @@ enum class WidgetFamily {
  * Light / dark appearance for the widget surface.
  */
 @Serializable
-enum class WidgetTheme {
+enum class WarpWidgetTheme {
     LIGHT,
     DARK,
     UNSPECIFIED,
 }
 
 /**
- * Layout direction for text and mirroring.
+ * Layout direction for text and mirroring (not SwiftUI `LayoutDirection`).
  */
 @Serializable
-enum class LayoutDirection {
+enum class WarpLayoutDirection {
     LTR,
     RTL,
 }
@@ -164,7 +169,7 @@ enum class LayoutDirection {
  * Logical width/height of the widget (dp on Android, points on iOS).
  */
 @Serializable
-data class WidgetSize(
+data class WarpWidgetSize(
     val widthDp: Float,
     val heightDp: Float,
 )
@@ -173,22 +178,22 @@ data class WidgetSize(
  * Edge insets in dp / points (used for iOS content margins).
  */
 @Serializable
-data class WidgetPadding(
+data class WarpWidgetPadding(
     val start: Float = 0f,
     val top: Float = 0f,
     val end: Float = 0f,
     val bottom: Float = 0f,
 ) {
     companion object {
-        val Zero: WidgetPadding = WidgetPadding()
+        val Zero: WarpWidgetPadding = WarpWidgetPadding()
     }
 }
 
 /**
- * WidgetKit `WidgetRenderingMode`. Ignored on Glance.
+ * Maps WidgetKit `WidgetRenderingMode`. Ignored on Glance.
  */
 @Serializable
-enum class WidgetRenderingMode {
+enum class WarpWidgetRenderingMode {
     FULL_COLOR,
     ACCENTED,
     VIBRANT,
@@ -197,10 +202,13 @@ enum class WidgetRenderingMode {
 /**
  * Opaque string key/value configuration shared by both hosts when present.
  *
+ * Named [WarpWidgetConfiguration] so it does not collide with WidgetKit’s
+ * `WidgetConfiguration` when Shared is imported from Swift.
+ *
  * - **Glance:** flattened `LocalAppWidgetOptions` / intent extras
  * - **WidgetKit:** App Intent configuration parameters
  */
 @Serializable
-data class WidgetConfiguration(
+data class WarpWidgetConfiguration(
     val parameters: Map<String, String> = emptyMap(),
 )
