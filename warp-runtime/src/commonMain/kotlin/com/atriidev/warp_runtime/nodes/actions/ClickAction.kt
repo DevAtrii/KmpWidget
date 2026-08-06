@@ -2,15 +2,7 @@ package com.atriidev.warp_runtime.nodes.actions
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-
-@Serializable
-sealed interface ActionId
-
-@Serializable
-sealed interface MyActions : ActionId {
-    data object ActionA : MyActions
-    data object ActionB : MyActions
-}
+import kotlin.reflect.KClass
 
 /**
  * A tap/click action identified by [actionId], with optional [parameters].
@@ -100,6 +92,21 @@ fun WarpActionId.asClickAction(vararg parameters: Pair<String, String>): ClickAc
     actionClick(this, *parameters)
 
 /**
+ * Decodes a wire [actionId] string into widget-specific enum [A].
+ *
+ * @throws IllegalArgumentException when [actionId] is unknown to [A].
+ */
+fun <A> decodeActionId(actionId: String, idClass: KClass<A>): A
+    where A : Enum<A>, A : WarpActionId {
+    @Suppress("UNCHECKED_CAST")
+    val constants = idClass.java.enumConstants as Array<A>
+    return constants.firstOrNull { it.actionId == actionId }
+        ?: throw IllegalArgumentException(
+            "Unknown ${idClass.simpleName} action id \"$actionId\"",
+        )
+}
+
+/**
  * Decodes this wire [actionId] into widget-specific enum [A].
  *
  * The returned enum enables an exhaustive native `when`:
@@ -114,10 +121,7 @@ fun WarpActionId.asClickAction(vararg parameters: Pair<String, String>): ClickAc
  */
 inline fun <reified A> ClickAction.actionIdAs(): A
     where A : Enum<A>, A : WarpActionId =
-    enumValues<A>().firstOrNull { it.actionId == actionId }
-        ?: throw IllegalArgumentException(
-            "Unknown ${A::class.simpleName} action id \"$actionId\"",
-        )
+    decodeActionId(actionId, A::class)
 
 /**
  * Returns the click [ClickAction.actionId] when this is a [ClickAction], otherwise null.

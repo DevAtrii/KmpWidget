@@ -5,8 +5,7 @@ import com.atriidev.warp_runtime.nodes.actions.WarpActionId
 /**
  * Counter widget click action ids.
  *
- * Native hosts decode a [com.atriidev.warp_runtime.nodes.actions.ClickAction] with
- * `action.actionIdAs<CounterActions>()`, then use an exhaustive `when`.
+ * Native hosts receive typed [CounterActions] from [com.atriidev.warp_ui.WarpClickHandler].
  */
 enum class CounterActions(
     override val actionId: String,

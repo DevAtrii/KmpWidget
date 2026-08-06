@@ -606,5 +606,4 @@ as data, and let native hosts handle `actionId` plus parameters.**
 
 ## Click dispatch (native UI)
 
-See **[README_CLICK.md](./README_CLICK.md)** for implementers wiring Glance / WidgetKit taps
-to native `onClick(actionId, parameters)` callbacks.
+See **[README_CLICK.md](./README_CLICK.md)** for native click callbacks and **[warp-ui/README.md](../warp-ui/README.md)** for the Glance renderer (`WarpRender`, `WarpClicksRegistry`).

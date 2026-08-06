@@ -1,3 +1,4 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidMultiplatformLibrary)
@@ -6,17 +7,16 @@ plugins {
     alias(libs.plugins.composeCompiler)
 }
 
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 
 kotlin {
 
-    jvm()
 
     // Target declarations - add or remove as needed below. These define
     // which platforms this KMP module supports.
     // See: https://kotlinlang.org/docs/multiplatform-discover-project.html#targets
     android {
-        namespace = "com.atriidev.warp_runtime"
+        namespace = "com.atriidev.warp_ui"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
 
@@ -32,7 +32,7 @@ kotlin {
     // A step-by-step guide on how to include this library in an XCode
     // project can be found here:
     // https://developer.android.com/kotlin/multiplatform/migrate
-    val xcfName = "warp-runtimeKit"
+    val xcfName = "warp-uiKit"
 
     iosArm64 {
         binaries.framework {
@@ -58,13 +58,13 @@ kotlin {
                 // Add KMP dependencies here
                 implementation(libs.compose.runtime)
                 implementation(libs.kotlinx.serialization.json)
+                implementation(project(":warp-runtime"))
             }
         }
         androidMain {
             dependencies {
-                // Add Android-specific dependencies here. Note that this source set depends on
-                // commonMain by default and will correctly pull the Android artifacts of any KMP
-                // dependencies declared in commonMain.
+                implementation(libs.compose.ui)
+                implementation(libs.androidx.glance.appwidget)
             }
         }
 

@@ -95,9 +95,37 @@ the missing branch.
 There are two exhaustive checks:
 
 1. `when (action)` covers WARP action types (`ClickAction`, future `StartActivityAction`, etc.).
-2. `when (action.actionIdAs<CounterActions>())` covers every ID in one widget's enum.
+2. `when (actionId)` on typed [T] in [WarpClickHandler] covers every ID in one widget's enum.
 
-## Android Glance sketch
+## warp-ui (Android Glance)
+
+For a concrete renderer, use [`warp-ui`](../warp-ui/README.md):
+
+```kotlin
+provideContent {
+    val node = composeWarp(state, CounterWidget.ui)
+    WarpRender(
+        node = node,
+        handlers = counterWidgetClickHandlers(dataStore, widgetUpdater),
+    )
+}
+
+class CounterClickHandler(
+    dataStore: KmpDataStore,
+    widgetUpdater: WidgetUpdater,
+) : WarpClickHandler<CounterActions>(CounterActions::class) {
+    override suspend fun onClick(actionId: CounterActions, parameters) {
+        when (actionId) {
+            CounterActions.Increment -> updateCount(+1)
+            CounterActions.Decrement -> updateCount(-1)
+        }
+    }
+}
+```
+
+`WarpRender` registers handlers in `WarpClicksRegistry`; one Glance callback dispatches all clicks.
+
+## Android Glance sketch (manual wiring)
 
 Pass the serialized data through one Glance `ActionCallback`:
 

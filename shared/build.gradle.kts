@@ -44,7 +44,7 @@ kotlin {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.compose.uiTooling)
             implementation(libs.androidx.glance.appwidget)
-
+            implementation(project(":warp-ui"))
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
@@ -56,6 +56,7 @@ kotlin {
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(project(":warp-runtime"))
+            implementation(project(":warp-ui"))
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

@@ -47,6 +47,16 @@ class ClickActionTest {
     }
 
     @Test
+    fun decodeActionId_decodesWidgetEnumForExhaustiveWhen() {
+        val result = when (decodeActionId("increment", CounterActions::class)) {
+            CounterActions.Increment -> "incremented"
+            CounterActions.Decrement -> "decremented"
+        }
+
+        assertEquals("incremented", result)
+    }
+
+    @Test
     fun actionIdAs_decodesWidgetEnumForExhaustiveWhen() {
         val action = CounterActions.Increment.asClickAction()
 

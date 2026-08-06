@@ -31,3 +31,4 @@ include(":androidApp")
 include(":shared")
 
 include(":warp-runtime")
+include(":warp-ui")
