@@ -55,6 +55,7 @@ kotlin {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
+            implementation(project(":warp-runtime"))
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

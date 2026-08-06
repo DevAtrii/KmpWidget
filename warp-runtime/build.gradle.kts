@@ -15,12 +15,8 @@ kotlin {
     // See: https://kotlinlang.org/docs/multiplatform-discover-project.html#targets
     android {
         namespace = "com.atriidev.warp_runtime"
-        compileSdk {
-            version = release(36) {
-                minorApiLevel = 1
-            }
-        }
-        minSdk = 31
+        compileSdk = libs.versions.android.compileSdk.get().toInt()
+        minSdk = libs.versions.android.minSdk.get().toInt()
 
 
     }
