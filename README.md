@@ -48,7 +48,8 @@ See [example/counter/CounterWidget.kt](./warp-runtime/src/commonMain/kotlin/com/
 | Module | Role |
 |--------|------|
 | [warp-runtime](./warp-runtime/) | Author widget UI (`WarpColumn`, `WarpText`, `WarpButton`), compose to tree/JSON, click wire format |
-| [warp-ui](./warp-ui/) | Platform renderers — Glance (Android), WidgetKit + SwiftUI (iOS via [spm4Kmp](https://github.com/frankois944/spm4Kmp)) |
+| [warp-ui](./warp-ui/) | Platform renderers — Glance (Android), iOS via [spm4Kmp](https://github.com/frankois944/spm4Kmp) |
+| [warpWidgetKit](./warpWidgetKit/) | **SPM** SwiftUI / WidgetKit package (`import warpWidgetKit`) — local now, remote later |
 | [shared](./shared/) | App + demo widgets (counter), shared click handlers, DataStore |
 | [androidApp](./androidApp/) | Android host app + Glance widget |
 | [iosApp](./iosApp/) | iOS host app + Counter Widget extension (`.systemSmall`) |

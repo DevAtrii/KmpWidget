@@ -156,6 +156,7 @@
 			);
 			name = iosApp;
 			packageProductDependencies = (
+				AA010003AABBCCDD00110003 /* warpWidgetKit */,
 			);
 			productName = iosApp;
 			productReference = B41E2D7C996BFA4135E058EE /* KmpWidget.app */;
@@ -179,6 +180,7 @@
 			);
 			name = CounterWidgetExtension;
 			packageProductDependencies = (
+				AA010002AABBCCDD00110002 /* warpWidgetKit */,
 			);
 			productName = CounterWidgetExtension;
 			productReference = 3EF6C91D30249C47006BFED0 /* CounterWidgetExtension.appex */;
@@ -211,6 +213,9 @@
 			);
 			mainGroup = DCFAC3E453E5F9DF24AA0C0E;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				AA010001AABBCCDD00110001 /* XCLocalSwiftPackageReference "warpWidgetKit" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 30FEB4B685BB345DD14A45BB /* Products */;
 			projectDirPath = "";
@@ -394,8 +399,6 @@
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				"SWIFT_INCLUDE_PATHS[sdk=iphoneos*]" = "$(SRCROOT)/../warp-ui/build/spmKmpPlugin/warpWidgetKit/scratch/arm64-apple-ios/release/Modules";
-				"SWIFT_INCLUDE_PATHS[sdk=iphonesimulator*]" = "$(SRCROOT)/../warp-ui/build/spmKmpPlugin/warpWidgetKit/scratch/arm64-apple-ios-simulator/release/Modules";
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -432,8 +435,6 @@
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				"SWIFT_INCLUDE_PATHS[sdk=iphoneos*]" = "$(SRCROOT)/../warp-ui/build/spmKmpPlugin/warpWidgetKit/scratch/arm64-apple-ios/release/Modules";
-				"SWIFT_INCLUDE_PATHS[sdk=iphonesimulator*]" = "$(SRCROOT)/../warp-ui/build/spmKmpPlugin/warpWidgetKit/scratch/arm64-apple-ios-simulator/release/Modules";
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -598,6 +599,26 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		AA010001AABBCCDD00110001 /* XCLocalSwiftPackageReference "warpWidgetKit" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../warpWidgetKit;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		AA010002AABBCCDD00110002 /* warpWidgetKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AA010001AABBCCDD00110001 /* XCLocalSwiftPackageReference "warpWidgetKit" */;
+			productName = warpWidgetKit;
+		};
+		AA010003AABBCCDD00110003 /* warpWidgetKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AA010001AABBCCDD00110001 /* XCLocalSwiftPackageReference "warpWidgetKit" */;
+			productName = warpWidgetKit;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = FE26EA6BB14926B67B5447A1 /* Project object */;
 }

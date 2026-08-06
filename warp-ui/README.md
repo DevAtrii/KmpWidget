@@ -128,20 +128,32 @@ struct CounterWidgetBundle: WidgetBundle {
 `CounterWidgetClickIntent` (in the extension) calls `dispatchCounterWidgetClick`.  
 App Intents inside a static Shared library are **not** discovered by WidgetKit.
 
-### `import warpWidgetKit`
+### `import warpWidgetKit` (SPM package)
 
-spm4Kmp embeds a prebuilt `warpWidgetKit.swiftmodule` in the Shared framework. WidgetKit needs that pure-Swift module (ObjC export cannot carry `SwiftUI.View`).
+SwiftUI types live in the **`warpWidgetKit` Swift package** (repo root: [`../warpWidgetKit`](../warpWidgetKit/)):
 
-Point the widget target’s `SWIFT_INCLUDE_PATHS` at the spm4Kmp Modules dir (simulator / device):
+| Consumer | How |
+|----------|-----|
+| **Kotlin (`:warp-ui`)** | spm4Kmp `localPackage` + `exportToKotlin` (bridge cinterop `warpBridge`) |
+| **Xcode widget / app** | Local SPM dependency → `import warpWidgetKit` |
 
+**Local (this repo):** Xcode → package `../warpWidgetKit` (already wired in `iosApp.xcodeproj`).
+
+**Remote (when published):**
+
+```text
+# Xcode: File → Add Package Dependencies
+https://github.com/<org>/warpWidgetKit.git
+
+# :warp-ui build.gradle.kts — swap localPackage for:
+remotePackageVersion(
+    url = uri("https://github.com/<org>/warpWidgetKit.git"),
+    version = "1.0.0",
+    products = { add("warpWidgetKit", exportToKotlin = true) },
+)
 ```
-…/warp-ui/build/spmKmpPlugin/warpWidgetKit/scratch/arm64-apple-ios-simulator/release/Modules
-…/warp-ui/build/spmKmpPlugin/warpWidgetKit/scratch/arm64-apple-ios/release/Modules
-```
 
-This imports the **already-linked** module — it does **not** recompile Swift sources into the extension.
-
-> **Never** add `src/swift/warpWidgetKit` as widget target sources (WarpKit-style). That creates a second click-bridge singleton.
+> **Never** copy package sources into the widget target. Depend on the SPM product only (same as any other Swift package).
 
 ### `useIntents`
 
@@ -161,15 +173,20 @@ holder.previewView() // UIKitView
 
 Same App Group on **app + widget extension**. Extension needs **iOS 17+** for interactive buttons.
 
-### Swift package layout (library internals)
+### Swift package layout
 
 ```
-src/swift/warpWidgetKit/
-  WarpSwiftUIView.swift
-  WarpSwiftUIRenderer.swift
-  WarpWidgetBridge.swift
-  WarpClickBridge.swift
-  WarpUiHostView.swift
+warpWidgetKit/                         # SPM root (publish this)
+  Package.swift
+  Sources/warpWidgetKit/
+    WarpSwiftUIView.swift
+    WarpSwiftUIRenderer.swift
+    WarpWidgetBridge.swift
+    WarpClickBridge.swift
+    WarpUiHostView.swift
+
+warp-ui/src/swift/warpBridge/          # empty-ish spm4Kmp bridge (imports package)
+  WarpBridgeAnchor.swift
 ```
 
 ---
