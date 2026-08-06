@@ -18,7 +18,7 @@ Widgets on Android and iOS are built with different UI toolkits. WARP wants one 
 ```
 You write UI with @Composable functions
         ↓
-warp-runtime builds a WarpNode tree
+warp-runtime builds a WarpNode tree (recomposing when state changes)
         ↓
 You get JSON (or the tree directly)
         ↓
@@ -31,11 +31,12 @@ Think of it like writing HTML as a data structure instead of drawing pixels imme
 
 ## Quick start
 
+### Static UI (no external state)
+
 ```kotlin
 import com.atriidev.warp_runtime.compose.*
 import com.atriidev.warp_runtime.nodes.modifier.*
 
-// Build UI and get JSON in one step
 val json = composeWarpToJson {
     WarpColumn {
         WarpText("Hello WARP")
@@ -46,24 +47,100 @@ val json = composeWarpToJson {
 println(json)
 ```
 
-Or use the built-in sample:
+### State-driven UI (recommended for widgets)
 
 ```kotlin
-val json = sampleCounterWidgetJson()
+@Serializable
+data class CounterState(val count: Int = 0)
+
+val json = composeWarpToJson(CounterState(count = 42)) { state ->
+    WarpColumn {
+        WarpText("Counter")
+        WarpRow {
+            WarpButton(text = "-", actionId = "decrement")
+            WarpText(state.count.toString())
+            WarpButton(text = "+", actionId = "increment")
+        }
+    }
+}
+```
+
+When `state.count` changes and you call `composeWarp` again, you get a new `WarpNode` tree reflecting the updated value.
+
+### Built-in sample
+
+```kotlin
+val json = sampleCounterWidgetJson(count = 42)
 println(json)
 ```
 
-To get the tree object instead of JSON:
+### Get the tree object instead of JSON
 
 ```kotlin
-val tree: WarpNode = composeWarp {
-    WarpRow {
-        WarpText("42")
-    }
+val tree: WarpNode = composeWarp(CounterState(0)) { state ->
+    WarpText("Count: ${state.count}")
 }
 
 val json = tree.toJson()
 ```
+
+---
+
+## Working with state
+
+WARP supports three ways to drive UI from state. Pick the one that fits your widget refresh flow.
+
+| Approach | Best for | API |
+|----------|----------|-----|
+| **Explicit state parameter** | Widget refresh — load state, compose, serialize, push to platform | `composeWarp(state) { s -> ... }` |
+| **WarpComposition** | Same widget UI composed multiple times in one session | `WarpComposition(state) { ... }.updateState(newState)` |
+| **mutableStateOf inside composables** | Local/derived UI state during a single composition | `remember { mutableStateOf(...) }` inside `composeWarp { }` |
+
+### 1. Explicit state parameter
+
+The simplest pattern for widget updates. Pass your widget state each time the platform asks for a new tree:
+
+```kotlin
+fun renderWidget(state: CounterState): WarpNode =
+    composeWarp(state) { s ->
+        WarpText("Count: ${s.count}")
+    }
+
+// Widget refresh cycle:
+val tree = renderWidget(CounterState(count = 10))
+val json = tree.toJson()
+```
+
+Each call with a new `CounterState` runs composition again and produces a fresh tree.
+
+### 2. WarpComposition
+
+Holds state for you and re-composes when you call `updateState`:
+
+```kotlin
+val warp = WarpComposition(CounterState(0), sampleCounterWidgetUi)
+
+warp.updateState(CounterState(5))   // → new WarpNode
+warp.currentNode().toJson()
+
+warp.dispose()  // no-op today; reserved for future live-composition backends
+```
+
+Under the hood, each `updateState` calls `composeWarp` with the new state.
+
+### 3. mutableStateOf inside composeWarp
+
+If you use Compose's `mutableStateOf` inside your composables, WARP runs multiple recomposition passes until state settles:
+
+```kotlin
+composeWarp {
+    val count = remember { mutableStateOf(0) }
+    if (count.value == 0) count.value = 5
+    WarpText(count.value.toString())  // final tree shows "5"
+}
+```
+
+The internal tree is **cleared and rebuilt** on every recomposition pass so holders never accumulate duplicates.
 
 ---
 
@@ -82,7 +159,7 @@ All nodes can optionally take a `WarpModifier` (padding is supported today).
 
 ## Example JSON output
 
-For the sample counter widget:
+For the sample counter widget with `CounterState(count = 42)`:
 
 ```json
 {
@@ -136,12 +213,12 @@ There are **two layers** inside warp-runtime. This is the most important idea to
 You write UI using `@Composable` functions that look similar to Jetpack Compose or Glance:
 
 ```kotlin
-composeWarpToJson {
+composeWarpToJson(CounterState(count = 42)) { state ->
     WarpColumn {
         WarpText("Counter")
         WarpRow {
             WarpButton(text = "-", actionId = "decrement")
-            WarpText("42")
+            WarpText(state.count.toString())
         }
     }
 }
@@ -166,7 +243,7 @@ These are plain Kotlin objects — no Compose runtime UI, no Android views, no S
 
 ## The full pipeline
 
-Here is exactly what happens when you call `composeWarpToJson { ... }`:
+Here is exactly what happens when you call `composeWarpToJson { ... }` or `composeWarp(state) { ... }`:
 
 ### Step 1 — Create an empty root
 
@@ -176,19 +253,21 @@ val root = RootHolder()
 
 `RootHolder` is an internal bucket that will collect top-level nodes while composition runs.
 
-### Step 2 — Start a one-time Compose composition
+### Step 2 — Run Compose Runtime (with recomposition support)
 
 warp-runtime uses a small piece of **Compose Runtime** (not Compose UI):
 
-- `Recomposer` — runs composition once
+- `Recomposer` — drives composition and recomposition
 - `Composition` — executes your `@Composable` lambda
-- `BroadcastFrameClock` — gives the recomposer a clock so it can finish
+- `BroadcastFrameClock` — sends frames so pending recompositions can finish
 
-This is **not** a live UI that keeps recomposing at 60fps. It runs **once**, builds the tree, and stops. That is enough for widgets, which refresh only when data changes.
+This is **not** a live 60fps UI. It runs until all state-driven recompositions settle, builds the tree, and returns. That matches how widgets work: compose when data changes, then hand off JSON to the platform.
 
-### Step 3 — Your composables register nodes
+If `mutableStateOf` changes during composition, WARP sends additional frames (up to 3) and waits for the recomposer to become idle before converting the result.
 
-When `WarpColumn`, `WarpRow`, `WarpText`, or `WarpButton` run:
+### Step 3 — WarpRootContent clears and rebuilds the tree
+
+Every recomposition pass starts by clearing `RootHolder.children`. Then your composables register fresh holders:
 
 1. An internal **holder** object is created (for example `WarpColumnHolder`)
 2. That holder is added to the current parent's `children` list
@@ -229,7 +308,7 @@ You now hold a `WarpNode` tree made of regular data classes.
 ### Step 5 — Serialize to JSON
 
 ```kotlin
-fun composeWarpToJson(content) = composeWarp(content).toJson()
+fun composeWarpToJson(state, content) = composeWarp(state, content).toJson()
 
 fun WarpNode.toJson() = Json.encodeToString(this)
 ```
@@ -248,9 +327,9 @@ Settings used today:
 ```
 ┌─────────────────────────────────────────────┐
 │  Your code                                  │
-│  composeWarpToJson {                        │
+│  composeWarp(CounterState(42)) { state ->   │
 │      WarpColumn {                           │
-│          WarpText("Hello")                  │
+│          WarpText("${state.count}")         │
 │      }                                      │
 │  }                                          │
 └──────────────────┬──────────────────────────┘
@@ -258,13 +337,13 @@ Settings used today:
                    ▼
 ┌─────────────────────────────────────────────┐
 │  Compose Compiler + Compose Runtime         │
-│  (runs @Composable functions once)          │
+│  (compose + recompose until state settles)  │
 └──────────────────┬──────────────────────────┘
                    │
                    ▼
 ┌─────────────────────────────────────────────┐
-│  Internal holders (WarpColumnHolder, etc.)  │
-│  Built during composition                   │
+│  WarpRootContent clears root each pass      │
+│  Internal holders rebuilt (ColumnHolder…)   │
 └──────────────────┬──────────────────────────┘
                    │  toWarpNode()
                    ▼
@@ -289,9 +368,10 @@ warp-runtime/
 ├── compose/
 │   ├── WarpUi.kt           # Public @Composable API (WarpColumn, WarpRow, …)
 │   ├── ComposeWarp.kt      # composeWarp(), composeWarpToJson(), toJson()
-│   ├── WarpSamples.kt      # sampleCounterWidgetJson() example
+│   ├── WarpComposition.kt  # Stateful WarpComposition<S> with updateState()
+│   ├── WarpSamples.kt      # CounterState, sampleCounterWidgetJson()
 │   └── internal/
-│       ├── WarpComposeScope.kt   # CompositionLocal tree building
+│       ├── WarpComposeScope.kt   # WarpRootContent, CompositionLocal tree building
 │       └── WarpNodeHolders.kt    # Internal holders + toWarpNode()
 └── nodes/
     ├── WarpNode.kt         # Sealed serializable interface
@@ -323,6 +403,17 @@ This applies to `shared`, app modules, etc. The lambda `{ WarpText("Hi") }` must
 
 If you define the UI in `commonMain` as a stored composable lambda (like `sampleCounterWidgetUi` in `WarpSamples.kt`), that also works.
 
+### Widget state should be serializable data classes
+
+Use `@Serializable` data classes for state you persist or pass across platforms:
+
+```kotlin
+@Serializable
+data class CounterState(val count: Int = 0)
+```
+
+Pass them to `composeWarp(state) { ... }` or `WarpComposition`. This mirrors how Glance uses `GlanceStateDefinition` — state lives outside the UI tree, composition reads it.
+
 ### Buttons use action IDs, not click lambdas
 
 ```kotlin
@@ -337,7 +428,7 @@ This module stops at the data/JSON layer. Rendering to Glance (Android) or Swift
 
 ### Dependencies (intentionally small)
 
-- `compose-runtime` — powers `@Composable` and one-shot composition
+- `compose-runtime` — powers `@Composable`, composition, and recomposition
 - `kotlinx-serialization-json` — JSON output
 
 No Compose UI, Material, Foundation, or platform widget libraries.
@@ -348,9 +439,15 @@ No Compose UI, Material, Foundation, or platform widget libraries.
 
 ```bash
 ./gradlew :warp-runtime:iosSimulatorArm64Test
+./gradlew :warp-runtime:jvmTest
 ```
 
-Tests live in `commonTest` and verify both the node tree shape and JSON output.
+Tests in `commonTest` verify:
+
+- Node tree shape and JSON output
+- State parameter changes produce different trees
+- `WarpComposition.updateState()` returns updated trees
+- `mutableStateOf` triggers recomposition inside `composeWarp`
 
 ---
 
@@ -358,9 +455,9 @@ Tests live in `commonTest` and verify both the node tree shape and JSON output.
 
 Planned direction for WARP (not implemented here yet):
 
-- `WarpWidget<State>` — widget class with state and `update()`
+- `WarpWidget<State>` — widget class with `update()` and platform integration
 - Gradle/KSP plugin — generate Android receiver + iOS widget boilerplate
 - Platform renderers — `WarpNode` → Glance on Android, SwiftUI on iOS
 - More nodes — `Image`, `Spacer`, `LazyColumn`, etc.
 
-For now, `warp-runtime` proves the core idea: **write widget UI like Compose, get serializable data out.**
+For now, `warp-runtime` proves the core idea: **write widget UI like Compose, react to state, get serializable data out.**
