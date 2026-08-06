@@ -1,0 +1,117 @@
+package com.atriidev.warp_widget
+
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.staticCompositionLocalOf
+import kotlinx.serialization.Serializable
+
+/**
+ * Typed key for widget preference state (Glance-style).
+ *
+ * Backed by:
+ * - **Android:** Glance `Preferences` / `PreferencesGlanceStateDefinition`
+ * - **iOS:** App Group `UserDefaults`
+ */
+class WarpStateKey<T> internal constructor(
+    val name: String,
+    internal val encode: (T) -> String,
+    internal val decode: (String) -> T,
+) {
+    companion object {
+        fun string(name: String): WarpStateKey<String> =
+            WarpStateKey(name, encode = { it }, decode = { it })
+
+        fun int(name: String): WarpStateKey<Int> =
+            WarpStateKey(name, encode = { it.toString() }, decode = { it.toInt() })
+
+        fun long(name: String): WarpStateKey<Long> =
+            WarpStateKey(name, encode = { it.toString() }, decode = { it.toLong() })
+
+        fun boolean(name: String): WarpStateKey<Boolean> =
+            WarpStateKey(name, encode = { it.toString() }, decode = { it.toBooleanStrict() })
+
+        fun float(name: String): WarpStateKey<Float> =
+            WarpStateKey(name, encode = { it.toString() }, decode = { it.toFloat() })
+    }
+}
+
+/**
+ * Read-only preference bag available during [WarpWidget.Content] via [currentState] /
+ * [currentPreferences].
+ */
+@Serializable
+data class WarpWidgetPreferences(
+    val values: Map<String, String> = emptyMap(),
+) {
+    operator fun <T> get(key: WarpStateKey<T>): T? =
+        values[key.name]?.let(key.decode)
+
+    fun <T> getOrDefault(key: WarpStateKey<T>, default: T): T =
+        get(key) ?: default
+}
+
+/**
+ * Mutable prefs for [updateWarpWidgetState] transforms (app or click handlers).
+ */
+class MutableWarpWidgetPreferences(
+    initial: Map<String, String> = emptyMap(),
+) {
+    private val map = initial.toMutableMap()
+
+    operator fun <T> get(key: WarpStateKey<T>): T? =
+        map[key.name]?.let(key.decode)
+
+    operator fun <T> set(key: WarpStateKey<T>, value: T) {
+        map[key.name] = key.encode(value)
+    }
+
+    fun <T> remove(key: WarpStateKey<T>) {
+        map.remove(key.name)
+    }
+
+    fun toPreferences(): WarpWidgetPreferences =
+        WarpWidgetPreferences(map.toMap())
+
+    internal fun asMap(): Map<String, String> = map.toMap()
+}
+
+internal val LocalWarpWidgetPreferences =
+    staticCompositionLocalOf<WarpWidgetPreferences> {
+        error(
+            "No WarpWidgetPreferences. Call WarpWidgetHost.compose / provide Content " +
+                "only inside a host session (Glance provideContent or WidgetKit timeline).",
+        )
+    }
+
+/**
+ * Full preference bag for this render — analogous to Glance `currentState<Preferences>()`.
+ *
+ * Only valid inside [WarpWidget.Content] while [WarpWidgetHost] is composing.
+ */
+@Composable
+@ReadOnlyComposable
+fun currentPreferences(): WarpWidgetPreferences = LocalWarpWidgetPreferences.current
+
+/**
+ * Single key — analogous to Glance `currentState(key)`.
+ *
+ * ```
+ * @Composable
+ * override fun Content(env: WidgetEnvironment) {
+ *     val count = currentState(CounterKeys.Count) ?: 0
+ *     WarpText("$count")
+ * }
+ * ```
+ */
+@Composable
+@ReadOnlyComposable
+fun <T> currentState(key: WarpStateKey<T>): T? = currentPreferences()[key]
+
+@Composable
+internal fun ProvideWarpWidgetPreferences(
+    preferences: WarpWidgetPreferences,
+    content: @Composable () -> Unit,
+) {
+    CompositionLocalProvider(LocalWarpWidgetPreferences provides preferences, content = content)
+}

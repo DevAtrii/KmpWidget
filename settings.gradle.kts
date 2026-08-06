@@ -14,6 +14,8 @@ pluginManagement {
     }
 }
 
+
+
 dependencyResolutionManagement {
     repositories {
         google {
@@ -32,3 +34,4 @@ include(":shared")
 
 include(":warp-runtime")
 include(":warp-ui")
+include(":warp-widget")

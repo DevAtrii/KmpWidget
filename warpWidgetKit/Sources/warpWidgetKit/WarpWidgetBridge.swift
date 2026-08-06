@@ -22,4 +22,14 @@ public class WarpWidgetBridge: NSObject {
             WidgetCenter.shared.reloadAllTimelines()
         }
     }
+
+    /// Reloads timelines for a single widget kind (`Widget.kind` / WARP `WarpWidget.id`).
+    ///
+    /// Kotlin: `WarpWidgetBridge.shared().reloadTimelinesOfKind(kind)`
+    @objc(reloadTimelinesOfKind:)
+    public func reloadTimelinesOfKind(_ kind: String) {
+        if #available(iOS 14.0, *) {
+            WidgetCenter.shared.reloadTimelines(ofKind: kind)
+        }
+    }
 }
