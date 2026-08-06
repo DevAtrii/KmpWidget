@@ -2,6 +2,11 @@ TEAM_ID=
 
 PRODUCT_NAME=KmpWidget
 PRODUCT_BUNDLE_IDENTIFIER=com.atriidev.kmpwidget.KmpWidget$(TEAM_ID)
+APP_GROUP_ID=group.com.atriidev.kmpwidget
+
+SHARED_FRAMEWORK_DIR=$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)
+FRAMEWORK_SEARCH_PATHS=$(inherited) $(SHARED_FRAMEWORK_DIR)
+OTHER_LDFLAGS=$(inherited) -framework Shared
 
 CURRENT_PROJECT_VERSION=1
 MARKETING_VERSION=1.0

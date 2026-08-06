@@ -1,7 +1,11 @@
 package com.atriidev.kmpwidget
 
+import kotlinx.cinterop.ExperimentalForeignApi
+import warpWidgetKit.WarpWidgetBridge
+
 actual class WidgetUpdater {
+    @OptIn(ExperimentalForeignApi::class)
     actual suspend fun update(counter: Int) {
-        println("Widget is not updated")
+        WarpWidgetBridge.shared().reloadTimelines()
     }
 }

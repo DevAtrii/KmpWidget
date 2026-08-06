@@ -1,24 +1,91 @@
-This is a Kotlin Multiplatform project targeting Android, iOS.
+# KmpWidget
 
-* [/iosApp](./iosApp/iosApp) contains an iOS application. Even if you’re sharing your UI with Compose Multiplatform,
-  you need this entry point for your iOS app. This is also where you should add SwiftUI code for your project.
+> **Active development** — APIs and architecture are changing. Follow [@dev_atrii on X](https://x.com/dev_atrii) for updates.
 
-* [/shared](./shared/src) is for code that will be shared across your Compose Multiplatform applications.
-  It contains several subfolders:
-  - [commonMain](./shared/src/commonMain/kotlin) is for code that’s common for all targets.
-  - Other folders are for Kotlin code that will be compiled for only the platform indicated in the folder name.
-    For example, if you want to use Apple’s CoreCrypto for the iOS part of your Kotlin app,
-    the [iosMain](./shared/src/iosMain/kotlin) folder would be the right place for such calls.
-    Similarly, if you want to edit the Desktop (JVM) specific part, the [jvmMain](./shared/src/jvmMain/kotlin)
-    folder is the appropriate location.
+## WARP — Coming Soon
 
-### Running the apps
+**WARP** (**W**idget **A**bstraction, **R**endering **P**ipeline) is a unified API for creating home-screen widgets in **Kotlin Multiplatform**.
 
-Use the run configurations provided by the run widget in your IDE's toolbar. You can also use these commands and options:
+Write widget UI once in Kotlin → render on **Android** (Jetpack Glance) and **iOS** (WidgetKit + SwiftUI).
 
-- Android app: `./gradlew :androidApp:assembleDebug`
-- iOS app: open the [/iosApp](./iosApp) directory in Xcode and run it from there.
+```
+Compose-like Kotlin UI  →  WarpNode tree  →  JSON  →  platform renderer
+                              ↑
+                         shared state & click handlers
+```
+
+### Example
+
+Describe widget UI in `commonMain` with composable primitives — same counter on Android Glance and iOS WidgetKit:
+
+```kotlin
+@Composable
+fun CounterWidgetUi(state: CounterState) {
+    WarpColumn(
+        modifier = WarpModifier().padding(WarpPadding(16, 16, 16, 16)),
+    ) {
+        WarpText("Counter")
+        WarpRow {
+            WarpButton(text = "-", onClick = CounterActions.Decrement.asClickAction())
+            WarpText(state.count.toString())
+            WarpButton(text = "+", onClick = CounterActions.Increment.asClickAction())
+        }
+    }
+}
+
+// Compose state → tree → platform render
+val node = composeWarp(CounterState(count = count), CounterWidgetUi)
+WarpRender(node, counterWidgetClickHandlers(dataStore, widgetUpdater))  // Android Glance
+// iOS: renderCounterWidget() → WidgetKit (.systemSmall)
+```
+
+See [example/counter/CounterWidget.kt](./warp-runtime/src/commonMain/kotlin/com/atriidev/warp_runtime/example/counter/CounterWidget.kt) for the full demo.
+
+### Modules
+
+| Module | Role |
+|--------|------|
+| [warp-runtime](./warp-runtime/) | Author widget UI (`WarpColumn`, `WarpText`, `WarpButton`), compose to tree/JSON, click wire format |
+| [warp-ui](./warp-ui/) | Platform renderers — Glance (Android), WidgetKit + SwiftUI (iOS via [spm4Kmp](https://github.com/frankois944/spm4Kmp)) |
+| [shared](./shared/) | App + demo widgets (counter), shared click handlers, DataStore |
+| [androidApp](./androidApp/) | Android host app + Glance widget |
+| [iosApp](./iosApp/) | iOS host app + Counter Widget extension (`.systemSmall`) |
+
+### Docs
+
+- [warp-runtime README](./warp-runtime/README.md) — composing widgets, JSON, click actions
+- [warp-runtime click guide](./warp-runtime/README_CLICK.md) — handler registry & dispatch
+- [warp-ui README](./warp-ui/README.md) — `WarpRender`, `warpRender`, iOS WidgetKit setup
+
+### Status
+
+| Platform | Renderer | Demo |
+|----------|----------|------|
+| Android | Jetpack Glance ✓ | Counter widget ✓ |
+| iOS | WidgetKit + SwiftUI ✓ | Counter widget (`.systemSmall`) ✓ |
+| API stability | Early / experimental | — |
 
 ---
 
-Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html)…
+## Running the apps
+
+- **Android:** `./gradlew :androidApp:assembleDebug` — install app, add Counter widget from launcher
+- **iOS:** open [iosApp](./iosApp) in Xcode, run **iosApp**, add **Counter** widget (requires App Group + iOS 17+)
+
+### Verify builds
+
+```bash
+./gradlew :warp-runtime:jvmTest
+./gradlew :warp-ui:compileKotlinIosSimulatorArm64
+./gradlew :androidApp:assembleDebug
+```
+
+---
+
+## Project layout
+
+* [/iosApp](./iosApp) — iOS application and Widget Extension entry points
+* [/shared](./shared/src) — shared Kotlin (commonMain, androidMain, iosMain)
+* [/androidApp](./androidApp) — Android application
+
+Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html).

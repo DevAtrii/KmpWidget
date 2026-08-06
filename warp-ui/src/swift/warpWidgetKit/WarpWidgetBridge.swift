@@ -4,22 +4,27 @@ import SwiftUI
 import WidgetKit
 
 private let nodeJsonKey = "warp_node_json"
+public let warpAppGroupId = "group.com.atriidev.kmpwidget"
 
 /// Kotlin ↔ Swift bridge for WARP WidgetKit storage, preview, and timeline reload.
 @objcMembers
 public class WarpWidgetBridge: NSObject {
     public static let shared = WarpWidgetBridge()
 
+    private var defaults: UserDefaults {
+        UserDefaults(suiteName: warpAppGroupId) ?? .standard
+    }
+
     private override init() {
         super.init()
     }
 
     public func publishNodeJson(_ json: String) {
-        UserDefaults.standard.set(json, forKey: nodeJsonKey)
+        defaults.set(json, forKey: nodeJsonKey)
     }
 
     public func storedNodeJson() -> String {
-        UserDefaults.standard.string(forKey: nodeJsonKey) ?? "{}"
+        defaults.string(forKey: nodeJsonKey) ?? "{}"
     }
 
     public func reloadTimelines() {

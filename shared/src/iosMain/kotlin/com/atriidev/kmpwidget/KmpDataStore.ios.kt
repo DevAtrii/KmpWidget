@@ -4,7 +4,8 @@ import platform.Foundation.NSUserDefaults
 
 actual class KmpDataStore {
 
-    private val defaults = NSUserDefaults.standardUserDefaults()
+    private val defaults =
+        NSUserDefaults(suiteName = APP_GROUP_ID)
 
     actual fun get(key: String, defaultValue: String): String {
         return defaults.stringForKey(key) ?: defaultValue

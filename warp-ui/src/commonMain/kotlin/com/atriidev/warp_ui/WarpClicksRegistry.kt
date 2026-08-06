@@ -13,7 +13,7 @@ object WarpClicksRegistry {
         handlers.forEach(::registerOne)
     }
 
-    internal suspend fun dispatch(actionId: String, parameters: Map<String, String>) {
+    suspend fun dispatch(actionId: String, parameters: Map<String, String>) {
         handlers[actionId]?.invoke(parameters)
     }
 

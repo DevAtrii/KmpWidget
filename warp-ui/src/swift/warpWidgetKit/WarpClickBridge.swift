@@ -6,6 +6,7 @@ public class WarpClickBridge: NSObject {
     public static let shared = WarpClickBridge()
 
     private var handler: ((String, String) -> Void)?
+    private var prepareHandler: (() -> Void)?
 
     private override init() {
         super.init()
@@ -15,7 +16,16 @@ public class WarpClickBridge: NSObject {
         self.handler = handler
     }
 
+    public func setPrepareHandler(_ handler: @escaping () -> Void) {
+        prepareHandler = handler
+    }
+
+    public func prepareIfNeeded() {
+        prepareHandler?()
+    }
+
     public func perform(actionId: String, parametersJson: String) {
+        prepareIfNeeded()
         handler?(actionId, parametersJson)
     }
 }

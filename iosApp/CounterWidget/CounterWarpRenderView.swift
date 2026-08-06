@@ -1,14 +1,19 @@
-import SwiftUI
-import AppIntents
+//
+//  CounterWarpRenderView.swift
+//  CounterWidget
+//
 
-struct WarpSwiftUIRootView: View {
+import AppIntents
+import Shared
+import SwiftUI
+import WidgetKit
+
+struct CounterWarpRenderView: View {
     let json: String
-    let useIntents: Bool
 
     var body: some View {
-        if let root = WarpNodeParser.parse(json: json) {
-            WarpNodeView(node: root, useIntents: useIntents)
-                .padding()
+        if let root = CounterWarpNodeParser.parse(json: json) {
+            CounterWarpNodeView(node: root)
         } else {
             Text("Invalid WARP node JSON")
                 .font(.caption)
@@ -16,16 +21,15 @@ struct WarpSwiftUIRootView: View {
     }
 }
 
-private struct WarpNodeView: View {
-    let node: WarpParsedNode
-    let useIntents: Bool
+private struct CounterWarpNodeView: View {
+    let node: CounterWarpParsedNode
 
     var body: some View {
         switch node.kind {
         case .column:
             VStack(alignment: .center, spacing: 6) {
                 ForEach(Array(node.children.enumerated()), id: \.offset) { _, child in
-                    WarpNodeView(node: child, useIntents: useIntents)
+                    CounterWarpNodeView(node: child)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -35,14 +39,14 @@ private struct WarpNodeView: View {
             HStack(spacing: 6) {
                 ForEach(Array(node.children.enumerated()), id: \.offset) { index, child in
                     if node.children.count == 3, index == 1, child.kind == .text {
-                        WarpNodeView(node: child, useIntents: useIntents)
+                        CounterWarpNodeView(node: child)
                             .frame(maxWidth: .infinity)
                             .layoutPriority(1)
                     } else if child.kind == .button {
-                        WarpNodeView(node: child, useIntents: useIntents)
+                        CounterWarpNodeView(node: child)
                             .frame(minWidth: 32, maxWidth: 40)
                     } else {
-                        WarpNodeView(node: child, useIntents: useIntents)
+                        CounterWarpNodeView(node: child)
                     }
                 }
             }
@@ -60,25 +64,12 @@ private struct WarpNodeView: View {
                 .padding(node.padding)
 
         case .button:
-            if useIntents, #available(iOS 17.0, *), let actionId = node.actionId {
-                Button(intent: WarpClickIntent(actionId: actionId, parametersJson: node.parametersJson)) {
+            if #available(iOS 17.0, *), let actionId = node.actionId {
+                Button(intent: CounterWidgetClickIntent(actionId: actionId, parametersJson: node.parametersJson)) {
                     Text(node.text ?? "")
                         .font(.title3.weight(.semibold))
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
-                .buttonStyle(.bordered)
-                .buttonBorderShape(.circle)
-                .controlSize(.small)
-                .padding(node.padding)
-            } else if let actionId = node.actionId {
-                Button(node.text ?? "") {
-                    WarpClickBridge.shared.perform(
-                        actionId: actionId,
-                        parametersJson: node.parametersJson
-                    )
-                    WarpWidgetBridge.shared.reloadTimelines()
-                }
-                .font(.title3.weight(.semibold))
                 .buttonStyle(.bordered)
                 .buttonBorderShape(.circle)
                 .controlSize(.small)
@@ -91,24 +82,24 @@ private struct WarpNodeView: View {
     }
 }
 
-enum WarpNodeKind {
+private enum CounterWarpNodeKind {
     case column
     case row
     case text
     case button
 }
 
-struct WarpParsedNode {
-    let kind: WarpNodeKind
+private struct CounterWarpParsedNode {
+    let kind: CounterWarpNodeKind
     let text: String?
     let actionId: String?
     let parametersJson: String
     let padding: EdgeInsets
-    let children: [WarpParsedNode]
+    let children: [CounterWarpParsedNode]
 }
 
-enum WarpNodeParser {
-    static func parse(json: String) -> WarpParsedNode? {
+private enum CounterWarpNodeParser {
+    static func parse(json: String) -> CounterWarpParsedNode? {
         guard
             let data = json.data(using: .utf8),
             let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
@@ -118,7 +109,7 @@ enum WarpNodeParser {
         return parseNode(object)
     }
 
-    private static func parseNode(_ object: [String: Any]) -> WarpParsedNode? {
+    private static func parseNode(_ object: [String: Any]) -> CounterWarpParsedNode? {
         guard let type = object["type"] as? String else { return nil }
         let padding = parsePadding(object["modifier"] as? [String: Any])
         let children = (object["children"] as? [[String: Any]] ?? [])
@@ -126,7 +117,7 @@ enum WarpNodeParser {
 
         switch type {
         case "column":
-            return WarpParsedNode(
+            return CounterWarpParsedNode(
                 kind: .column,
                 text: nil,
                 actionId: nil,
@@ -135,7 +126,7 @@ enum WarpNodeParser {
                 children: children
             )
         case "row":
-            return WarpParsedNode(
+            return CounterWarpParsedNode(
                 kind: .row,
                 text: nil,
                 actionId: nil,
@@ -144,7 +135,7 @@ enum WarpNodeParser {
                 children: children
             )
         case "text":
-            return WarpParsedNode(
+            return CounterWarpParsedNode(
                 kind: .text,
                 text: object["text"] as? String ?? "",
                 actionId: nil,
@@ -157,7 +148,7 @@ enum WarpNodeParser {
             let actionId = click?["actionId"] as? String
             let parameters = click?["parameters"] as? [String: String] ?? [:]
             let parametersJson = jsonString(parameters) ?? "{}"
-            return WarpParsedNode(
+            return CounterWarpParsedNode(
                 kind: .button,
                 text: object["text"] as? String ?? "",
                 actionId: actionId,
@@ -193,8 +184,8 @@ enum WarpNodeParser {
 }
 
 @available(iOS 17.0, *)
-struct WarpClickIntent: AppIntent {
-    static var title: LocalizedStringResource = "WARP Click"
+struct CounterWidgetClickIntent: AppIntent {
+    static var title: LocalizedStringResource = "Counter Widget Click"
 
     @Parameter(title: "Action ID")
     var actionId: String
@@ -213,8 +204,11 @@ struct WarpClickIntent: AppIntent {
     }
 
     func perform() async throws -> some IntentResult {
-        WarpClickBridge.shared.perform(actionId: actionId, parametersJson: parametersJson)
-        WarpWidgetBridge.shared.reloadTimelines()
+        CounterWidgetIosKt.dispatchCounterWidgetClick(
+            actionId: actionId,
+            parametersJson: parametersJson
+        )
+        WidgetCenter.shared.reloadAllTimelines()
         return .result()
     }
 }
