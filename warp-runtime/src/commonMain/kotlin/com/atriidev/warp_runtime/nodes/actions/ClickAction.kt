@@ -99,7 +99,7 @@ fun WarpActionId.asClickAction(vararg parameters: Pair<String, String>): ClickAc
 fun <A> decodeActionId(actionId: String, idClass: KClass<A>): A
     where A : Enum<A>, A : WarpActionId {
     @Suppress("UNCHECKED_CAST")
-    val constants = idClass.java.enumConstants as Array<A>
+    val constants = platformEnumConstants(idClass)
     return constants.firstOrNull { it.actionId == actionId }
         ?: throw IllegalArgumentException(
             "Unknown ${idClass.simpleName} action id \"$actionId\"",

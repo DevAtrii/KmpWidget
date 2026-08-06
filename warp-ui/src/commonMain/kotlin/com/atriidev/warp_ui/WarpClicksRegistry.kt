@@ -1,7 +1,5 @@
 package com.atriidev.warp_ui
 
-import com.atriidev.warp_runtime.nodes.actions.WarpActionId
-
 /**
  * Registry of wire `actionId` → [WarpClickHandler] dispatch targets.
  *
@@ -20,10 +18,8 @@ object WarpClicksRegistry {
     }
 
     private fun registerOne(handler: WarpClickHandler<*>) {
-        handler.actionIdType.java.enumConstants?.forEach { constant ->
-            val action = constant as Enum<*>
-            val wireId = (constant as WarpActionId).actionId
-            handlers[wireId] = { parameters -> handler.dispatch(action, parameters) }
+        handler.registerEntries { wireId, entryHandler ->
+            handlers[wireId] = entryHandler
         }
     }
 }

@@ -9,9 +9,10 @@ import com.atriidev.warp_ui.WarpClickHandler
 class CounterClickHandler(
     private val dataStore: KmpDataStore,
     private val widgetUpdater: WidgetUpdater,
-) : WarpClickHandler<CounterActions>(CounterActions::class) {
+) : WarpClickHandler<CounterActions>(CounterActions::class, CounterActions.entries) {
 
     override suspend fun onClick(actionId: CounterActions, parameters: Map<String, String>) {
+        println("CounterClickHandler, $actionId, $parameters")
         when (actionId) {
             CounterActions.Increment -> updateCount(delta = +1)
             CounterActions.Decrement -> updateCount(delta = -1)

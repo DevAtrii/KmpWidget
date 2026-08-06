@@ -16,3 +16,8 @@ actual fun WarpRender(node: WarpNode, handlers: List<WarpClickHandler<*>>) {
         clickActionFor(WarpRegistryActionCallback::class.java, action)
     }
 }
+
+actual fun warpRender(node: WarpNode, handlers: List<WarpClickHandler<*>>): WarpSwiftUIView {
+    error("warpRender returns a SwiftUI view and is iOS-only. Use WarpRender() for Jetpack Glance on Android.")
+}
+
