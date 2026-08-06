@@ -9,14 +9,15 @@ import kotlinx.serialization.Serializable
  * Actions are **data only** — no lambdas, no platform APIs. Each implementation is
  * `@Serializable` so it can travel in JSON from common code to Android/iOS renderers.
  *
- * Platform code maps [ClickAction.id] (and future action payloads) to native handlers:
+ * Platform code exhaustively handles each action subtype with `when (action)`:
  * - Android Glance: `ActionCallback`, `actionStartActivity`, etc.
  * - iOS WidgetKit: `AppIntent`, deep links, etc.
  *
  * ### Adding a new action type
  * 1. Add a new `@Serializable` `@SerialName("…")` data class implementing [WarpAction].
- * 2. Add a composable factory (for example `actionStartActivity(...)`).
- * 3. Teach each platform renderer to handle the new `"type"` discriminator in JSON.
+ * 2. Add a factory (for example `actionStartActivity(...)`).
+ * 3. Handle the new subtype in each platform renderer. Because this interface is sealed,
+ *    Kotlin reports every `when (action)` that needs a new branch.
  */
 @Serializable
 sealed interface WarpAction

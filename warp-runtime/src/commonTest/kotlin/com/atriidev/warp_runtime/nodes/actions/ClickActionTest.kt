@@ -3,6 +3,7 @@ package com.atriidev.warp_runtime.nodes.actions
 import com.atriidev.warp_runtime.compose.WarpButton
 import com.atriidev.warp_runtime.compose.composeWarpToJson
 import com.atriidev.warp_runtime.compose.toJson
+import com.atriidev.warp_runtime.example.counter.CounterActions
 import com.atriidev.warp_runtime.nodes.WarpButton as WarpButtonNode
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -15,13 +16,13 @@ class ClickActionTest {
         val json = composeWarpToJson {
             WarpButton(
                 text = "+",
-                onClick = actionClick("increment", "step" to "1"),
+                onClick = actionClick(CounterActions.Increment, "step" to "1"),
             )
         }
 
         assertTrue(json.contains("\"onClick\""))
         assertTrue(json.contains("\"type\": \"click\""))
-        assertTrue(json.contains("\"id\": \"increment\""))
+        assertTrue(json.contains("\"actionId\": \"increment\""))
         assertTrue(json.contains("\"step\": \"1\""))
     }
 
@@ -34,14 +35,26 @@ class ClickActionTest {
 
         assertTrue(json.contains("\"onClick\""))
         assertTrue(json.contains("\"type\": \"click\""))
-        assertTrue(json.contains("\"id\": \"increment\""))
+        assertTrue(json.contains("\"actionId\": \"increment\""))
     }
 
     @Test
-    fun warpActionKey_producesExpectedClickAction() {
+    fun warpActionId_producesExpectedClickAction() {
         assertEquals(
-            ClickAction(id = "decrement"),
+            ClickAction(actionId = "decrement"),
             CounterActions.Decrement.asClickAction(),
         )
+    }
+
+    @Test
+    fun actionIdAs_decodesWidgetEnumForExhaustiveWhen() {
+        val action = CounterActions.Increment.asClickAction()
+
+        val result = when (action.actionIdAs<CounterActions>()) {
+            CounterActions.Increment -> "incremented"
+            CounterActions.Decrement -> "decremented"
+        }
+
+        assertEquals("incremented", result)
     }
 }

@@ -10,6 +10,7 @@ package com.atriidev.warp_runtime.compose
 import androidx.compose.runtime.Composable
 import com.atriidev.warp_runtime.nodes.actions.ClickAction
 import com.atriidev.warp_runtime.nodes.actions.WarpAction
+import com.atriidev.warp_runtime.nodes.actions.WarpActionId
 import com.atriidev.warp_runtime.nodes.actions.actionClick
 import com.atriidev.warp_runtime.compose.internal.WarpButtonComposable
 import com.atriidev.warp_runtime.compose.internal.WarpColumnComposable
@@ -71,7 +72,7 @@ fun WarpText(
  * Maps to [com.atriidev.warp_runtime.nodes.WarpButton] in the output tree.
  *
  * [onClick] is stored in JSON as a [WarpAction] — use [actionClick] or [ClickAction] directly.
- * Platform code resolves [ClickAction.id] to native tap handlers.
+ * Platform code forwards [ClickAction.actionId] and [ClickAction.parameters] to native handlers.
  *
  * @param text Label shown on the button.
  * @param onClick Serializable action for the tap (typically [actionClick] or a [ClickAction]).
@@ -87,14 +88,12 @@ fun WarpButton(
 }
 
 /**
- * Convenience overload when you only have a stable action [id] string.
- *
- * Prefer [WarpActionKey.asClickAction] for typed ids in shared code.
+ * Convenience overload for a typed widget [actionId].
  */
 @Composable
 fun WarpButton(
     text: String,
-    actionId: String,
+    actionId: WarpActionId,
     modifier: WarpModifier = WarpModifier(),
 ) {
     WarpButton(text = text, onClick = actionClick(actionId), modifier = modifier)

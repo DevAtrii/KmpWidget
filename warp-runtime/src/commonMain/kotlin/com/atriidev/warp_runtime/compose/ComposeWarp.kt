@@ -127,7 +127,7 @@ fun <S> composeWarp(
  * @param content The widget UI described with WARP composables.
  * @return A JSON string representing the composed [WarpNode] tree.
  *
- * @sample com.atriidev.warp_runtime.compose.sampleCounterWidgetJson
+ * @sample com.atriidev.warp_runtime.example.counter.sampleCounterWidgetJson
  */
 fun composeWarpToJson(content: @Composable () -> Unit): String {
     return composeWarp(content).toJson()

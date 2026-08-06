@@ -13,7 +13,7 @@ This is an early proof of concept. There is **no platform renderer yet** (no Gla
 
 Widgets on Android and iOS are built with different UI toolkits. WARP wants one shared way to describe a widget in Kotlin, then render it separately on each platform.
 
-`warp-runtime` handles the **shared description** part:
+`warp-runtime` handles the **shared description** and **shared action contracts**:
 
 ```
 You write UI with @Composable functions
@@ -22,10 +22,10 @@ warp-runtime builds a WarpNode tree (recomposing when state changes)
         ↓
 You get JSON (or the tree directly)
         ↓
-(later) Android/iOS renderers read that data
+(later) Android/iOS renderers read that data and forward clicks
 ```
 
-Think of it like writing HTML as a data structure instead of drawing pixels immediately.
+Think of it like writing HTML as a data structure instead of drawing pixels immediately. Clicks are also data — not Kotlin lambdas in the tree.
 
 ---
 
@@ -35,12 +35,14 @@ Think of it like writing HTML as a data structure instead of drawing pixels imme
 
 ```kotlin
 import com.atriidev.warp_runtime.compose.*
+import com.atriidev.warp_runtime.example.counter.*
 import com.atriidev.warp_runtime.nodes.actions.*
+import com.atriidev.warp_runtime.nodes.modifier.*
 
 val json = composeWarpToJson {
     WarpColumn {
         WarpText("Hello WARP")
-        WarpButton(text = "Tap me", onClick = actionClick("tap"))
+        WarpButton(text = "Tap me", onClick = actionClick(CounterActions.Increment))
     }
 }
 
@@ -49,11 +51,24 @@ println(json)
 
 ### State-driven UI (recommended for widgets)
 
-```kotlin
-@Serializable
-data class CounterState(val count: Int = 0)
+Use the built-in counter example, or write your own:
 
-val json = composeWarpToJson(CounterState(count = 42)) { state ->
+```kotlin
+import com.atriidev.warp_runtime.compose.*
+import com.atriidev.warp_runtime.example.counter.*
+
+val json = CounterWidget.toJson(count = 42)
+// or: sampleCounterWidgetJson(count = 42)
+```
+
+Or compose manually with the same typed actions:
+
+```kotlin
+import com.atriidev.warp_runtime.compose.*
+import com.atriidev.warp_runtime.example.counter.*
+import com.atriidev.warp_runtime.nodes.actions.*
+
+val json = composeWarpToJson(CounterWidget.State(count = 42)) { state ->
     WarpColumn {
         WarpText("Counter")
         WarpRow {
@@ -142,6 +157,112 @@ composeWarp {
 
 The internal tree is **cleared and rebuilt** on every recomposition pass so holders never accumulate duplicates.
 
+> **Note:** `LaunchedEffect` + `delay` inside `composeWarp` does not work — composition finishes and disposes before async effects complete. Drive widget updates from outside via explicit state or platform refresh cycles.
+
+---
+
+## Actions and native clicks
+
+Widget buttons cannot store Kotlin lambdas — taps must survive JSON and run on the native host later:
+
+| Side | Where | What you write |
+|------|-------|----------------|
+| **Author** (common) | `WarpButton(onClick = …)` | Serializable `WarpAction` data |
+| **Handle** (native) | Glance / WidgetKit callback | `onClick(actionId, parameters)` |
+
+### Author side — declaring clicks
+
+All actions implement the sealed `WarpAction` interface. Today the main type is `ClickAction`:
+
+```kotlin
+import com.atriidev.warp_runtime.nodes.actions.*
+
+// Typed widget action
+WarpButton(text = "+", onClick = actionClick(CounterActions.Increment))
+
+// Typed ids
+WarpButton(text = "+", onClick = CounterActions.Increment.asClickAction())
+
+// With string parameters (JSON-safe metadata for the handler)
+WarpButton(
+    text = "+5",
+    onClick = actionClick(CounterActions.Increment, "step" to "5"),
+)
+```
+
+Define each action ID once:
+
+```kotlin
+enum class CounterActions(
+    override val actionId: String,
+) : WarpActionId {
+    Increment("increment"),
+    Decrement("decrement"),
+}
+
+WarpButton("+", onClick = CounterActions.Increment.asClickAction())
+```
+
+See `example/counter/` for the full sample widget.
+
+`ClickAction` JSON shape:
+
+```json
+{
+  "type": "click",
+  "actionId": "increment",
+  "parameters": {}
+}
+```
+
+Future action types (`StartActivityAction`, deep links, etc.) add new `@SerialName` implementations of `WarpAction` without changing `WarpButton`.
+
+### Native side — exhaustive action mapping
+
+Native renderers receive `WarpButton.onClick: WarpAction`. Map it to native UI with `when`:
+
+```kotlin
+fun renderAction(action: WarpAction): NativeAction =
+    when (action) {
+        is ClickAction -> nativeClick(
+            actionId = action.actionId,
+            parameters = action.parameters,
+        )
+    }
+```
+
+Because `WarpAction` is sealed, Kotlin reports this `when` when a future action subtype needs
+a new branch. The native callback receives `actionId` and `parameters`, then owns behavior,
+state updates, and widget refresh.
+
+Decode the wire ID into the widget enum for another exhaustive `when`:
+
+```kotlin
+when (clickAction.actionIdAs<CounterActions>()) {
+    CounterActions.Increment -> increment()
+    CounterActions.Decrement -> decrement()
+}
+```
+
+### End-to-end click flow
+
+```
+Common UI                          Host (Android / iOS)
+─────────────────────────────────────────────────────────
+WarpButton(                        Renderer reads WarpButton.onClick
+  onClick = CounterActions         → wires native onClick with action id
+    .Increment.asClickAction()     User taps
+)                                       ↓
+     ↓                             ActionCallback / AppIntent
+JSON: { onClick: {                      ↓
+  type: "click",                   native onClick(
+  actionId: "increment"              actionId,
+}}                                   parameters
+                                   )
+                                        ↓
+                                   update state + refresh widget
+```
+
 ---
 
 ## Available UI components (PoC)
@@ -151,7 +272,7 @@ The internal tree is **cleared and rebuilt** on every recomposition pass so hold
 | `WarpColumn { ... }` | `{ "type": "column", "children": [...] }` |
 | `WarpRow { ... }` | `{ "type": "row", "children": [...] }` |
 | `WarpText("Hello")` | `{ "type": "text", "text": "Hello" }` |
-| `WarpButton(text, onClick)` | `{ "type": "button", "text": "...", "onClick": { "type": "click", "id": "..." } }` |
+| `WarpButton(text, onClick)` | `{ "type": "button", "text": "...", "onClick": { "type": "click", "actionId": "..." } }` |
 
 All nodes can optionally take a `WarpModifier` (padding is supported today).
 
@@ -185,7 +306,7 @@ For the sample counter widget with `CounterState(count = 42)`:
                     "text": "-",
                     "onClick": {
                         "type": "click",
-                        "id": "decrement",
+                        "actionId": "decrement",
                         "parameters": {}
                     }
                 },
@@ -198,7 +319,7 @@ For the sample counter widget with `CounterState(count = 42)`:
                     "text": "+",
                     "onClick": {
                         "type": "click",
-                        "id": "increment",
+                        "actionId": "increment",
                         "parameters": {}
                     }
                 }
@@ -208,13 +329,16 @@ For the sample counter widget with `CounterState(count = 42)`:
 }
 ```
 
-Each node has a `"type"` field so JSON readers know which kind of node it is.
+Each node and nested action has a `"type"` field for polymorphic decoding.
 
 ---
 
 ## How it works (step by step)
 
-There are **two layers** inside warp-runtime. This is the most important idea to understand.
+There are **two layers** inside warp-runtime:
+
+1. **Compose DSL** — what you write (`WarpColumn`, `WarpButton`, …)
+2. **Node tree** — serializable data classes (`WarpNode`, `WarpAction`)
 
 ### Layer 1 — What you write (Compose-style API)
 
@@ -225,8 +349,9 @@ composeWarpToJson(CounterState(count = 42)) { state ->
     WarpColumn {
         WarpText("Counter")
         WarpRow {
-            WarpButton(text = "-", actionId = "decrement")
+            WarpButton(text = "-", onClick = CounterActions.Decrement.asClickAction())
             WarpText(state.count.toString())
+            WarpButton(text = "+", onClick = CounterActions.Increment.asClickAction())
         }
     }
 }
@@ -238,12 +363,8 @@ Under the hood, the **Compose Compiler** plugin transforms these functions. You 
 
 While your composables run, warp-runtime quietly builds a tree of **serializable data classes**:
 
-- `WarpColumn`
-- `WarpRow`
-- `WarpText`
-- `WarpButton`
-
-All of them implement `WarpNode`, a sealed interface marked with `@Serializable`.
+- `WarpColumn`, `WarpRow`, `WarpText`, `WarpButton` — all implement `WarpNode`
+- `ClickAction` (and future types) — implement `WarpAction` on `WarpButton.onClick`
 
 These are plain Kotlin objects — no Compose runtime UI, no Android views, no SwiftUI. Just data.
 
@@ -337,6 +458,7 @@ Settings used today:
 │  Your code                                  │
 │  composeWarp(CounterState(42)) { state ->   │
 │      WarpColumn {                           │
+│          WarpButton("+", onClick = …)       │
 │          WarpText("${state.count}")         │
 │      }                                      │
 │  }                                          │
@@ -357,13 +479,19 @@ Settings used today:
                    ▼
 ┌─────────────────────────────────────────────┐
 │  WarpNode data tree                         │
-│  WarpColumn → WarpText                      │
+│  WarpColumn → WarpButton(onClick: ClickAction) │
 │  (@Serializable data classes)               │
 └──────────────────┬──────────────────────────┘
                    │  toJson()
                    ▼
 ┌─────────────────────────────────────────────┐
-│  JSON string                                │
+│  JSON string  →  platform renderer          │
+└──────────────────┬──────────────────────────┘
+                   │  user tap
+                   ▼
+┌─────────────────────────────────────────────┐
+│  Native onClick(actionId, parameters)       │
+│  → update state + refresh widget            │
 └─────────────────────────────────────────────┘
 ```
 
@@ -377,19 +505,26 @@ warp-runtime/
 │   ├── WarpUi.kt           # Public @Composable API (WarpColumn, WarpRow, …)
 │   ├── ComposeWarp.kt      # composeWarp(), composeWarpToJson(), toJson()
 │   ├── WarpComposition.kt  # Stateful WarpComposition<S> with updateState()
-│   ├── WarpSamples.kt      # CounterState, sampleCounterWidgetJson()
+│   ├── WarpSamples.kt      # Internal test-only composables
 │   └── internal/
 │       ├── WarpComposeScope.kt   # WarpRootContent, CompositionLocal tree building
 │       └── WarpNodeHolders.kt    # Internal holders + toWarpNode()
-└── nodes/
-    ├── WarpNode.kt         # Sealed serializable interface
-    ├── WarpColumn.kt       # Public data classes
-    ├── WarpRow.kt
-    ├── WarpText.kt
-    ├── WarpButton.kt
-    └── modifier/
-        ├── WarpModifier.kt
-        └── WarpModifierExt.kt
+├── example/
+│   └── counter/            # Sample counter widget (not core API)
+│       ├── CounterWidget.kt        # State, UI, toJson()
+│       └── CounterActions.kt       # Widget-specific WarpActionId enum
+├── nodes/
+│   ├── WarpNode.kt         # Sealed serializable interface
+│   ├── WarpColumn.kt       # Public node data classes
+│   ├── WarpRow.kt
+│   ├── WarpText.kt
+│   ├── WarpButton.kt       # onClick: WarpAction
+│   ├── modifier/
+│   │   ├── WarpModifier.kt
+│   │   └── WarpModifierExt.kt
+│   └── actions/
+│       ├── WarpAction.kt       # Sealed action interface
+│       └── ClickAction.kt      # actionClick(), WarpActionId, typed decoding
 ```
 
 ---
@@ -409,7 +544,7 @@ plugins {
 
 This applies to `shared`, app modules, etc. The lambda `{ WarpText("Hi") }` must be compiled as a composable lambda.
 
-If you define the UI in `commonMain` as a stored composable lambda (like `sampleCounterWidgetUi` in `WarpSamples.kt`), that also works.
+If you define the UI in `commonMain` as a stored composable lambda (like `CounterWidget.ui` in `example/counter/`), that also works.
 
 ### Widget state should be serializable data classes
 
@@ -422,35 +557,10 @@ data class CounterState(val count: Int = 0)
 
 Pass them to `composeWarp(state) { ... }` or `WarpComposition`. This mirrors how Glance uses `GlanceStateDefinition` — state lives outside the UI tree, composition reads it.
 
-### Buttons use serializable actions, not click lambdas
-
-Widget taps must survive JSON. Use `WarpAction` types on buttons — not Kotlin lambdas.
-
-```kotlin
-// Simple id
-WarpButton(text = "+", onClick = actionClick("increment"))
-
-// Typed ids in common code
-WarpButton(text = "+", onClick = CounterActions.Increment.asClickAction())
-
-// With parameters (strings only — JSON-safe)
-WarpButton(
-    text = "Open",
-    onClick = actionClick("open_item", "itemId" to "42"),
-)
-```
-
-`actionId` string overload still exists for quick prototypes:
-
-```kotlin
-WarpButton(text = "+", actionId = "increment")  // → actionClick("increment")
-```
-
-Platform renderers read `onClick.type` and map `ClickAction.id` to native handlers (Glance `ActionCallback`, WidgetKit intents, etc.). Future action types (`StartActivityAction`, deep links) implement the same `WarpAction` sealed interface.
-
 ### No platform renderer yet
 
-This module stops at the data/JSON layer. Rendering to Glance (Android) or SwiftUI (iOS) will be a separate step that reads `WarpNode` or JSON and draws the native widget.
+This module stops at the data/JSON layer. Rendering `WarpNode` → Glance (Android) or SwiftUI
+(iOS), then forwarding `ClickAction.actionId` and parameters, belongs to native host modules.
 
 ### Dependencies (intentionally small)
 
@@ -464,13 +574,14 @@ No Compose UI, Material, Foundation, or platform widget libraries.
 ## Running tests
 
 ```bash
-./gradlew :warp-runtime:iosSimulatorArm64Test
 ./gradlew :warp-runtime:jvmTest
+./gradlew :warp-runtime:iosSimulatorArm64Test
 ```
 
 Tests in `commonTest` verify:
 
 - Node tree shape and JSON output
+- `ClickAction` serialization on buttons
 - State parameter changes produce different trees
 - `WarpComposition.updateState()` returns updated trees
 - `mutableStateOf` triggers recomposition inside `composeWarp`
@@ -481,9 +592,19 @@ Tests in `commonTest` verify:
 
 Planned direction for WARP (not implemented here yet):
 
-- `WarpWidget<State>` — widget class with `update()` and platform integration
-- Gradle/KSP plugin — generate Android receiver + iOS widget boilerplate
-- Platform renderers — `WarpNode` → Glance on Android, SwiftUI on iOS
-- More nodes — `Image`, `Spacer`, `LazyColumn`, etc.
+- **Platform renderers** — `WarpNode` → Glance on Android, SwiftUI on iOS
+- **Glance dispatcher** — single `ActionCallback` forwards `actionId` and parameters
+- **New action types** — `StartActivityAction`, deep links
+- **`WarpWidget<State>`** — widget class with `update()` and platform integration
+- **Gradle/KSP plugin** — generate Android receiver + iOS widget boilerplate
+- **More nodes** — `Image`, `Spacer`, `LazyColumn`, etc.
 
-For now, `warp-runtime` proves the core idea: **write widget UI like Compose, react to state, get serializable data out.**
+For now, `warp-runtime` proves the core idea: **write widget UI like Compose, declare clicks
+as data, and let native hosts handle `actionId` plus parameters.**
+
+---
+
+## Click dispatch (native UI)
+
+See **[README_CLICK.md](./README_CLICK.md)** for implementers wiring Glance / WidgetKit taps
+to native `onClick(actionId, parameters)` callbacks.

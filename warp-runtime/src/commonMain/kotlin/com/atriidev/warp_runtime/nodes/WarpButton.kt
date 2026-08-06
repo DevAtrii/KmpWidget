@@ -11,7 +11,8 @@ import kotlinx.serialization.Serializable
  * JSON `"type"` value: `"button"`.
  *
  * [onClick] is a serializable [WarpAction] — not a Kotlin lambda. Platform renderers
- * map [com.atriidev.warp_runtime.nodes.actions.ClickAction.id] to native handlers
+ * forward [com.atriidev.warp_runtime.nodes.actions.ClickAction.actionId] and parameters
+ * to native handlers
  * (for example Glance `ActionCallback` on Android).
  *
  * @property text Label displayed on the button.

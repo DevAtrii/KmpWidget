@@ -3,8 +3,17 @@ package com.atriidev.warp_runtime.nodes.actions
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+@Serializable
+sealed interface ActionId
+
+@Serializable
+sealed interface MyActions : ActionId {
+    data object ActionA : MyActions
+    data object ActionB : MyActions
+}
+
 /**
- * A tap/click action identified by [id], with optional [parameters].
+ * A tap/click action identified by [actionId], with optional [parameters].
  *
  * This is the foundation action type for WARP. Most widget buttons use [ClickAction] today.
  * Future action types ([StartActivityAction], deep links, etc.) also implement [WarpAction]
@@ -14,79 +23,108 @@ import kotlinx.serialization.Serializable
  * ```json
  * {
  *   "type": "click",
- *   "id": "increment",
+ *   "actionId": "increment",
  *   "parameters": { "step": "1" }
  * }
  * ```
  *
- * @property id Stable action identifier. Platform registries map this to a handler class
- *   (for example Glance `ActionCallback` on Android).
+ * @property actionId Stable identifier passed to the native click callback.
  * @property parameters Optional key/value metadata passed to the handler. Values are strings
  *   so the action stays JSON-safe across platforms.
  */
 @Serializable
 @SerialName("click")
 data class ClickAction(
-    val id: String,
+    val actionId: String,
     val parameters: WarpActionParameters = emptyMap(),
 ) : WarpAction
 
 /**
- * Creates a [ClickAction] with only an [id].
+ * Creates a [ClickAction] from a typed [actionId].
  *
  * ```
- * WarpButton(text = "+", onClick = actionClick("increment"))
+ * WarpButton(text = "+", onClick = actionClick(CounterActions.Increment))
  * ```
  */
-fun actionClick(id: String): ClickAction = ClickAction(id = id)
+fun actionClick(actionId: WarpActionId): ClickAction =
+    ClickAction(actionId = actionId.actionId)
 
 /**
- * Creates a [ClickAction] with an [id] and string [parameters].
+ * Creates a [ClickAction] with a typed [actionId] and string [parameters].
  *
  * ```
  * WarpButton(
  *     text = "Open",
- *     onClick = actionClick("open_item", "itemId" to "42"),
+ *     onClick = actionClick(ItemActions.Open, "itemId" to "42"),
  * )
  * ```
  */
-fun actionClick(id: String, vararg parameters: Pair<String, String>): ClickAction =
-    ClickAction(id = id, parameters = parameters.toMap())
+fun actionClick(
+    actionId: WarpActionId,
+    vararg parameters: Pair<String, String>,
+): ClickAction = ClickAction(
+    actionId = actionId.actionId,
+    parameters = parameters.toMap(),
+)
 
 /**
  * Creates a [ClickAction] from a pre-built parameter map.
  */
-fun actionClick(id: String, parameters: WarpActionParameters): ClickAction =
-    ClickAction(id = id, parameters = parameters)
+fun actionClick(actionId: WarpActionId, parameters: WarpActionParameters): ClickAction =
+    ClickAction(actionId = actionId.actionId, parameters = parameters)
 
 /**
- * Marker for typed action ids defined in common code.
+ * Stable string representation implemented by a widget-specific enum.
  *
  * ```
- * object CounterActions {
- *     object Increment : WarpActionKey { override val id = "increment" }
+ * enum class CounterActions(override val actionId: String) : WarpActionId {
+ *     Increment("increment"),
+ *     Decrement("decrement"),
  * }
  *
  * WarpButton("+", onClick = CounterActions.Increment.asClickAction())
  * ```
+ *
+ * Native renderers receive the resulting [ClickAction] and forward [ClickAction.actionId]
+ * plus [ClickAction.parameters] to their platform callback.
  */
-interface WarpActionKey {
-    val id: String
+interface WarpActionId {
+    val actionId: String
 }
 
 /** Converts this key to a [ClickAction] with no parameters. */
-fun WarpActionKey.asClickAction(): ClickAction = actionClick(id)
+fun WarpActionId.asClickAction(): ClickAction = actionClick(this)
 
 /** Converts this key to a [ClickAction] with [parameters]. */
-fun WarpActionKey.asClickAction(vararg parameters: Pair<String, String>): ClickAction =
-    actionClick(id, *parameters)
+fun WarpActionId.asClickAction(vararg parameters: Pair<String, String>): ClickAction =
+    actionClick(this, *parameters)
 
 /**
- * Returns the click [id] when this [WarpAction] is a [ClickAction], otherwise null.
+ * Decodes this wire [actionId] into widget-specific enum [A].
+ *
+ * The returned enum enables an exhaustive native `when`:
+ * ```
+ * when (action.actionIdAs<CounterActions>()) {
+ *     CounterActions.Increment -> increment()
+ *     CounterActions.Decrement -> decrement()
+ * }
+ * ```
+ *
+ * @throws IllegalArgumentException when [actionId] is unknown to [A].
+ */
+inline fun <reified A> ClickAction.actionIdAs(): A
+    where A : Enum<A>, A : WarpActionId =
+    enumValues<A>().firstOrNull { it.actionId == actionId }
+        ?: throw IllegalArgumentException(
+            "Unknown ${A::class.simpleName} action id \"$actionId\"",
+        )
+
+/**
+ * Returns the click [ClickAction.actionId] when this is a [ClickAction], otherwise null.
  *
  * Useful for platform renderers that only need the handler id during migration.
  */
-fun WarpAction.clickIdOrNull(): String? = (this as? ClickAction)?.id
+fun WarpAction.clickActionIdOrNull(): String? = (this as? ClickAction)?.actionId
 
 /**
  * Placeholder for a future [WarpAction] type — not wired into renderers yet.

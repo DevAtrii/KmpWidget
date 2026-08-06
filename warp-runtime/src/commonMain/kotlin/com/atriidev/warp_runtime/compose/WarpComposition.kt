@@ -13,7 +13,7 @@ import com.atriidev.warp_runtime.nodes.WarpNode
  * cycles where you load state, compose once, serialize to JSON, and push to the platform renderer.
  *
  * ```
- * val warp = WarpComposition(CounterState(0), sampleCounterWidgetUi)
+ * val warp = WarpComposition(CounterWidget.State(0), CounterWidget.ui)
  *
  * warp.updateState(CounterState(5)) // recomposes → new WarpNode
  * warp.currentNode().toJson()

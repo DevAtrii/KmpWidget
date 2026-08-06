@@ -1,5 +1,6 @@
 package com.atriidev.warp_runtime.compose
 
+import com.atriidev.warp_runtime.example.counter.sampleCounterWidgetJson
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
