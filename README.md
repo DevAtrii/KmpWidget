@@ -1,3 +1,5 @@
+https://github.com/user-attachments/assets/6bcdd802-41fc-4ac7-8629-e9711f0fb1f8
+
 # KmpWidget
 
 > **Active development** — APIs and architecture are changing. Follow [@dev_atrii on X](https://x.com/dev_atrii) for updates.
