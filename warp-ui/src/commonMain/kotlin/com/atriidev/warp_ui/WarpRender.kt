@@ -21,7 +21,8 @@ expect fun WarpRender(node: WarpNode, handlers: List<WarpClickHandler<*>>)
 /**
  * Builds a native widget view from a [WarpNode] tree.
  *
- * - **iOS:** returns [WarpSwiftUIView] — call `makeView()` in Swift for the SwiftUI tree.
+ * - **iOS:** registers [handlers], returns [WarpSwiftUIView] (in-app / Kotlin use).
+ *   WidgetKit Swift hosts should prefer `warpWidgetJson` + Swift `WarpSwiftUIView`.
  * - **Android:** throws — use [WarpRender] with Jetpack Glance instead.
  *
  * ```
@@ -32,9 +33,5 @@ expect fun WarpRender(node: WarpNode, handlers: List<WarpClickHandler<*>>)
  * ```
  */
 expect fun warpRender(node: WarpNode, handlers: List<WarpClickHandler<*>>): WarpSwiftUIView
-
-
-
-
 
 

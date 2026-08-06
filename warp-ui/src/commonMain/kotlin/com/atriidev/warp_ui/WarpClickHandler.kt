@@ -6,13 +6,20 @@ import kotlin.reflect.KClass
 /**
  * Pure click handler for a widget action enum [T].
  *
- * Register instances with [WarpClicksRegistry] via [WarpRender]. Platform renderers
- * look up handlers by wire `actionId` and invoke [onClick] with the decoded enum value.
+ * Register with [WarpClicksRegistry] via [WarpRender] (iOS: also `registerWarpClicks`).
+ * Platform code looks up wire `actionId` and invokes [onClick].
+ *
+ * ### iOS
+ * Swift `AppIntent` → `dispatchWarpClick` → registry → [onClick].
+ *
+ * ### Android
+ * Glance `ActionCallback` → registry → [onClick].
  */
 abstract class WarpClickHandler<T>(
     val actionIdType: KClass<T>,
     private val actionEntries: List<T>,
 ) where T : Enum<T>, T : WarpActionId {
+    /** Handle a typed action after the platform forwarded the wire id. */
     abstract suspend fun onClick(actionId: T, parameters: Map<String, String>)
 
     internal fun registerEntries(

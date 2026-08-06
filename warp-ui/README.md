@@ -10,43 +10,33 @@ Platform renderers for WARP `WarpNode` trees.
 commonMain                          androidMain                         iosMain
 ──────────                          ───────────                         ───────
 WarpRender(node, handlers)   →      Glance composable                   SideEffect → warpRender
-warpRender(node, handlers)   →      throws (iOS-only)                   WarpSwiftUIView holder
+warpRender(node, handlers)   →      throws (iOS-only)                   register + WarpSwiftUIView
+warpWidgetView(node)         →      —                                   WarpSwiftUIView (view only)
 WarpClickHandler<T>                 WarpRegistryActionCallback            SwiftUI + WidgetKit
 WarpClicksRegistry
 ```
 
 | API | Android | iOS |
 |-----|---------|-----|
-| `WarpRender` | `@Composable` Glance tree | Publishes JSON + registers handlers (Compose side-effect) |
-| `warpRender` | throws | Returns `WarpSwiftUIView` for SwiftUI / WidgetKit embedding |
+| `WarpRender` | `@Composable` Glance tree | Registers handlers via `warpRender` side-effect |
+| `warpRender` | throws | Registers handlers + returns `WarpSwiftUIView` |
+| `warpWidgetView` | — | `WarpNode` → `WarpSwiftUIView` (no handler register) |
+| `registerWarpClicks` | — | Registers handlers + installs click bridge |
 
 ## Click dispatch
-
-Handlers are registered at render time. Platform code only invokes `WarpClicksRegistry.dispatch(actionId, parameters)`.
 
 ```
 Button tap
   → Android: WarpRegistryActionCallback (Glance)
-  → iOS widget: WarpClickIntent (iOS 17+)
+  → iOS widget: extension AppIntent → dispatchCounterWidgetClick → WarpClicksRegistry
   → iOS preview: WarpClickBridge
   → WarpClicksRegistry.dispatch
-  → WarpClickHandler.onClick(typedActionId, parameters)
-```
-
-Register shared handlers once per render:
-
-```kotlin
-val handlers = listOf(CounterClickHandler(dataStore, widgetUpdater))
-
-WarpRender(node, handlers)           // Android Glance widget
-val view = warpRender(node, handlers) // iOS native view holder
+  → WarpClickHandler.onClick
 ```
 
 ---
 
 ## Android
-
-Use `WarpRender` inside a Glance `provideContent` block:
 
 ```kotlin
 provideContent {
@@ -58,135 +48,128 @@ provideContent {
 }
 ```
 
-`warpRender` is **not** available on Android — it throws. Glance requires the composable renderer.
-
-Flow: `RenderWarpNode` → `WarpRegistryActionCallback` → `WarpClicksRegistry`.
-
 See [`CounterWidgetGlance.kt`](../shared/src/androidMain/kotlin/com/atriidev/kmpwidget/CounterWidgetGlance.kt).
 
 ---
 
 ## iOS
 
-Swift bridge lives in `src/swift/warpWidgetKit/` and is exported to Kotlin via [spm4Kmp](https://spmforkmp.eu/setup/).
+Swift bridge: `src/swift/warpWidgetKit/` → compiled by [spm4Kmp](https://spmforkmp.eu/setup/) into the KMP framework. **Do not** copy those sources into the widget target (duplicate `WarpClickBridge` → broken clicks).
 
-Requires `kotlin.mpp.enableCInteropCommonization=true` in the root `gradle.properties`.
+Requires `kotlin.mpp.enableCInteropCommonization=true` in root `gradle.properties`.
 
-### `warpRender` — native view holder
-
-Primary iOS entry point when you need a SwiftUI view to embed in a widget or UIKit host:
+### Library consumer setup
 
 ```kotlin
-import com.atriidev.warp_ui.warpRender
-
-val holder = warpRender(
-    node = composeWarp(CounterWidget.State(count = count), CounterWidget.ui),
-    handlers = counterWidgetClickHandlers(dataStore, widgetUpdater),
-)
-```
-
-What it does:
-
-1. `WarpClicksRegistry.register(handlers)`
-2. Install `WarpClickBridge` handler → Kotlin dispatch
-3. Publish `WarpNode` JSON to `WarpWidgetBridge` (App Group / UserDefaults for extensions)
-4. Return `WarpSwiftUIView(json, useIntents = true)`
-
-**Swift — embed in WidgetKit:**
-
-```swift
-let holder = WarpUiKt.warpRender(node: node, handlers: handlers)
-holder.makeView()  // AnyView
-    .containerBackground(.fill.tertiary, for: .widget)
-```
-
-**Swift — `StaticConfiguration` body:**
-
-```swift
-StaticConfiguration(kind: kind, provider: provider) { entry in
-    let holder = SharedKt.warpRender(node: entry.node, handlers: handlers)
-    holder.makeView()
-}
-```
-
-### `WarpRender` — Compose side-effect (iOS)
-
-When already inside Compose, call the composable variant — it delegates to `warpRender` via `SideEffect`:
-
-```kotlin
-@Composable
-fun MyScreen(node: WarpNode, handlers: List<WarpClickHandler<*>>) {
-    WarpRender(node, handlers)  // publishes JSON, registers handlers
-}
-```
-
-### In-app preview (UIKit host)
-
-Three ways to preview the SwiftUI tree inside the app:
-
-| Method | Use case |
-|--------|----------|
-| `holder.previewView()` | Embed in Compose via `UIKitView` |
-| `holder.previewViewController()` | Full-screen UIKit push / sheet |
-| `warpWidgetPreviewViewController()` | Reads last published JSON from `WarpWidgetBridge` |
-
-**Compose + UIKitView** (see [`MainViewController.kt`](../shared/src/iosMain/kotlin/com/atriidev/kmpwidget/MainViewController.kt)):
-
-```kotlin
-import com.atriidev.warp_ui.previewView
-import com.atriidev.warp_ui.warpRender
-
-val holder = warpRender(node, handlers)
-
-UIKitView(
-    factory = {
-        @Suppress("UNCHECKED_CAST")
-        holder.previewView() as UIView
-    },
-    modifier = Modifier.fillMaxWidth().height(160.dp),
-)
-```
-
-Preview uses `useIntents: false` so taps go through `WarpClickBridge` (same process). WidgetKit uses `WarpClickIntent` (`useIntents: true`).
-
-**Legacy preview helper** (JSON already published):
-
-```kotlin
-import com.atriidev.warp_ui.warpWidgetPreviewViewController
-
-val controller = warpWidgetPreviewViewController()
-```
-
-### Widget extension setup
-
-Add a Widget Extension target in Xcode:
-
-```swift
-import warpWidgetKit
-import WidgetKit
-import SwiftUI
-
-@main
-struct MyWidgetBundle: WidgetBundle {
-    var body: some Widget {
-        WarpWidgetKitWidget()  // reads JSON from WarpWidgetBridge
+// shared/build.gradle.kts
+kotlin {
+    iosTarget.binaries.framework {
+        export(project(":warp-ui"))
+        export(project(":warp-runtime"))
+    }
+    sourceSets.commonMain.dependencies {
+        api(project(":warp-runtime")) // or maven coords when published
+        api(project(":warp-ui"))
     }
 }
 ```
 
-For app ↔ extension JSON sharing, configure an **App Group** and point `WarpWidgetBridge` storage at the shared `UserDefaults` suite.
+`api` = Gradle/metadata. `export` = types + top-level fns appear in `Shared.h` for Swift.
 
-Alternatively, call `warpRender` from Kotlin in the extension's timeline provider and use `holder.makeView()` directly.
+### WidgetKit flow
 
-### Swift package layout
+```
+renderXWidget(): WarpNode              // your iosMain — compose + registerWarpClicks
+        ↓
+warpWidgetJson(node)                   // warp-ui iosMain
+        ↓
+WarpSwiftUIView(...).widgetRootView()  // warpWidgetKit (spm4Kmp, prebuilt module)
+```
+
+**Kotlin** — compose + register only:
+
+```kotlin
+fun renderCounterWidget(): WarpNode {
+    val node = composeWarp(CounterWidget.State(count = count), CounterWidget.ui)
+    registerWarpClicks(counterWidgetClickHandlers(dataStore, widgetUpdater))
+    return node
+}
+```
+
+**Swift** — display only:
+
+```swift
+import Shared
+import SwiftUI
+import warpWidgetKit
+
+func counterWidgetRootView() -> WarpSwiftUIRootView {
+    let node = CounterWidgetIosKt.renderCounterWidget()
+    return WarpSwiftUIView(
+        json: WarpWidgetView_iosKt.warpWidgetJson(node: node),
+        useIntents: true
+    ).widgetRootView()
+}
+```
+
+**WidgetBundle + AppIntent** — intents must live in the **extension** target (not Shared):
+
+```swift
+@main
+struct CounterWidgetBundle: WidgetBundle {
+    init() {
+        CounterWidgetClickSetup.install() // registers WarpClickIntentRegistry.buttonBuilder
+        CounterWidgetIosKt.prepareCounterWidgetHandlers()
+    }
+    var body: some Widget { CounterWidget() }
+}
+```
+
+`CounterWidgetClickIntent` (in the extension) calls `dispatchCounterWidgetClick`.  
+App Intents inside a static Shared library are **not** discovered by WidgetKit.
+
+### `import warpWidgetKit`
+
+spm4Kmp embeds a prebuilt `warpWidgetKit.swiftmodule` in the Shared framework. WidgetKit needs that pure-Swift module (ObjC export cannot carry `SwiftUI.View`).
+
+Point the widget target’s `SWIFT_INCLUDE_PATHS` at the spm4Kmp Modules dir (simulator / device):
+
+```
+…/warp-ui/build/spmKmpPlugin/warpWidgetKit/scratch/arm64-apple-ios-simulator/release/Modules
+…/warp-ui/build/spmKmpPlugin/warpWidgetKit/scratch/arm64-apple-ios/release/Modules
+```
+
+This imports the **already-linked** module — it does **not** recompile Swift sources into the extension.
+
+> **Never** add `src/swift/warpWidgetKit` as widget target sources (WarpKit-style). That creates a second click-bridge singleton.
+
+### `useIntents`
+
+| Value | Use | Button |
+|-------|-----|--------|
+| `true` | Home-screen widget | Extension `AppIntent` via `WarpClickIntentRegistry` |
+| `false` | In-app preview | `Button { WarpClickBridge.perform }` |
+
+### In-app preview
+
+```kotlin
+val holder = warpRender(node, handlers)
+holder.previewView() // UIKitView
+```
+
+### App Group
+
+Same App Group on **app + widget extension**. Extension needs **iOS 17+** for interactive buttons.
+
+### Swift package layout (library internals)
 
 ```
 src/swift/warpWidgetKit/
-  WarpSwiftUIView.swift      # View holder (makeView / makePreviewView)
-  WarpSwiftUIRenderer.swift  # JSON → SwiftUI
-  WarpWidgetBridge.swift     # JSON storage + timeline reload
-  WarpClickBridge.swift      # In-app click callback
-  WarpWidgetKitWidget.swift  # WidgetKit entry point
+  WarpSwiftUIView.swift
+  WarpSwiftUIRenderer.swift
+  WarpWidgetBridge.swift
+  WarpClickBridge.swift
+  WarpUiHostView.swift
 ```
 
 ---
@@ -195,15 +178,18 @@ src/swift/warpWidgetKit/
 
 | File | Platform | What it shows |
 |------|----------|---------------|
-| [`CounterWidgetGlance.kt`](../shared/src/androidMain/kotlin/com/atriidev/kmpwidget/CounterWidgetGlance.kt) | Android | `WarpRender` in Glance widget |
+| [`CounterWidgetGlance.kt`](../shared/src/androidMain/kotlin/com/atriidev/kmpwidget/CounterWidgetGlance.kt) | Android | `WarpRender` in Glance |
 | [`CounterClickHandler.kt`](../shared/src/commonMain/kotlin/com/atriidev/kmpwidget/CounterClickHandler.kt) | common | Shared click handlers |
-| [`MainViewController.kt`](../shared/src/iosMain/kotlin/com/atriidev/kmpwidget/MainViewController.kt) | iOS | `warpRender` + `UIKitView` preview |
+| [`CounterWidgetIos.kt`](../shared/src/iosMain/kotlin/com/atriidev/kmpwidget/CounterWidgetIos.kt) | iOS | `renderCounterWidget(): WarpNode` |
+| [`CounterWidgetView.swift`](../iosApp/CounterWidget/CounterWidgetView.swift) | iOS | Node → SwiftUI |
+| [`CounterWidgetBundle.swift`](../iosApp/CounterWidget/CounterWidgetBundle.swift) | iOS | Cold-start prepare |
+| [`MainViewController.kt`](../shared/src/iosMain/kotlin/com/atriidev/kmpwidget/MainViewController.kt) | iOS | In-app preview |
 
 ## Build verification
 
 ```bash
-./gradlew :warp-ui:compileKotlinIosSimulatorArm64   # iOS + spm4Kmp
-./gradlew :androidApp:assembleDebug                  # Android Glance
+./gradlew :warp-ui:compileKotlinIosSimulatorArm64
+./gradlew :androidApp:assembleDebug
 ```
 
 ## Related docs

@@ -4,7 +4,14 @@ import com.atriidev.warp_runtime.example.counter.CounterActions
 import com.atriidev.warp_ui.WarpClickHandler
 
 /**
- * Shared counter click handling for app + widget.
+ * Shared counter click handling for app + widget (Android Glance and iOS WidgetKit).
+ *
+ * Wire ids: [CounterActions.Increment] / [CounterActions.Decrement]
+ * (`"increment"` / `"decrement"` in WARP JSON).
+ *
+ * ### iOS path
+ * Swift `AppIntent` → `dispatchCounterWidgetClick` → `WarpClicksRegistry` → here →
+ * [KmpDataStore] + [WidgetUpdater].
  */
 class CounterClickHandler(
     private val dataStore: KmpDataStore,
@@ -27,6 +34,7 @@ class CounterClickHandler(
     }
 }
 
+/** Handlers list for `registerWarpClicks` (iOS) / [com.atriidev.warp_ui.WarpRender]. */
 fun counterWidgetClickHandlers(
     dataStore: KmpDataStore,
     widgetUpdater: WidgetUpdater,

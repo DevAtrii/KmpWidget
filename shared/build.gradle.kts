@@ -15,6 +15,9 @@ kotlin {
         iosTarget.binaries.framework {
             baseName = "Shared"
             isStatic = true
+            // Re-export library APIs into Shared.h for Swift widget hosts.
+            export(project(":warp-ui"))
+            export(project(":warp-runtime"))
         }
     }
 
@@ -55,8 +58,8 @@ kotlin {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
-            implementation(project(":warp-runtime"))
-            implementation(project(":warp-ui"))
+            api(project(":warp-runtime"))
+            api(project(":warp-ui"))
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

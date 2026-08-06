@@ -5,6 +5,22 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import warpWidgetKit.WarpClickBridge
 
+/**
+ * Entry point for Swift AppIntents → Kotlin [WarpClicksRegistry].
+ *
+ * ### Typical Swift call (widget extension)
+ * ```swift
+ * CounterWidgetIosKt.dispatchCounterWidgetClick(actionId:actionId, parametersJson:parametersJson)
+ * // which eventually calls:
+ * WarpClickDispatch_iosKt.dispatchWarpClick(actionId:parametersJson:)
+ * ```
+ *
+ * Runs [WarpClickBridge.prepareIfNeeded] first so cold-start AppIntent launches
+ * can re-register handlers before [WarpClicksRegistry.dispatch].
+ *
+ * @param actionId wire id from WARP JSON (`"increment"`, `"decrement"`, …)
+ * @param parametersJson JSON object of string params, or `"{}"`
+ */
 @OptIn(ExperimentalForeignApi::class)
 fun dispatchWarpClick(actionId: String, parametersJson: String) {
     WarpClickBridge.shared().prepareIfNeeded()

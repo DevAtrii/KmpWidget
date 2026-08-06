@@ -2,12 +2,14 @@ package com.atriidev.warp_ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
-import com.atriidev.warp_runtime.compose.toJson
 import com.atriidev.warp_runtime.nodes.WarpNode
-import com.atriidev.warp_ui.internal.WarpIosBridge
 import kotlinx.cinterop.ExperimentalForeignApi
-import warpWidgetKit.WarpSwiftUIView as NativeWarpSwiftUIView
 
+/**
+ * iOS [WarpRender]: registers handlers via [warpRender] on each composition (side-effect).
+ *
+ * Prefer [warpRender] / [registerWarpClicks] + [warpWidgetJson] for WidgetKit hosts.
+ */
 @Composable
 actual fun WarpRender(node: WarpNode, handlers: List<WarpClickHandler<*>>) {
     SideEffect {
@@ -15,11 +17,15 @@ actual fun WarpRender(node: WarpNode, handlers: List<WarpClickHandler<*>>) {
     }
 }
 
+/**
+ * iOS [warpRender]: [registerWarpClicks] + [warpWidgetView] (`useIntents = true`).
+ *
+ * Returns a [WarpSwiftUIView] for in-app preview (`previewView()` / `UIKitView`).
+ * For home-screen WidgetKit, Swift should call [warpWidgetJson] and host
+ * `WarpSwiftUIRootView` directly (pure SwiftUI — no `UIViewControllerRepresentable`).
+ */
 @OptIn(ExperimentalForeignApi::class)
 actual fun warpRender(node: WarpNode, handlers: List<WarpClickHandler<*>>): WarpSwiftUIView {
-    WarpClicksRegistry.register(handlers)
-    WarpIosBridge.installClickHandler()
-    val json = node.toJson()
-    WarpIosBridge.publishNode(json)
-    return NativeWarpSwiftUIView(json = json, useIntents = true)
+    registerWarpClicks(handlers)
+    return warpWidgetView(node, useIntents = true)
 }

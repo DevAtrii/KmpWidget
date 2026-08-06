@@ -1,11 +1,47 @@
 import SwiftUI
 import AppIntents
 
-struct WarpSwiftUIRootView: View {
+// MARK: - AppIntent host hook
+
+/// Widget **extension** registers a button builder so `AppIntent` types live in the
+/// extension binary (WidgetKit does not discover intents that exist only inside Shared).
+///
+/// ### Kotlin / Shared
+/// Renderer calls this when `useIntents == true`. Kotlin still owns click *logic*
+/// via `dispatchCounterWidgetClick` → `WarpClicksRegistry`.
+///
+/// ### Extension setup (`WidgetBundle.init`)
+/// ```swift
+/// WarpClickIntentRegistry.buttonBuilder = { actionId, parametersJson, label in
+///     AnyView(Button(intent: MyClickIntent(...)) { Text(label) } /* styles */)
+/// }
+/// ```
+@available(iOS 17.0, *)
+public enum WarpClickIntentRegistry {
+    /// `(actionId, parametersJson, label) → styled button view`
+    public static var buttonBuilder: ((String, String, String) -> AnyView)?
+}
+
+// MARK: - SwiftUI root
+
+/// Pure SwiftUI tree for WidgetKit / previews from WARP JSON.
+///
+/// ### From Kotlin
+/// 1. `renderXWidget(): WarpNode` + `registerWarpClicks`
+/// 2. `warpWidgetJson(node)` → this view’s `json`
+///
+/// - `useIntents: true` — home-screen widget (needs [WarpClickIntentRegistry])
+/// - `useIntents: false` — in-app preview via [WarpClickBridge]
+public struct WarpSwiftUIRootView: View {
     let json: String
     let useIntents: Bool
 
-    var body: some View {
+    public init(json: String, useIntents: Bool) {
+        self.json = json
+        self.useIntents = useIntents
+    }
+
+    public var body: some View {
         if let root = WarpNodeParser.parse(json: json) {
             WarpNodeView(node: root, useIntents: useIntents)
                 .padding()
@@ -16,6 +52,7 @@ struct WarpSwiftUIRootView: View {
     }
 }
 
+/// Recursive SwiftUI mapping of a parsed WARP node (column / row / text / button).
 private struct WarpNodeView: View {
     let node: WarpParsedNode
     let useIntents: Bool
@@ -60,17 +97,12 @@ private struct WarpNodeView: View {
                 .padding(node.padding)
 
         case .button:
-            if useIntents, #available(iOS 17.0, *), let actionId = node.actionId {
-                Button(intent: WarpClickIntent(actionId: actionId, parametersJson: node.parametersJson)) {
-                    Text(node.text ?? "")
-                        .font(.title3.weight(.semibold))
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                }
-                .buttonStyle(.bordered)
-                .buttonBorderShape(.circle)
-                .controlSize(.small)
-                .padding(node.padding)
+            if useIntents, #available(iOS 17.0, *), let actionId = node.actionId,
+               let builder = WarpClickIntentRegistry.buttonBuilder {
+                builder(actionId, node.parametersJson, node.text ?? "")
+                    .padding(node.padding)
             } else if let actionId = node.actionId {
+                // In-app preview / fallback — home-screen widgets need registry + AppIntent.
                 Button(node.text ?? "") {
                     WarpClickBridge.shared.perform(
                         actionId: actionId,
@@ -91,6 +123,8 @@ private struct WarpNodeView: View {
     }
 }
 
+// MARK: - JSON → model (mirrors warp-runtime node JSON)
+
 enum WarpNodeKind {
     case column
     case row
@@ -98,15 +132,18 @@ enum WarpNodeKind {
     case button
 }
 
+/// Intermediate model after parsing Kotlin `WarpNode.toJson()` output.
 struct WarpParsedNode {
     let kind: WarpNodeKind
     let text: String?
+    /// WARP `onClick.actionId` — Kotlin [WarpClicksRegistry] key.
     let actionId: String?
     let parametersJson: String
     let padding: EdgeInsets
     let children: [WarpParsedNode]
 }
 
+/// Parses WARP node JSON produced by Kotlin `WarpNode.toJson()` / `warpWidgetJson`.
 enum WarpNodeParser {
     static func parse(json: String) -> WarpParsedNode? {
         guard
@@ -189,32 +226,5 @@ enum WarpNodeParser {
             return nil
         }
         return String(data: data, encoding: .utf8)
-    }
-}
-
-@available(iOS 17.0, *)
-struct WarpClickIntent: AppIntent {
-    static var title: LocalizedStringResource = "WARP Click"
-
-    @Parameter(title: "Action ID")
-    var actionId: String
-
-    @Parameter(title: "Parameters JSON")
-    var parametersJson: String
-
-    init() {
-        actionId = ""
-        parametersJson = "{}"
-    }
-
-    init(actionId: String, parametersJson: String) {
-        self.actionId = actionId
-        self.parametersJson = parametersJson
-    }
-
-    func perform() async throws -> some IntentResult {
-        WarpClickBridge.shared.perform(actionId: actionId, parametersJson: parametersJson)
-        WarpWidgetBridge.shared.reloadTimelines()
-        return .result()
     }
 }

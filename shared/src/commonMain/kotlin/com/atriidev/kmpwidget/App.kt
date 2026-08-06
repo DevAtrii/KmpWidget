@@ -71,7 +71,8 @@ fun App(
                     FilledTonalButton(
                         onClick = {
                             count--
-                            dataStore.set("counter", count.toString())
+                            dataStore.set(COUNTER_KEY, count.toString())
+                            scope.launch { widgetUpdater.update(count) }
                         }
                     ) {
                         Text(
@@ -88,7 +89,8 @@ fun App(
                     FilledTonalButton(
                         onClick = {
                             count++
-                            dataStore.set("counter", count.toString())
+                            dataStore.set(COUNTER_KEY, count.toString())
+                            scope.launch { widgetUpdater.update(count) }
                         }
                     ) {
                         Text(

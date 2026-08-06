@@ -7,39 +7,35 @@ import Shared
 import SwiftUI
 import WidgetKit
 
+/// Timeline entry carries WARP JSON so reloads show fresh Kotlin state (not a cached view).
 struct CounterWidgetEntry: TimelineEntry {
     let date: Date
-    let nodeJson: String
+    /// From [counterWidgetJson] — Kotlin `WarpNode.toJson()` after `registerWarpClicks`.
+    let json: String
 }
 
+/// Builds entries by calling into Shared (Kotlin) on each snapshot / timeline refresh.
 struct CounterWidgetProvider: TimelineProvider {
     func placeholder(in context: Context) -> CounterWidgetEntry {
-        CounterWidgetEntry(date: Date(), nodeJson: "{}")
+        CounterWidgetEntry(date: Date(), json: counterWidgetJson())
     }
 
     func getSnapshot(in context: Context, completion: @escaping (CounterWidgetEntry) -> Void) {
-        completion(
-            CounterWidgetEntry(
-                date: Date(),
-                nodeJson: CounterWidgetIosKt.renderCounterWidget()
-            )
-        )
+        completion(CounterWidgetEntry(date: Date(), json: counterWidgetJson()))
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<CounterWidgetEntry>) -> Void) {
-        let entry = CounterWidgetEntry(
-            date: Date(),
-            nodeJson: CounterWidgetIosKt.renderCounterWidget()
-        )
+        let entry = CounterWidgetEntry(date: Date(), json: counterWidgetJson())
         completion(Timeline(entries: [entry], policy: .atEnd))
     }
 }
 
+/// Renders [CounterWidgetEntry.json] via warp-ui SwiftUI (`WarpSwiftUIRootView`).
 struct CounterWidgetEntryView: View {
     var entry: CounterWidgetProvider.Entry
 
     var body: some View {
-        CounterWarpRenderView(json: entry.nodeJson)
+        counterWidgetRootView(json: entry.json)
     }
 }
 
@@ -65,5 +61,5 @@ struct CounterWidget: Widget {
 #Preview(as: .systemSmall) {
     CounterWidget()
 } timeline: {
-    CounterWidgetEntry(date: .now, nodeJson: "{}")
+    CounterWidgetEntry(date: .now, json: counterWidgetJson())
 }
