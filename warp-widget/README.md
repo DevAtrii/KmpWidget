@@ -112,38 +112,26 @@ See demo: [`CounterWarpWidget.kt`](../shared/src/commonMain/kotlin/com/atriidev/
 
 ## Android (Jetpack Glance)
 
-1. Register WARP widget + Glance class in the **receiver `init`** (library handles cold-start taps — no app ContentProvider):
+1. Subclass [WarpGlanceWidgetReceiver](src/androidMain/kotlin/com/atriidev/warp_widget/WarpGlanceWidgetReceiver.kt) + [WarpGlanceWidget](src/androidMain/kotlin/com/atriidev/warp_widget/WarpGlanceWidget.kt) — registry + `PreferencesGlanceStateDefinition` + `WarpRender` are automatic:
 
 ```kotlin
-class CounterWidgetReceiver : GlanceAppWidgetReceiver() {
-    init {
-        WarpWidgetAndroidRegistry.register(
-            CounterWarpWidget.id,
-            CounterWarpWidget,
-        ) { CounterGlanceAppWidget() }
-    }
-    override val glanceAppWidget get() = CounterGlanceAppWidget()
+class CounterWidgetReceiver : WarpGlanceWidgetReceiver() {
+    override val widget get() = CounterWarpWidget
+    override fun createGlanceWidget() = CounterGlanceAppWidget()
 }
-```
 
-2. In `provideContent`, build a session with Glance helpers:
-
-```kotlin
-provideContent {
-    val session = rememberGlanceWidgetSession(context)
-    WarpRender(
-        node = WarpWidgetHost.compose(CounterWarpWidget, session),
-        handlers = WarpWidgetHost.handlers(CounterWarpWidget, session),
-    )
+class CounterGlanceAppWidget : WarpGlanceWidget() {
+    override val widget get() = CounterWarpWidget
 }
 ```
 
 | Helper | Role |
 |--------|------|
-| `rememberGlanceWidgetSession(context)` | `LocalSize` + Glance prefs → `WarpWidgetSession` |
+| `WarpGlanceWidgetReceiver` | Auto [WarpWidgetAndroidRegistry.register]; cold-start wake → `ensureRegistered` |
+| `WarpGlanceWidget` | `PreferencesGlanceStateDefinition` + `WarpWidgetHost` / `WarpRender` |
+| `rememberGlanceWidgetSession(context)` | `LocalSize` + Glance prefs → `WarpWidgetSession` (used inside `WarpGlanceWidget`) |
 | `glanceWidgetEnvironment(context, size)` | Map config / density / theme → `WidgetEnvironment` |
 | `Preferences.toWarpPreferences()` | Glance prefs → WARP bag |
-| `WarpWidgetAndroidRegistry` | `widgetId` → `GlanceAppWidget` for state update / reload |
 
 **State:** Glance `PreferencesGlanceStateDefinition` via `WarpWidgetStateStore`.  
 **Update from app:** `updateWarpWidgetState(PlatformContext(context), widget) { … }`.
@@ -219,6 +207,7 @@ warp-widget/
   src/commonMain/…/WarpWidget.kt          # WarpWidget, session, host
   src/commonMain/…/WarpWidgetState*.kt    # prefs, currentState, store expect
   src/commonMain/…/api/                   # WidgetEnvironment, PlatformContext, …
+  src/androidMain/…/WarpGlance*.kt        # GlanceAppWidget / Receiver bases
   src/androidMain/…/Glance*.kt            # Glance env/session helpers, registry
   src/iosMain/…/WarpWidgetKitMapping.kt   # Kit env dict → Shared types
   src/iosMain/…/WarpWidgetHost.ios.kt     # iosSession()

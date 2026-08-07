@@ -29,19 +29,7 @@ private const val TAG = "WarpWidgetAndroidRegistry"
  *    → your [register] call)
  * 2. Re-binds click handlers before dispatch
  *
- * App code only needs:
- *
- * ```
- * class CounterWidgetReceiver : GlanceAppWidgetReceiver() {
- *     init {
- *         WarpWidgetAndroidRegistry.register(
- *             CounterWarpWidget.id,
- *             CounterWarpWidget,
- *         ) { CounterGlanceAppWidget() }
- *     }
- *     override val glanceAppWidget get() = CounterGlanceAppWidget()
- * }
- * ```
+ * Prefer [WarpGlanceWidgetReceiver] + [WarpGlanceWidget] — they call [register] for you.
  *
  * No app ContentProvider / Application hook required.
  */
@@ -161,7 +149,8 @@ object WarpWidgetAndroidRegistry {
             }
             val className = info.provider.className
             val clazz = Class.forName(className, true, context.classLoader)
-            clazz.getDeclaredConstructor().newInstance()
+            val instance = clazz.getDeclaredConstructor().newInstance()
+            (instance as? WarpGlanceWidgetReceiver)?.ensureRegistered()
             Log.d(TAG, "Woke Glance receiver $className")
         } catch (e: Exception) {
             Log.w(TAG, "wakeGlanceReceiver failed", e)
