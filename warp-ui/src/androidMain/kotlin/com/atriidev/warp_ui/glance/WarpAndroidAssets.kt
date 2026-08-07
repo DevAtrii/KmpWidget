@@ -6,42 +6,41 @@ import android.net.Uri
 import androidx.annotation.DrawableRes
 import androidx.glance.ImageProvider
 import com.atriidev.warp_runtime.nodes.assets.WarpAsset
+import com.atriidev.warp_runtime.nodes.assets.WarpAssetId
 import com.atriidev.warp_runtime.nodes.assets.WarpAssets
 import java.util.concurrent.ConcurrentHashMap
 
 /**
  * One bundled drawable for [WarpAndroidAssets.register] / [com.atriidev.warp_widget.WarpGlanceWidget.assets].
  *
- * Use the same [id] as [WarpAsset.Id] or as [WarpAsset.System.name] (SF Symbol name on iOS).
+ * [id] must be the same [WarpAssetId] used in common `Content` (`asId()` / `asSystem()`).
  */
 data class WarpDrawableAsset(
-    val id: String,
+    val id: WarpAssetId,
     @DrawableRes val resId: Int,
 )
 
 /**
  * Resolves [WarpAsset] → Glance [ImageProvider] for Android widgets.
  *
- * - [WarpAsset.Id] / [WarpAsset.System] → [register] by id (system name looks up the same map)
- * - [WarpAssets.Android.Uri] → local bitmap (`content://` / `file://` / `android.resource://` only)
+ * - [WarpAsset.Id] / [WarpAsset.System] → [register] by [WarpAssetId]
+ * - [WarpAssets.Android.Uri] → local bitmap only
  *
- * Prefer declaring assets on [com.atriidev.warp_widget.WarpGlanceWidget.assets] — registration is automatic.
- * Unresolved → `null` (empty space). Remote http(s) not supported.
+ * Prefer [com.atriidev.warp_widget.WarpGlanceWidget.assets] — registration is automatic.
  */
 object WarpAndroidAssets {
     private val ids = ConcurrentHashMap<String, Int>()
 
-    /** Map logical id → `@DrawableRes` (also used when resolving [WarpAsset.System]). */
-    fun register(id: String, @DrawableRes resId: Int) {
-        ids[id] = resId
+    fun register(id: WarpAssetId, @DrawableRes resId: Int) {
+        ids[id.value] = resId
     }
 
     fun registerAll(assets: Iterable<WarpDrawableAsset>) {
         assets.forEach { register(it.id, it.resId) }
     }
 
-    fun unregister(id: String) {
-        ids.remove(id)
+    fun unregister(id: WarpAssetId) {
+        ids.remove(id.value)
     }
 
     fun clear() {
@@ -49,8 +48,8 @@ object WarpAndroidAssets {
     }
 
     fun resolve(asset: WarpAsset, context: Context): ImageProvider? = when (asset) {
-        is WarpAsset.Id -> ids[asset.id]?.let { ImageProvider(it) }
-        is WarpAsset.System -> ids[asset.name]?.let { ImageProvider(it) }
+        is WarpAsset.Id -> ids[asset.id.value]?.let { ImageProvider(it) }
+        is WarpAsset.System -> ids[asset.name.value]?.let { ImageProvider(it) }
         is WarpAssets.Android.Uri -> resolveUri(asset.uri, context)
     }
 

@@ -12,7 +12,7 @@ import com.atriidev.warp_runtime.compose.WarpSpacer
 import com.atriidev.warp_runtime.compose.WarpText
 import com.atriidev.warp_runtime.nodes.actions.WarpActionId
 import com.atriidev.warp_runtime.nodes.actions.asClickAction
-import com.atriidev.warp_runtime.nodes.assets.WarpAsset
+import com.atriidev.warp_runtime.nodes.assets.WarpAssetId
 import com.atriidev.warp_runtime.nodes.modifiers.WarpColor
 import com.atriidev.warp_runtime.nodes.modifiers.WarpModifier
 import com.atriidev.warp_runtime.nodes.style.WarpButtonColors
@@ -43,6 +43,11 @@ enum class CounterActions(
 data class CounterState(
     val count: Int = 0,
 )
+
+/** Type-safe asset keys — share with [CounterGlanceAppWidget.assets]. */
+object CounterAssets {
+    val NumberCircle = WarpAssetId("number.circle.fill")
+}
 
 /**
  * Shared counter [WarpWidget] — one definition for Glance + WidgetKit.
@@ -80,9 +85,9 @@ object CounterWarpWidget : WarpWidget<CounterState>(CounterState.serializer()) {
                         .clickable(CounterActions.Reset.asClickAction()),
                     verticalAlignment = WarpVerticalAlignment.Center,
                 ) {
-                    // SF Symbol on iOS; Android maps same id via WarpGlanceWidget.assets().
+                    // SF Symbol on iOS; Android maps same key via WarpGlanceWidget.assets().
                     WarpImage(
-                        asset = WarpAsset.System("number.circle.fill"),
+                        asset = CounterAssets.NumberCircle.asSystem(),
                         contentDescription = "Count",
                         modifier = WarpModifier.size(18),
                         tint = WarpColor("#B0BEC5"),

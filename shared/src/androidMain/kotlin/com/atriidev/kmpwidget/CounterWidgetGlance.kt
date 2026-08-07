@@ -15,7 +15,6 @@ class CounterGlanceAppWidget : WarpGlanceWidget() {
     override val widget get() = CounterWarpWidget
 
     override fun assets(): List<WarpDrawableAsset> = listOf(
-        // Same string as WarpAsset.System("number.circle.fill") / SF Symbol on iOS.
-        WarpDrawableAsset("number.circle.fill", R.drawable.ic_number_circle),
+        WarpDrawableAsset(CounterAssets.NumberCircle, R.drawable.ic_number_circle),
     )
 }

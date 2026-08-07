@@ -5,6 +5,7 @@ import com.atriidev.warp_runtime.compose.composeWarp
 import com.atriidev.warp_runtime.compose.composeWarpToJson
 import com.atriidev.warp_runtime.compose.toJson
 import com.atriidev.warp_runtime.nodes.assets.WarpAsset
+import com.atriidev.warp_runtime.nodes.assets.WarpAssetId
 import com.atriidev.warp_runtime.nodes.assets.WarpAssets
 import com.atriidev.warp_runtime.nodes.modifiers.WarpColor
 import com.atriidev.warp_runtime.nodes.style.WarpContentScale
@@ -13,13 +14,19 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
+private object TestAssets {
+    val NumberCircle = WarpAssetId("number.circle.fill")
+    val Sun = WarpAssetId("weather/sun")
+    val Plus = WarpAssetId("plus.circle.fill")
+}
+
 class WarpImageTest {
 
     @Test
     fun systemAsset_serializesForSfSymbols() {
         val json = composeWarpToJson {
             WarpImage(
-                asset = WarpAsset.System("number.circle.fill"),
+                asset = TestAssets.NumberCircle.asSystem(),
                 contentDescription = "Count",
                 contentScale = WarpContentScale.Fit,
                 tint = WarpColor("#B0BEC5"),
@@ -35,10 +42,10 @@ class WarpImageTest {
     @Test
     fun idAndUri_roundTripThroughCompose() {
         val tree = composeWarp {
-            WarpImage(asset = WarpAsset.Id("weather/sun"))
+            WarpImage(asset = TestAssets.Sun.asId())
         }
         val image = assertIs<WarpImage>(tree)
-        assertEquals(WarpAsset.Id("weather/sun"), image.asset)
+        assertEquals(WarpAsset.Id(TestAssets.Sun), image.asset)
 
         val uriTree = composeWarp {
             WarpImage(asset = WarpAssets.Android.Uri("file:///tmp/avatar.png"))
@@ -52,7 +59,7 @@ class WarpImageTest {
     @Test
     fun warpImageNode_toJson_includesContentScale() {
         val json = com.atriidev.warp_runtime.nodes.WarpImage(
-            asset = WarpAsset.System("plus.circle.fill"),
+            asset = TestAssets.Plus.asSystem(),
             contentScale = WarpContentScale.Crop,
         ).toJson()
 

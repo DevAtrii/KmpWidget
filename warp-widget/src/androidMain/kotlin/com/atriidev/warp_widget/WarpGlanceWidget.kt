@@ -20,13 +20,13 @@ import com.atriidev.warp_ui.glance.WarpDrawableAsset
  * class CounterGlanceAppWidget : WarpGlanceWidget() {
  *     override val widget get() = CounterWarpWidget
  *     override fun assets() = listOf(
- *         WarpDrawableAsset("number.circle.fill", R.drawable.ic_number_circle),
+ *         WarpDrawableAsset(CounterAssets.NumberCircle, R.drawable.ic_number_circle),
  *     )
  * }
  * ```
  *
- * [assets] are registered into [WarpAndroidAssets] automatically (id map).
- * [com.atriidev.warp_runtime.nodes.assets.WarpAsset.System] resolves via the same ids.
+ * [assets] are registered into [WarpAndroidAssets] automatically.
+ * Use the same [com.atriidev.warp_runtime.nodes.assets.WarpAssetId] constants as in common `Content`.
  */
 abstract class WarpGlanceWidget : GlanceAppWidget() {
     /** Shared WARP definition composed into this Glance surface. */
@@ -35,8 +35,8 @@ abstract class WarpGlanceWidget : GlanceAppWidget() {
     /**
      * Optional bundled drawables for this widget.
      *
-     * Keys = [com.atriidev.warp_runtime.nodes.assets.WarpAsset.Id] / SF Symbol name used with
-     * [com.atriidev.warp_runtime.nodes.assets.WarpAsset.System]. Registered under the hood.
+     * Pass [com.atriidev.warp_runtime.nodes.assets.WarpAssetId] keys shared with common UI.
+     * Registered under the hood into [WarpAndroidAssets].
      */
     open fun assets(): List<WarpDrawableAsset> = emptyList()
 

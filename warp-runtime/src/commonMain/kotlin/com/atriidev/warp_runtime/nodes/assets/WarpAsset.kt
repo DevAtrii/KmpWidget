@@ -8,32 +8,37 @@ import kotlinx.serialization.Serializable
  *
  * Wire format is a small JSON ref — never raw pixels. Hosts resolve at paint time:
  *
- * - [Id] → bundled drawable / asset catalog
- * - [System] → **SF Symbol** on iOS; Android via system→drawable map
+ * - [Id] → bundled drawable / asset catalog ([WarpAssetId])
+ * - [System] → **SF Symbol** on iOS; Android via same [WarpAssetId] registry
  * - [WarpAssets.Android.Uri] → local `file://` / `content://` / `android.resource://` only
  *
+ * Prefer defining keys as [WarpAssetId] constants — avoid raw strings in UI.
+ *
  * ```
- * WarpImage(asset = WarpAsset.System("plus.circle.fill"))
- * WarpImage(asset = WarpAsset.Id("weather/sun"))
+ * object Icons {
+ *     val Plus = WarpAssetId("plus.circle.fill")
+ * }
+ * WarpImage(asset = Icons.Plus.asSystem())
+ * WarpImage(asset = Icons.Plus.asId())
  * WarpImage(asset = WarpAssets.Android.Uri("file:///…/photo.jpg"))
  * ```
  */
 @Serializable
 sealed interface WarpAsset {
-    /** App-bundled asset id (Android drawable registry / iOS Asset Catalog name). */
+    /** App-bundled asset ([WarpAssetId] → Android drawable registry / iOS Asset Catalog). */
     @Serializable
     @SerialName("id")
-    data class Id(val id: String) : WarpAsset
+    data class Id(val id: WarpAssetId) : WarpAsset
 
     /**
      * Platform system symbol.
      *
-     * iOS: SF Symbol name (e.g. `"number.circle.fill"`).
-     * Android: same string looked up in the id→drawable map ([WarpAsset.Id] registry).
+     * iOS: SF Symbol [WarpAssetId.value].
+     * Android: same key looked up in the id→drawable map.
      */
     @Serializable
     @SerialName("system")
-    data class System(val name: String) : WarpAsset
+    data class System(val name: WarpAssetId) : WarpAsset
 }
 
 /**
