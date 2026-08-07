@@ -43,7 +43,11 @@ struct CounterWidgetClickIntent: AppIntent {
 
     func perform() async throws -> some IntentResult {
         WarpWidgetKitMappingKt.installWarpWidgetKitBridge()
-        let session: WarpWidgetSession = WarpWidgetKitEnv.placeholder().makeSession()
+        let env: WidgetEnvironment = WarpWidgetKitEnv.placeholder().makeEnvironment()
+        let session = WarpWidgetHost.shared.iosSession(
+            widget: CounterWarpWidget.shared,
+            environment: env
+        )
         WarpWidgetHost.shared.dispatchClick(
             widget: CounterWarpWidget.shared,
             session: session,

@@ -1,15 +1,18 @@
 package com.atriidev.warp_widget.api
 
+import com.atriidev.warp_widget.WarpWidget
+
 /**
  * iOS [PlatformContext].
  *
- * [appGroupId] must match Xcode App Groups + Swift `warpAppGroupId`
- * (`warpWidgetKit`). Used by [com.atriidev.warp_widget.WarpWidgetStateStore]
- * (`UserDefaults` suite).
+ * [appGroupId] must match Xcode App Groups. Prefer building via
+ * [com.atriidev.warp_widget.platformContext] / [com.atriidev.warp_widget.WarpWidgetHost.iosSession]
+ * so [WarpWidget.iosGroupId] stays the single source of truth.
  */
 actual class PlatformContext(
-    val appGroupId: String = DEFAULT_IOS_APP_GROUP_ID,
+    val appGroupId: String,
 )
 
-/** Default suite shared with the demo app / `warpWidgetKit.warpAppGroupId`. */
-const val DEFAULT_IOS_APP_GROUP_ID: String = "group.com.atriidev.kmpwidget"
+/** [PlatformContext] using [WarpWidget.iosGroupId]. */
+fun WarpWidget.platformContext(): PlatformContext =
+    PlatformContext(appGroupId = iosGroupId)

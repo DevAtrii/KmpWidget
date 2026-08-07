@@ -57,7 +57,9 @@ public class WarpWidgetKitShared: NSObject {
 
 public extension WarpWidgetKitEnv {
     /// Field bag consumed by Kotlin [WarpWidgetKitMapping].
-    func asKitFields(appGroupId: String = warpAppGroupId) -> NSDictionary {
+    ///
+    /// Pass [appGroupId] from Shared `WarpWidget.iosGroupId` (single source of truth).
+    func asKitFields(appGroupId: String) -> NSDictionary {
         [
             "family": family.rawValue,
             "widthDp": NSNumber(value: Float(width)),
@@ -79,16 +81,23 @@ public extension WarpWidgetKitEnv {
         ] as NSDictionary
     }
 
+    /// Field bag for environment-only mapping (no App Group).
+    func asKitFields() -> NSDictionary {
+        asKitFields(appGroupId: "")
+    }
+
     /**
      * Shared `WarpWidgetSession` via Kotlin mapping.
      *
+     * Pass [appGroupId] from `WarpWidget.iosGroupId`:
      * ```swift
-     * let session: WarpWidgetSession = WarpWidgetKitEnv.from(context: context).makeSession()
+     * let session: WarpWidgetSession = WarpWidgetKitEnv.from(context: context)
+     *     .makeSession(appGroupId: CounterWarpWidget.shared.iosGroupId)
      * ```
      *
-     * Requires Shared linked; first WARP prepare installs the bridge automatically.
+     * Or prefer `WarpWidgetHost.iosSession(widget:environment:)`.
      */
-    func makeSession<Session>(appGroupId: String = warpAppGroupId) -> Session {
+    func makeSession<Session>(appGroupId: String) -> Session {
         let object = WarpWidgetKitShared.shared.session(from: asKitFields(appGroupId: appGroupId))
         guard let session = object as? Session else {
             fatalError("makeSession expected Shared.WarpWidgetSession, got \(type(of: object))")

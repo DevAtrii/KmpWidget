@@ -52,7 +52,14 @@ sealed class WidgetPlatform {
     }
 }
 
-internal expect val widgetPlatform: WidgetPlatform
+
+/**
+ * Process [WidgetPlatform] for the current host (Android / iOS).
+ *
+ * Prefer host helpers that fill a full [WidgetEnvironment]
+ * ([com.atriidev.warp_widget.glanceWidgetEnvironment], Swift `WarpWidgetKitEnv`).
+ */
+expect fun currentWidgetPlatform(platformContext: PlatformContext): WidgetPlatform
 
 val WidgetPlatform.isIos: Boolean
     get() = this is WidgetPlatform.Ios

@@ -1,6 +1,7 @@
 package com.atriidev.kmpwidget
 
 import androidx.compose.runtime.Composable
+import com.atriidev.kmpwidget.CounterWarpWidget.id
 import com.atriidev.warp_runtime.compose.WarpButton
 import com.atriidev.warp_runtime.compose.WarpColumn
 import com.atriidev.warp_runtime.compose.WarpRow
@@ -30,19 +31,23 @@ object CounterKeys {
  *
  * ### Swift (WidgetKit)
  * ```swift
- * let session = WarpWidgetKitEnv.from(context: context).makeSession()
- * WarpWidgetHost.shared.prepare(widget: CounterWarpWidget.shared, session: session)
- * let json = WarpWidgetHost.shared.composeJson(widget: CounterWarpWidget.shared, session: session)
+ * let env = WarpWidgetKitEnv.from(context: context).makeEnvironment()
+ * let session = WarpWidgetHost.shared.iosSession(widget: CounterWarpWidget.shared, environment: env)
  * ```
  */
 object CounterWarpWidget : WarpWidget {
     override val id: String = "CounterWidget"
 
+    /** App Group suite — keep in sync with Xcode entitlements / [APP_GROUP_ID]. */
+    override val iosGroupId: String = APP_GROUP_ID
+
     @Composable
     override fun Content(env: WidgetEnvironment) {
+        println("WIDGET_ENV $env")
         val count = currentState(CounterKeys.Count) ?: 0
         WarpColumn(
-            modifier = WarpModifier().padding(WarpPadding(16, 16, 16, 16)),
+            modifier = WarpModifier()
+                .padding(WarpPadding(16, 16, 16, 16)),
         ) {
             WarpText("Count")
             WarpRow {

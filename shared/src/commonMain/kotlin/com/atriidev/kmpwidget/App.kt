@@ -13,7 +13,6 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -23,11 +22,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
-import com.atriidev.warp_widget.WarpWidgetHost
 import com.atriidev.warp_widget.WarpWidgetStateStore
 import com.atriidev.warp_widget.api.PlatformContext
-import com.atriidev.warp_widget.api.WarpWidgetFamily
-import com.atriidev.warp_widget.api.makeWidgetEnvironment
 import com.atriidev.warp_widget.updateWarpWidgetState
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -54,20 +50,6 @@ fun App(
             onPauseOrDispose { }
         }
 
-        LaunchedEffect(count) {
-            val session = counterWidgetSession(
-                context = platformContext,
-                environment = makeWidgetEnvironment(
-                    family = WarpWidgetFamily.SYSTEM_SMALL,
-                    isPreview = true,
-                ),
-                preferences = com.atriidev.warp_widget.WarpWidgetPreferences(
-                    mapOf(COUNTER_KEY to count.toString()),
-                ),
-            )
-            val node = WarpWidgetHost.compose(CounterWarpWidget, session)
-            println("WARP_WIDGET: $node")
-        }
 
         suspend fun persist(next: Int) {
             updateWarpWidgetState(platformContext, CounterWarpWidget) {

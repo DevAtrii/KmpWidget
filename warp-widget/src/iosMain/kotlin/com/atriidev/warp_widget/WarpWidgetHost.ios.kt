@@ -1,31 +1,35 @@
 package com.atriidev.warp_widget
 
-import com.atriidev.warp_widget.api.DEFAULT_IOS_APP_GROUP_ID
-import com.atriidev.warp_widget.api.PlatformContext
 import com.atriidev.warp_widget.api.WidgetEnvironment
+import com.atriidev.warp_widget.api.platformContext
 
 /**
- * Build an iOS [WarpWidgetSession] with App Group [PlatformContext].
+ * Build an iOS [WarpWidgetSession] from [widget] + host [environment].
  *
- * Host supplies [environment] (typically from Swift
- * `WarpWidgetKitEnv.makeEnvironment()` after [installWarpWidgetKitBridge]).
+ * Uses [WarpWidget.iosGroupId] for App Group [com.atriidev.warp_widget.api.PlatformContext]
+ * (single source of truth — do not hardcode the suite id in Swift/Kotlin hosts).
+ *
+ * Two overloads so Swift can omit preferences (Kotlin defaults are not exported to Swift).
  *
  * ```swift
  * WarpWidgetKitMappingKt.installWarpWidgetKitBridge()
  * let env: WidgetEnvironment = WarpWidgetKitEnv.from(context: context).makeEnvironment()
- * let session = WarpWidgetHost.shared.iosSession(environment: env)
+ * let session = WarpWidgetHost.shared.iosSession(widget: CounterWarpWidget.shared, environment: env)
  * ```
- *
- * Prefer `WarpWidgetKitEnv.makeSession()` which builds env + session in one step.
  */
 fun WarpWidgetHost.iosSession(
+    widget: WarpWidget,
     environment: WidgetEnvironment,
-    appGroupId: String = DEFAULT_IOS_APP_GROUP_ID,
-    preferences: WarpWidgetPreferences? = null,
+): WarpWidgetSession = iosSession(widget, environment, preferences = null)
+
+fun WarpWidgetHost.iosSession(
+    widget: WarpWidget,
+    environment: WidgetEnvironment,
+    preferences: WarpWidgetPreferences?,
 ): WarpWidgetSession {
     ensureWarpWidgetKitSharedInstalled()
     return WarpWidgetSession(
-        context = PlatformContext(appGroupId = appGroupId),
+        context = widget.platformContext(),
         environment = environment,
         preferences = preferences,
     )

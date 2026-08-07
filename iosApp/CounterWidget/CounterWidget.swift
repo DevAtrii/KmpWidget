@@ -36,7 +36,7 @@ struct CounterWidgetEntryView: View {
     var entry: CounterWidgetProvider.Entry
 
     var body: some View {
-        counterWidgetRootView(json: entry.json)
+        WarpSwiftUIRootView(json: entry.json, useIntents: true)
     }
 }
 
@@ -67,5 +67,5 @@ struct CounterHomeWidget: Widget {
 #Preview(as: .systemSmall) {
     CounterHomeWidget()
 } timeline: {
-    CounterWidgetEntry(date: .now, json: counterWidgetJsonPlaceholder())
+    CounterWidgetEntry(date: .now, json: counterWidgetPlaceholderJson())
 }

@@ -1,12 +1,6 @@
 package com.atriidev.warp_widget.api
 
-/**
- * Process [WidgetPlatform] for the current host (Android / iOS).
- *
- * Prefer host helpers that fill a full [WidgetEnvironment]
- * ([com.atriidev.warp_widget.glanceWidgetEnvironment], Swift `WarpWidgetKitEnv`).
- */
-fun currentWidgetPlatform(): WidgetPlatform = widgetPlatform
+
 
 /**
  * Build a [WidgetEnvironment] from host-supplied values.
@@ -19,6 +13,7 @@ fun currentWidgetPlatform(): WidgetPlatform = widgetPlatform
  * @param platformEnvironment Android- or iOS-only extras; inferred from [platform] when null
  */
 fun makeWidgetEnvironment(
+    platformContext: PlatformContext,
     family: WarpWidgetFamily,
     isPreview: Boolean,
     size: WarpWidgetSize? = null,
@@ -29,7 +24,7 @@ fun makeWidgetEnvironment(
     displayScale: Float = 1f,
     fontScale: Float = 1f,
     platformEnvironment: WidgetPlatformEnvironment? = null,
-    platform: WidgetPlatform = currentWidgetPlatform(),
+    platform: WidgetPlatform = currentWidgetPlatform(platformContext),
 ): WidgetEnvironment = WidgetEnvironment(
     platform = platform,
     family = family,

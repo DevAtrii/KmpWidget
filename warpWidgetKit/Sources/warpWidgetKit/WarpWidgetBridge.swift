@@ -1,7 +1,8 @@
 import Foundation
 import WidgetKit
 
-/// App Group id shared with Kotlin `APP_GROUP_ID` / `KmpDataStore` (UserDefaults suite).
+/// Demo App Group id. Prefer Shared `WarpWidget.iosGroupId` as the source of truth
+/// when building sessions (`makeSession(appGroupId:)` / `WarpWidgetHost.iosSession`).
 public let warpAppGroupId = "group.com.atriidev.kmpwidget"
 
 /// Thin ObjC wrapper around `WidgetCenter` for Kotlin `WidgetUpdater`.

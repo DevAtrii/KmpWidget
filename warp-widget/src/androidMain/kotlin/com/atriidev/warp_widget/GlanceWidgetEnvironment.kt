@@ -37,7 +37,7 @@ fun glanceWidgetEnvironment(
     val config = context.resources.configuration
     val metrics = context.resources.displayMetrics
     val night = (config.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
-        Configuration.UI_MODE_NIGHT_YES
+            Configuration.UI_MODE_NIGHT_YES
     val locale: Locale =
         if (android.os.Build.VERSION.SDK_INT >= 24) {
             config.locales[0] ?: Locale.getDefault()
@@ -47,6 +47,7 @@ fun glanceWidgetEnvironment(
         }
     val rtl = config.layoutDirection == View.LAYOUT_DIRECTION_RTL
     return makeWidgetEnvironment(
+        platformContext = PlatformContext(context),
         family = size.toWarpWidgetFamily(),
         isPreview = isPreview,
         size = WarpWidgetSize(

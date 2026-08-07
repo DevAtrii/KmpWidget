@@ -20,15 +20,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.UIKitView
 import androidx.compose.ui.window.ComposeUIViewController
 import androidx.lifecycle.compose.LifecycleResumeEffect
-import com.atriidev.warp_ui.previewView
 import com.atriidev.warp_ui.warpRender
 import com.atriidev.warp_widget.WarpWidgetHost
 import com.atriidev.warp_widget.WarpWidgetPreferences
+import com.atriidev.warp_widget.WarpWidgetSession
 import com.atriidev.warp_widget.WarpWidgetStateStore
-import com.atriidev.warp_widget.api.DEFAULT_IOS_APP_GROUP_ID
 import com.atriidev.warp_widget.api.PlatformContext
 import com.atriidev.warp_widget.api.WarpWidgetFamily
 import com.atriidev.warp_widget.api.makeWidgetEnvironment
+import com.atriidev.warp_widget.api.platformContext
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -37,7 +37,7 @@ import platform.UIKit.UIView
 
 fun MainViewController() = ComposeUIViewController {
     val platformContext = remember {
-        PlatformContext(appGroupId = DEFAULT_IOS_APP_GROUP_ID)
+        CounterWarpWidget.platformContext()
     }
     var count by remember { mutableIntStateOf(0) }
 
@@ -95,9 +95,10 @@ private fun WarpUiKitPreview(
         )
         key(count) {
             val session = remember(count, platformContext) {
-                counterWidgetSession(
+                WarpWidgetSession(
                     context = platformContext,
                     environment = makeWidgetEnvironment(
+                        platformContext,
                         family = WarpWidgetFamily.SYSTEM_SMALL,
                         isPreview = true,
                     ),
@@ -114,8 +115,9 @@ private fun WarpUiKitPreview(
             }
             UIKitView(
                 factory = {
-                    @Suppress("UNCHECKED_CAST")
-                    holder.previewView() as UIView
+                    // cinterop maps Swift UIView → objcnames; Compose wants platform.UIKit.UIView.
+                    @Suppress("CAST_NEVER_SUCCEEDS", "USELESS_CAST")
+                    holder.makePreviewView() as UIView
                 },
                 modifier = Modifier
                     .fillMaxWidth()

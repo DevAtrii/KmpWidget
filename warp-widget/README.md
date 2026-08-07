@@ -41,6 +41,7 @@ Shared **widget definition + host API** for WARP. Write one [`WarpWidget`](src/c
 One shared definition:
 
 - `id` — stable kind (`"CounterWidget"`); matches iOS `Widget.kind` for timeline reload
+- `iosGroupId` — iOS App Group suite (`group.*`); single source of truth for prefs (ignored on Android)
 - `Content(env)` — WARP composables; read prefs with `currentState(key)` (Glance-style)
 - `clickHandlers(session)` — persist via `updateWarpWidgetState`
 
@@ -78,6 +79,7 @@ object CounterKeys {
 
 object CounterWarpWidget : WarpWidget {
     override val id = "CounterWidget"
+    override val iosGroupId = "group.com.example.app"
 
     @Composable
     override fun Content(env: WidgetEnvironment) {
@@ -142,31 +144,22 @@ Hosts supply env from [`warpWidgetKit`](../warpWidgetKit/) (`WarpWidgetKitEnv`),
 
 ```swift
 WarpWidgetKitMappingKt.installWarpWidgetKitBridge()
-let session: WarpWidgetSession = WarpWidgetKitEnv.from(context: context).makeSession()
+let env: WidgetEnvironment = WarpWidgetKitEnv.from(context: context).makeEnvironment()
+let session = WarpWidgetHost.shared.iosSession(widget: CounterWarpWidget.shared, environment: env)
 WarpWidgetHost.shared.prepare(widget: CounterWarpWidget.shared, session: session)
 let json = WarpWidgetHost.shared.composeJson(widget: CounterWarpWidget.shared, session: session)
 // SwiftUI: WarpSwiftUIRootView(json: json, useIntents: true)
 ```
 
-AppIntent:
-
-```swift
-WarpWidgetKitMappingKt.installWarpWidgetKitBridge()
-let session: WarpWidgetSession = WarpWidgetKitEnv.placeholder().makeSession()
-WarpWidgetHost.shared.dispatchClick(
-    widget: CounterWarpWidget.shared,
-    session: session,
-    actionId: actionId,
-    parametersJson: parametersJson
-)
-```
+AppIntent: same `iosSession(widget:environment:)` — App Group comes from `widget.iosGroupId`.
 
 | Piece | Role |
 |-------|------|
+| `WarpWidget.iosGroupId` | App Group suite (source of truth) |
 | `WarpWidgetKitEnv.from(context:)` | WidgetKit → field snapshot (SPM, no Shared) |
-| `makeSession()` / `makeEnvironment()` | Generics → Shared types via `WarpWidgetKitShared` bridge |
+| `makeEnvironment()` / `makeSession(appGroupId:)` | Generics → Shared via bridge; pass `widget.iosGroupId` if using `makeSession` |
 | `installWarpWidgetKitBridge()` | Kotlin installs dict → `WarpWidgetKitMapping` |
-| `WarpWidgetHost.iosSession(environment:)` | App Group `PlatformContext` + env |
+| `WarpWidgetHost.iosSession(widget:environment:)` | `PlatformContext(widget.iosGroupId)` + env |
 | `WarpWidgetStateStore` | App Group UserDefaults `"$widgetId.$key"` + `reloadTimelinesOfKind` |
 
 **Do not** copy `warpWidgetKit` sources into the extension (duplicate `WarpClickBridge` → broken clicks). Link the SPM product once.

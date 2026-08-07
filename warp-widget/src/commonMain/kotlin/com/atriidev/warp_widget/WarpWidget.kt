@@ -16,7 +16,8 @@ import kotlinx.serialization.Serializable
  * Hosts **must** supply [environment] and [context] (never invented by [WarpWidgetHost]):
  *
  * - **Android:** [rememberGlanceWidgetSession] / [glanceWidgetEnvironment]
- * - **iOS:** `WarpWidgetKitEnv.from(context:).makeSession()` after [installWarpWidgetKitBridge]
+ * - **iOS:** [WarpWidgetHost.iosSession] / Kit env after [installWarpWidgetKitBridge]
+ *   ([WarpWidget.iosGroupId] → App Group)
  *
  * @property context Platform I/O handle ([PlatformContext])
  * @property environment Glance ∩ WidgetKit snapshot for this render
@@ -47,7 +48,8 @@ data class WarpWidgetSession(
  * ### iOS (Swift)
  * ```swift
  * WarpWidgetKitMappingKt.installWarpWidgetKitBridge()
- * let session: WarpWidgetSession = WarpWidgetKitEnv.from(context: context).makeSession()
+ * let env: WidgetEnvironment = WarpWidgetKitEnv.from(context: context).makeEnvironment()
+ * let session = WarpWidgetHost.shared.iosSession(widget: CounterWarpWidget.shared, environment: env)
  * WarpWidgetHost.shared.prepare(widget: CounterWarpWidget.shared, session: session)
  * let json = WarpWidgetHost.shared.composeJson(widget: CounterWarpWidget.shared, session: session)
  * ```
@@ -69,6 +71,17 @@ interface WarpWidget {
      * `WidgetCenter.reloadTimelines(ofKind:)` — keep in sync with WidgetKit `kind`.
      */
     val id: String
+
+    /**
+     * iOS App Group suite id (`group.*`) for this widget’s prefs / shared container.
+     *
+     * Single source of truth for [com.atriidev.warp_widget.api.PlatformContext] on iOS
+     * ([WarpWidgetHost.iosSession], Swift `makeSession(appGroupId:)`).
+     * Must match Xcode App Groups on the app + widget extension.
+     *
+     * Ignored on Android (Glance uses [android.content.Context]).
+     */
+    val iosGroupId: String
 
     /**
      * Declarative UI for the current [env] and prefs from [currentState].

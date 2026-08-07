@@ -124,9 +124,11 @@ object WarpWidgetAndroidRegistry {
             )
             return
         }
+        val platformContext = PlatformContext(context.applicationContext)
         val session = WarpWidgetSession(
-            context = PlatformContext(context.applicationContext),
+            context = platformContext,
             environment = makeWidgetEnvironment(
+                platformContext = platformContext,
                 family = WarpWidgetFamily.SYSTEM_SMALL,
                 isPreview = false,
             ),

@@ -7,24 +7,6 @@ import platform.Foundation.NSProcessInfo
 import kotlin.experimental.ExperimentalNativeApi
 
 
-@OptIn(ExperimentalForeignApi::class, ExperimentalNativeApi::class)
-internal actual val widgetPlatform: WidgetPlatform
-    get() {
-        val version = NSProcessInfo.processInfo.operatingSystemVersion
-        val isDebug = Platform.isDebugBinary
-        return version.useContents {
-            WidgetPlatform.Ios(
-                osVersion = this.majorVersion.toInt(),
-                exactVersion = IosVersion(
-                    major = this.majorVersion.toInt(),
-                    minor = this.minorVersion.toInt(),
-                    patch = this.patchVersion.toInt()
-                ),
-                debug = isDebug,
-                appInfo = getAppInfo()
-            )
-        }
-    }
 
 
 private fun getAppInfo(): AppInfo {
@@ -43,4 +25,22 @@ private fun getAppInfo(): AppInfo {
         versionName = versionName,
         appName = appName
     )
+}
+
+@OptIn(ExperimentalForeignApi::class, ExperimentalNativeApi::class)
+actual fun currentWidgetPlatform(platformContext: PlatformContext): WidgetPlatform {
+    val version = NSProcessInfo.processInfo.operatingSystemVersion
+    val isDebug = Platform.isDebugBinary
+    return version.useContents {
+        WidgetPlatform.Ios(
+            osVersion = this.majorVersion.toInt(),
+            exactVersion = IosVersion(
+                major = this.majorVersion.toInt(),
+                minor = this.minorVersion.toInt(),
+                patch = this.patchVersion.toInt()
+            ),
+            debug = isDebug,
+            appInfo = getAppInfo()
+        )
+    }
 }

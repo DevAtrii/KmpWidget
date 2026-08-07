@@ -19,7 +19,11 @@ struct CounterWidgetBundle: WidgetBundle {
             CounterWidgetClickSetup.install()
         }
         WarpWidgetKitMappingKt.installWarpWidgetKitBridge()
-        let session: WarpWidgetSession = WarpWidgetKitEnv.placeholder().makeSession()
+        let env: WidgetEnvironment = WarpWidgetKitEnv.placeholder().makeEnvironment()
+        let session = WarpWidgetHost.shared.iosSession(
+            widget: CounterWarpWidget.shared,
+            environment: env
+        )
         WarpWidgetHost.shared.prepare(widget: CounterWarpWidget.shared, session: session)
     }
 

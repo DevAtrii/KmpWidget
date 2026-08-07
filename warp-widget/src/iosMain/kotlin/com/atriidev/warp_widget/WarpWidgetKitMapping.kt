@@ -1,6 +1,5 @@
 package com.atriidev.warp_widget
 
-import com.atriidev.warp_widget.api.DEFAULT_IOS_APP_GROUP_ID
 import com.atriidev.warp_widget.api.PlatformContext
 import com.atriidev.warp_widget.api.WarpLayoutDirection
 import com.atriidev.warp_widget.api.WarpWidgetFamily
@@ -21,12 +20,17 @@ import warpWidgetKit.WarpWidgetKitShared
  * Lives in Shared/Kotlin — not in the SPM package — because Shared already depends on
  * `warpWidgetKit` via spm4Kmp (`import Shared` inside that package would cycle).
  *
- * Swift hosts should call [installWarpWidgetKitBridge] once, then
- * `WarpWidgetKitEnv.from(context:).makeSession()` (preferred) rather than invoking these
- * methods with dozens of scalars.
+ * Prefer [WarpWidgetHost.iosSession] with [WarpWidget.iosGroupId] as the App Group source
+ * of truth. [makeSession] still accepts an explicit [appGroupId] (pass `widget.iosGroupId`
+ * from Swift) for the Kit field-bag bridge.
  */
 object WarpWidgetKitMapping {
-    /** Flat WidgetKit fields → [WidgetEnvironment] (iOS platform extras included). */
+    /**
+     * Flat WidgetKit fields → [WidgetEnvironment] (iOS platform extras included).
+     *
+     * [appGroupId] is only needed for [currentWidgetPlatform] sampling; prefs use the
+     * session’s [PlatformContext] from [WarpWidget.iosGroupId] via [WarpWidgetHost.iosSession].
+     */
     fun makeEnvironment(
         family: String,
         widthDp: Float,
@@ -44,7 +48,9 @@ object WarpWidgetKitMapping {
         marginTrailing: Float,
         marginBottom: Float,
         showsContainerBackground: Boolean,
+        appGroupId: String = "",
     ): WidgetEnvironment = makeWidgetEnvironment(
+        platformContext = PlatformContext(appGroupId = appGroupId),
         family = family.toWarpFamily(),
         isPreview = isPreview,
         size = WarpWidgetSize(widthDp = widthDp, heightDp = heightDp),
@@ -70,7 +76,9 @@ object WarpWidgetKitMapping {
     /**
      * Flat WidgetKit fields → [WarpWidgetSession] with App Group [PlatformContext].
      *
-     * Prefer Swift `WarpWidgetKitEnv.makeSession()` after [installWarpWidgetKitBridge].
+     * Pass [appGroupId] from [WarpWidget.iosGroupId] (Swift:
+     * `makeSession(appGroupId: CounterWarpWidget.shared.iosGroupId)`).
+     * Prefer [WarpWidgetHost.iosSession] when you already have a [WarpWidget].
      */
     fun makeSession(
         family: String,
@@ -89,7 +97,7 @@ object WarpWidgetKitMapping {
         marginTrailing: Float,
         marginBottom: Float,
         showsContainerBackground: Boolean,
-        appGroupId: String = DEFAULT_IOS_APP_GROUP_ID,
+        appGroupId: String,
     ): WarpWidgetSession = WarpWidgetSession(
         context = PlatformContext(appGroupId = appGroupId),
         environment = makeEnvironment(
@@ -109,11 +117,18 @@ object WarpWidgetKitMapping {
             marginTrailing = marginTrailing,
             marginBottom = marginBottom,
             showsContainerBackground = showsContainerBackground,
+            appGroupId = appGroupId,
         ),
     )
 
-    internal fun makeSessionFromMap(fields: Map<*, *>): WarpWidgetSession =
-        makeSession(
+    internal fun makeSessionFromMap(fields: Map<*, *>): WarpWidgetSession {
+        val appGroupId = fields.str("appGroupId")
+        require(appGroupId.isNotBlank()) {
+            "makeSession requires appGroupId — pass WarpWidget.iosGroupId " +
+                "(e.g. makeSession(appGroupId: CounterWarpWidget.shared.iosGroupId)) " +
+                "or use WarpWidgetHost.iosSession(widget:environment:)."
+        }
+        return makeSession(
             family = fields.str("family", "systemSmall"),
             widthDp = fields.float("widthDp"),
             heightDp = fields.float("heightDp"),
@@ -130,8 +145,9 @@ object WarpWidgetKitMapping {
             marginTrailing = fields.float("marginTrailing"),
             marginBottom = fields.float("marginBottom"),
             showsContainerBackground = fields.bool("showsContainerBackground", true),
-            appGroupId = fields.str("appGroupId", DEFAULT_IOS_APP_GROUP_ID),
+            appGroupId = appGroupId,
         )
+    }
 
     internal fun makeEnvironmentFromMap(fields: Map<*, *>): WidgetEnvironment =
         makeEnvironment(
@@ -151,6 +167,7 @@ object WarpWidgetKitMapping {
             marginTrailing = fields.float("marginTrailing"),
             marginBottom = fields.float("marginBottom"),
             showsContainerBackground = fields.bool("showsContainerBackground", true),
+            appGroupId = fields.str("appGroupId"),
         )
 }
 

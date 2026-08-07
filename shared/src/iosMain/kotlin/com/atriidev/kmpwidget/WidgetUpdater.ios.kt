@@ -1,7 +1,6 @@
 package com.atriidev.kmpwidget
 
-import com.atriidev.warp_widget.api.DEFAULT_IOS_APP_GROUP_ID
-import com.atriidev.warp_widget.api.PlatformContext
+import com.atriidev.warp_widget.api.platformContext
 import com.atriidev.warp_widget.updateWarpWidgetState
 
 /**
@@ -10,7 +9,7 @@ import com.atriidev.warp_widget.updateWarpWidgetState
 actual class WidgetUpdater {
     actual suspend fun update(counter: Int) {
         updateWarpWidgetState(
-            PlatformContext(appGroupId = DEFAULT_IOS_APP_GROUP_ID),
+            CounterWarpWidget.platformContext(),
             CounterWarpWidget,
         ) {
             this[CounterKeys.Count] = counter

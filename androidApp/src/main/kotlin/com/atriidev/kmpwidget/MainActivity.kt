@@ -12,8 +12,6 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-
-
         setContent {
             val context = LocalContext.current
             val platformContext = remember(context) {

@@ -7,10 +7,11 @@ import WidgetKit
 ///
 /// Map to Shared types with generics (Kotlin bridge auto-installed on prepare):
 /// ```swift
-/// let session: WarpWidgetSession = WarpWidgetKitEnv.from(context: context).makeSession()
-/// let env: WidgetEnvironment = kitEnv.makeEnvironment()
+/// let env: WidgetEnvironment = WarpWidgetKitEnv.from(context: context).makeEnvironment()
+/// let session = WarpWidgetHost.shared.iosSession(widget: myWidget, environment: env)
+/// // or: kitEnv.makeSession(appGroupId: myWidget.iosGroupId)
 /// ```
-/// See `WarpWidgetKitShared` + Kotlin `WarpWidgetKitMapping`.
+/// See `WarpWidgetKitShared` + Kotlin `WarpWidgetKitMapping`. App Group = `WarpWidget.iosGroupId`.
 public struct WarpWidgetKitEnv: Sendable, Equatable {
     public enum Family: String, Sendable {
         case systemSmall
