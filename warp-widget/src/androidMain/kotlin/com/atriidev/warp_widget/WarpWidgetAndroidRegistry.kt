@@ -35,7 +35,7 @@ private const val TAG = "WarpWidgetAndroidRegistry"
  */
 object WarpWidgetAndroidRegistry {
     private data class Entry(
-        val widget: WarpWidget<*>?,
+        val widget: WarpWidgetHostApi?,
         val factory: () -> GlanceAppWidget,
     )
 
@@ -52,7 +52,7 @@ object WarpWidgetAndroidRegistry {
      */
     fun register(
         widgetId: String,
-        widget: WarpWidget<*>,
+        widget: WarpWidgetHostApi,
         factory: () -> GlanceAppWidget,
     ) {
         entries[widgetId] = Entry(widget = widget, factory = factory)

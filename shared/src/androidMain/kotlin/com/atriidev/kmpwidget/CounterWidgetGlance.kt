@@ -16,5 +16,8 @@ class CounterGlanceAppWidget : WarpGlanceWidget() {
 
     override fun assets(): List<WarpDrawableAsset> = listOf(
         WarpDrawableAsset(CounterAssets.NumberCircle, R.drawable.ic_number_circle),
+        WarpDrawableAsset(CounterAssets.Checklist, R.drawable.ic_checklist),
+        WarpDrawableAsset(CounterAssets.Circle, R.drawable.ic_circle),
+        WarpDrawableAsset(CounterAssets.CheckCircle, R.drawable.ic_check_circle),
     )
 }

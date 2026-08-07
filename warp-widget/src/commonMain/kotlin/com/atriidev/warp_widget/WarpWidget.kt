@@ -27,6 +27,22 @@ data class WarpWidgetSession(
 )
 
 /**
+ * Type-erased widget surface for platform hosts.
+ *
+ * Swift cannot accept Kotlin `WarpWidget<*>` (`WarpWidget<AnyObject>` is invariant).
+ * Host APIs take this interface; app widgets still extend [WarpWidget].
+ */
+interface WarpWidgetHostApi {
+    val id: String
+    val iosGroupId: String
+
+    fun clickHandlers(session: WarpWidgetSession): List<WarpClickHandler<*>>
+
+    @Composable
+    fun ComposeContent(env: WidgetEnvironment, preferences: WarpWidgetPreferences)
+}
+
+/**
  * Shared widget definition for Glance and WidgetKit — typed serializable [S] state.
  *
  * State is JSON-encoded and stored under prefs key = [id].
@@ -52,19 +68,19 @@ data class WarpWidgetSession(
  */
 abstract class WarpWidget<S : Any>(
     private val stateSerializer: KSerializer<S>,
-) {
+) : WarpWidgetHostApi {
     /**
      * Stable widget kind id.
      *
      * Prefs JSON key, timeline kind, Glance registry, WidgetKit `kind`.
      */
-    abstract val id: String
+    abstract override val id: String
 
     /**
      * iOS App Group suite id (`group.*`).
      * Ignored on Android.
      */
-    abstract val iosGroupId: String
+    abstract override val iosGroupId: String
 
     /** Used when prefs are empty or decode fails. */
     abstract val defaultState: S
@@ -80,7 +96,7 @@ abstract class WarpWidget<S : Any>(
      *
      * Prefer [updateWarpWidgetState] with a `(S) -> S` transform.
      */
-    open fun clickHandlers(session: WarpWidgetSession): List<WarpClickHandler<*>> = emptyList()
+    override fun clickHandlers(session: WarpWidgetSession): List<WarpClickHandler<*>> = emptyList()
 
     /** Decode [S] from prefs (key = [id]); falls back to [defaultState]. */
     fun decodeState(preferences: WarpWidgetPreferences): S {
@@ -97,7 +113,7 @@ abstract class WarpWidget<S : Any>(
      * Host entry: resolve [state] from [preferences] and call [Content].
      */
     @Composable
-    fun ComposeContent(env: WidgetEnvironment, preferences: WarpWidgetPreferences) {
+    final override fun ComposeContent(env: WidgetEnvironment, preferences: WarpWidgetPreferences) {
         Content(env, decodeState(preferences))
     }
 
@@ -122,24 +138,24 @@ data class WarpWidgetSnapshot(
 )
 
 /**
- * Platform consumption surface for a [WarpWidget].
+ * Platform consumption surface for a [WarpWidgetHostApi].
  */
 object WarpWidgetHost {
-    private var lastWidget: WarpWidget<*>? = null
+    private var lastWidget: WarpWidgetHostApi? = null
     private var lastSession: WarpWidgetSession? = null
 
     /**
      * Resolve prefs for a compose pass: [WarpWidgetSession.preferences] if set, else
      * [WarpWidgetStateStore.read].
      */
-    fun preferences(widget: WarpWidget<*>, session: WarpWidgetSession): WarpWidgetPreferences =
+    fun preferences(widget: WarpWidgetHostApi, session: WarpWidgetSession): WarpWidgetPreferences =
         session.preferences
             ?: runBlocking { WarpWidgetStateStore.read(session.context, widget.id) }
 
     /**
-     * Run [WarpWidget.ComposeContent] under [ProvideWarpWidgetPreferences] → [WarpNode].
+     * Run [WarpWidgetHostApi.ComposeContent] under [ProvideWarpWidgetPreferences] → [WarpNode].
      */
-    fun compose(widget: WarpWidget<*>, session: WarpWidgetSession): WarpNode {
+    fun compose(widget: WarpWidgetHostApi, session: WarpWidgetSession): WarpNode {
         val prefs = preferences(widget, session)
         return composeWarp {
             ProvideWarpWidgetPreferences(prefs) {
@@ -149,15 +165,15 @@ object WarpWidgetHost {
     }
 
     /** [compose] then serialize to JSON for WidgetKit. */
-    fun composeJson(widget: WarpWidget<*>, session: WarpWidgetSession): String =
+    fun composeJson(widget: WarpWidgetHostApi, session: WarpWidgetSession): String =
         compose(widget, session).toJson()
 
     fun handlers(
-        widget: WarpWidget<*>,
+        widget: WarpWidgetHostApi,
         session: WarpWidgetSession,
     ): List<WarpClickHandler<*>> = widget.clickHandlers(session)
 
-    fun prepare(widget: WarpWidget<*>, session: WarpWidgetSession) {
+    fun prepare(widget: WarpWidgetHostApi, session: WarpWidgetSession) {
         lastWidget = widget
         lastSession = session
         platformRegisterClickHandlers(handlers(widget, session))
@@ -171,7 +187,7 @@ object WarpWidgetHost {
     }
 
     fun dispatchClick(
-        widget: WarpWidget<*>,
+        widget: WarpWidgetHostApi,
         session: WarpWidgetSession,
         actionId: String,
         parametersJson: String,
@@ -185,7 +201,7 @@ object WarpWidgetHost {
         platformDispatchClick(actionId, parametersJson)
     }
 
-    fun snapshot(widget: WarpWidget<*>, session: WarpWidgetSession): WarpWidgetSnapshot {
+    fun snapshot(widget: WarpWidgetHostApi, session: WarpWidgetSession): WarpWidgetSnapshot {
         val prefs = preferences(widget, session)
         return WarpWidgetSnapshot(
             widgetId = widget.id,

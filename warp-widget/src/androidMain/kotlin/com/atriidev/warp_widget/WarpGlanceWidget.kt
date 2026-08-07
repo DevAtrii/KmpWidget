@@ -30,7 +30,7 @@ import com.atriidev.warp_ui.glance.WarpDrawableAsset
  */
 abstract class WarpGlanceWidget : GlanceAppWidget() {
     /** Shared WARP definition composed into this Glance surface. */
-    abstract val widget: WarpWidget<*>
+    abstract val widget: WarpWidgetHostApi
 
     /**
      * Optional bundled drawables for this widget.

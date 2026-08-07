@@ -58,10 +58,10 @@ suspend fun updateWarpWidgetPreferences(
     WarpWidgetStateStore.reload(context, widgetId)
 }
 
-/** [updateWarpWidgetPreferences] using [WarpWidget.id]. */
+/** [updateWarpWidgetPreferences] using [WarpWidgetHostApi.id]. */
 suspend fun updateWarpWidgetPreferences(
     context: PlatformContext,
-    widget: WarpWidget<*>,
+    widget: WarpWidgetHostApi,
     transform: MutableWarpWidgetPreferences.() -> Unit,
 ) = updateWarpWidgetPreferences(context, widget.id, transform)
 
@@ -71,8 +71,8 @@ suspend fun reloadWarpWidget(
     widgetId: String,
 ) = WarpWidgetStateStore.reload(context, widgetId)
 
-/** [reloadWarpWidget] using [WarpWidget.id]. */
+/** [reloadWarpWidget] using [WarpWidgetHostApi.id]. */
 suspend fun reloadWarpWidget(
     context: PlatformContext,
-    widget: WarpWidget<*>,
+    widget: WarpWidgetHostApi,
 ) = reloadWarpWidget(context, widget.id)

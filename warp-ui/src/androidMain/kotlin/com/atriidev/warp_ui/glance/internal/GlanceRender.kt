@@ -39,6 +39,9 @@ import com.atriidev.warp_runtime.nodes.style.WarpProgressIndicatorStyle
 import com.atriidev.warp_runtime.nodes.style.WarpTextAlign
 import com.atriidev.warp_ui.glance.WarpAndroidAssets
 
+/** Glance / RemoteViews: max direct children per Column or Row. */
+private const val GlanceMaxChildrenPerContainer = 10
+
 @PublishedApi
 @Composable
 internal fun RenderWarpNode(
@@ -46,25 +49,8 @@ internal fun RenderWarpNode(
     clickAction: (ClickAction) -> Action,
 ) {
     when (node) {
-        is WarpColumn -> Column(
-            modifier = node.modifier.toGlanceModifier(clickAction),
-            verticalAlignment = node.verticalAlignment.toGlance(),
-            horizontalAlignment = node.horizontalAlignment.toGlance(),
-        ) {
-            node.children.forEach { child ->
-                RenderScopedChild(child, clickAction)
-            }
-        }
-
-        is WarpRow -> Row(
-            modifier = node.modifier.toGlanceModifier(clickAction),
-            horizontalAlignment = node.horizontalAlignment.toGlance(),
-            verticalAlignment = node.verticalAlignment.toGlance(),
-        ) {
-            node.children.forEach { child ->
-                RenderScopedChild(child, clickAction)
-            }
-        }
+        is WarpColumn -> RenderColumn(node, clickAction)
+        is WarpRow -> RenderRow(node, clickAction)
 
         is WarpBox -> Box(
             modifier = node.modifier.toGlanceModifier(clickAction),
@@ -81,6 +67,75 @@ internal fun RenderWarpNode(
         is WarpDivider -> RenderDivider(node, clickAction)
         is WarpProgressIndicator -> RenderProgressIndicator(node, clickAction)
         is WarpImage -> RenderImage(node, clickAction)
+    }
+}
+
+@Composable
+private fun RenderColumn(
+    node: WarpColumn,
+    clickAction: (ClickAction) -> Action,
+    extraModifier: GlanceModifier = GlanceModifier,
+) {
+    val modifier = node.modifier.toGlanceModifier(clickAction).then(extraModifier)
+    val vAlign = node.verticalAlignment.toGlance()
+    val hAlign = node.horizontalAlignment.toGlance()
+    val chunks = node.children.chunked(GlanceMaxChildrenPerContainer)
+    Column(
+        modifier = modifier,
+        verticalAlignment = vAlign,
+        horizontalAlignment = hAlign,
+    ) {
+        if (chunks.size <= 1) {
+            node.children.forEach { child ->
+                RenderScopedChild(child, clickAction)
+            }
+        } else {
+            // Nest chunks so each Glance Column stays ≤ 10 children.
+            chunks.forEach { chunk ->
+                Column(
+                    verticalAlignment = vAlign,
+                    horizontalAlignment = hAlign,
+                ) {
+                    chunk.forEach { child ->
+                        RenderScopedChild(child, clickAction)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RenderRow(
+    node: WarpRow,
+    clickAction: (ClickAction) -> Action,
+    extraModifier: GlanceModifier = GlanceModifier,
+) {
+    val modifier = node.modifier.toGlanceModifier(clickAction).then(extraModifier)
+    val hAlign = node.horizontalAlignment.toGlance()
+    val vAlign = node.verticalAlignment.toGlance()
+    val chunks = node.children.chunked(GlanceMaxChildrenPerContainer)
+    Row(
+        modifier = modifier,
+        horizontalAlignment = hAlign,
+        verticalAlignment = vAlign,
+    ) {
+        if (chunks.size <= 1) {
+            node.children.forEach { child ->
+                RenderScopedChild(child, clickAction)
+            }
+        } else {
+            chunks.forEach { chunk ->
+                Row(
+                    horizontalAlignment = hAlign,
+                    verticalAlignment = vAlign,
+                ) {
+                    chunk.forEach { child ->
+                        RenderScopedChild(child, clickAction)
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -285,25 +340,8 @@ private fun RenderNodeWithExtra(
     extra: GlanceModifier,
 ) {
     when (node) {
-        is WarpColumn -> Column(
-            modifier = node.modifier.toGlanceModifier(clickAction).then(extra),
-            verticalAlignment = node.verticalAlignment.toGlance(),
-            horizontalAlignment = node.horizontalAlignment.toGlance(),
-        ) {
-            node.children.forEach { child ->
-                RenderScopedChild(child, clickAction)
-            }
-        }
-
-        is WarpRow -> Row(
-            modifier = node.modifier.toGlanceModifier(clickAction).then(extra),
-            horizontalAlignment = node.horizontalAlignment.toGlance(),
-            verticalAlignment = node.verticalAlignment.toGlance(),
-        ) {
-            node.children.forEach { child ->
-                RenderScopedChild(child, clickAction)
-            }
-        }
+        is WarpColumn -> RenderColumn(node, clickAction, extra)
+        is WarpRow -> RenderRow(node, clickAction, extra)
 
         is WarpBox -> Box(
             modifier = node.modifier.toGlanceModifier(clickAction).then(extra),
