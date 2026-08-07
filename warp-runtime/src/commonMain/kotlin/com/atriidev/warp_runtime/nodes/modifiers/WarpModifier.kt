@@ -8,6 +8,7 @@
  */
 package com.atriidev.warp_runtime.nodes.modifiers
 
+import androidx.compose.runtime.Stable
 import com.atriidev.warp_runtime.nodes.actions.ClickAction
 import com.atriidev.warp_runtime.nodes.actions.WarpAction
 import com.atriidev.warp_runtime.nodes.actions.WarpActionId
@@ -20,6 +21,7 @@ import kotlinx.serialization.Serializable
  * JSON preserves order in `elements[]`.
  */
 @Serializable
+@Stable
 data class WarpModifier(
     val elements: List<WarpModifierElement> = emptyList(),
 ) {

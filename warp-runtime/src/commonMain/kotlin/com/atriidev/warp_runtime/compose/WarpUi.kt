@@ -12,13 +12,20 @@ import com.atriidev.warp_runtime.nodes.actions.ClickAction
 import com.atriidev.warp_runtime.nodes.actions.WarpAction
 import com.atriidev.warp_runtime.nodes.actions.WarpActionId
 import com.atriidev.warp_runtime.nodes.actions.actionClick
+import com.atriidev.warp_runtime.compose.internal.WarpBoxComposable
 import com.atriidev.warp_runtime.compose.internal.WarpButtonComposable
 import com.atriidev.warp_runtime.compose.internal.WarpColumnComposable
+import com.atriidev.warp_runtime.compose.internal.WarpDividerComposable
+import com.atriidev.warp_runtime.compose.internal.WarpProgressIndicatorComposable
 import com.atriidev.warp_runtime.compose.internal.WarpRowComposable
+import com.atriidev.warp_runtime.compose.internal.WarpSpacerComposable
 import com.atriidev.warp_runtime.compose.internal.WarpTextComposable
+import com.atriidev.warp_runtime.nodes.modifiers.WarpColor
 import com.atriidev.warp_runtime.nodes.modifiers.WarpModifier
 import com.atriidev.warp_runtime.nodes.style.WarpButtonColors
+import com.atriidev.warp_runtime.nodes.style.WarpContentAlignment
 import com.atriidev.warp_runtime.nodes.style.WarpHorizontalAlignment
+import com.atriidev.warp_runtime.nodes.style.WarpProgressIndicatorStyle
 import com.atriidev.warp_runtime.nodes.style.WarpTextStyle
 import com.atriidev.warp_runtime.nodes.style.WarpVerticalAlignment
 
@@ -155,5 +162,79 @@ fun WarpButton(
         style = style,
         colors = colors,
         maxLines = maxLines,
+    )
+}
+
+/**
+ * Stacks children — Glance `Box`-shaped API.
+ *
+ * Maps to [com.atriidev.warp_runtime.nodes.WarpBox].
+ */
+@Composable
+fun WarpBox(
+    modifier: WarpModifier = WarpModifier(),
+    contentAlignment: WarpContentAlignment = WarpContentAlignment.TopStart,
+    content: @Composable () -> Unit,
+) {
+    WarpBoxComposable(
+        modifier = modifier,
+        contentAlignment = contentAlignment,
+        content = content,
+    )
+}
+
+/**
+ * Empty space — Glance `Spacer`-shaped API.
+ *
+ * Size via [modifier] (`width` / `height` / `size` / `weight`).
+ *
+ * Maps to [com.atriidev.warp_runtime.nodes.WarpSpacer].
+ */
+@Composable
+fun WarpSpacer(
+    modifier: WarpModifier = WarpModifier(),
+) {
+    WarpSpacerComposable(modifier = modifier)
+}
+
+/**
+ * Horizontal separator (Material `Divider`-shaped).
+ *
+ * Maps to [com.atriidev.warp_runtime.nodes.WarpDivider].
+ */
+@Composable
+fun WarpDivider(
+    modifier: WarpModifier = WarpModifier(),
+    thickness: Int = 1,
+    color: WarpColor? = null,
+) {
+    WarpDividerComposable(
+        modifier = modifier,
+        thickness = thickness,
+        color = color,
+    )
+}
+
+/**
+ * Progress indicator — Glance circular / linear API.
+ *
+ * Maps to [com.atriidev.warp_runtime.nodes.WarpProgressIndicator].
+ *
+ * @param progress `0f..1f` determinate; `null` indeterminate.
+ */
+@Composable
+fun WarpProgressIndicator(
+    modifier: WarpModifier = WarpModifier(),
+    style: WarpProgressIndicatorStyle = WarpProgressIndicatorStyle.Circular,
+    progress: Float? = null,
+    color: WarpColor? = null,
+    backgroundColor: WarpColor? = null,
+) {
+    WarpProgressIndicatorComposable(
+        modifier = modifier,
+        style = style,
+        progress = progress,
+        color = color,
+        backgroundColor = backgroundColor,
     )
 }

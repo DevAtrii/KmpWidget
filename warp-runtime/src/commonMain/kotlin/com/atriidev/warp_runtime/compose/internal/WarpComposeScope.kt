@@ -10,10 +10,13 @@ package com.atriidev.warp_runtime.compose.internal
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
+import com.atriidev.warp_runtime.nodes.modifiers.WarpColor
 import com.atriidev.warp_runtime.nodes.modifiers.WarpModifier
 import com.atriidev.warp_runtime.nodes.actions.WarpAction
 import com.atriidev.warp_runtime.nodes.style.WarpButtonColors
+import com.atriidev.warp_runtime.nodes.style.WarpContentAlignment
 import com.atriidev.warp_runtime.nodes.style.WarpHorizontalAlignment
+import com.atriidev.warp_runtime.nodes.style.WarpProgressIndicatorStyle
 import com.atriidev.warp_runtime.nodes.style.WarpTextStyle
 import com.atriidev.warp_runtime.nodes.style.WarpVerticalAlignment
 
@@ -159,6 +162,60 @@ internal fun WarpButtonComposable(
             style = style,
             colors = colors,
             maxLines = maxLines,
+        ),
+    )
+}
+
+@Composable
+internal fun WarpBoxComposable(
+    modifier: WarpModifier,
+    contentAlignment: WarpContentAlignment,
+    content: @Composable () -> Unit,
+) {
+    WarpContainer(
+        WarpBoxHolder(
+            modifier = modifier,
+            contentAlignment = contentAlignment,
+        ),
+        content,
+    )
+}
+
+@Composable
+internal fun WarpSpacerComposable(modifier: WarpModifier) {
+    WarpLeaf(WarpSpacerHolder(modifier = modifier))
+}
+
+@Composable
+internal fun WarpDividerComposable(
+    modifier: WarpModifier,
+    thickness: Int,
+    color: WarpColor?,
+) {
+    WarpLeaf(
+        WarpDividerHolder(
+            modifier = modifier,
+            thickness = thickness,
+            color = color,
+        ),
+    )
+}
+
+@Composable
+internal fun WarpProgressIndicatorComposable(
+    modifier: WarpModifier,
+    style: WarpProgressIndicatorStyle,
+    progress: Float?,
+    color: WarpColor?,
+    backgroundColor: WarpColor?,
+) {
+    WarpLeaf(
+        WarpProgressIndicatorHolder(
+            modifier = modifier,
+            style = style,
+            progress = progress,
+            color = color,
+            backgroundColor = backgroundColor,
         ),
     )
 }

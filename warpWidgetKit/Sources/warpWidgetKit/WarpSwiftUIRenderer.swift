@@ -99,7 +99,7 @@ private struct WarpNodeView: View {
     private var content: some View {
         switch node.kind {
         case .column:
-            // Cross-axis only (Glance Column.horizontalAlignment). Main-axis pack via style fill + alignment.
+            // Cross-axis only (Glance Column.horizontalAlignment).
             VStack(alignment: node.horizontalAlignment.stackAlignment, spacing: 0) {
                 ForEach(Array(node.children.enumerated()), id: \.offset) { _, child in
                     WarpNodeView(node: child, useIntents: useIntents, widgetId: widgetId)
@@ -107,9 +107,14 @@ private struct WarpNodeView: View {
             }
 
         case .row:
-            // Cross-axis only (Glance Row.verticalAlignment). Do NOT center the whole HStack —
-            // that made [-][count][+] look centered when weight wasn't a true LinearLayout weight.
             HStack(alignment: node.verticalAlignment.stackAlignment, spacing: 0) {
+                ForEach(Array(node.children.enumerated()), id: \.offset) { _, child in
+                    WarpNodeView(node: child, useIntents: useIntents, widgetId: widgetId)
+                }
+            }
+
+        case .box:
+            ZStack(alignment: node.contentAlignment) {
                 ForEach(Array(node.children.enumerated()), id: \.offset) { _, child in
                     WarpNodeView(node: child, useIntents: useIntents, widgetId: widgetId)
                 }
@@ -122,6 +127,27 @@ private struct WarpNodeView: View {
         case .button:
             Text(node.text ?? "")
                 .modifier(WarpTextArgsModifier(args: node.textArgs))
+
+        case .spacer:
+            Color.clear
+                .frame(width: 0, height: 0) // size comes from WarpStyleModifier width/height/size
+
+        case .divider:
+            Rectangle()
+                .fill(node.dividerColor ?? Color.secondary.opacity(0.35))
+                .frame(height: CGFloat(node.dividerThickness))
+                .frame(maxWidth: .infinity)
+
+        case .progressIndicator:
+            if node.progressStyle == .linear {
+                ProgressView(value: node.progress.map { Double($0) })
+                    .progressViewStyle(.linear)
+                    .tint(node.progressColor)
+            } else {
+                ProgressView()
+                    .progressViewStyle(.circular)
+                    .tint(node.progressColor)
+            }
         }
     }
 }
@@ -307,8 +333,17 @@ private struct WarpIntentPlainButton<Label: View>: View {
 enum WarpNodeKind {
     case column
     case row
+    case box
     case text
     case button
+    case spacer
+    case divider
+    case progressIndicator
+}
+
+enum WarpParsedProgressStyle {
+    case circular
+    case linear
 }
 
 enum WarpParsedVisibility {
@@ -404,6 +439,13 @@ struct WarpParsedNode {
     let textArgs: WarpParsedTextArgs
     let horizontalAlignment: WarpParsedHorizontalAlignment
     let verticalAlignment: WarpParsedVerticalAlignment
+    /// Glance Box `contentAlignment`.
+    let contentAlignment: Alignment
+    let dividerThickness: Int
+    let dividerColor: Color?
+    let progressStyle: WarpParsedProgressStyle
+    let progress: Float?
+    let progressColor: Color?
     let children: [WarpParsedNode]
 
     /// Modifier clickable first, then node onClick.
@@ -416,6 +458,46 @@ struct WarpParsedNode {
             return modifierParametersJson
         }
         return nodeParametersJson
+    }
+
+    static func leafDefaults(
+        kind: WarpNodeKind,
+        text: String? = nil,
+        nodeActionId: String? = nil,
+        nodeParametersJson: String = "{}",
+        modifierActionId: String? = nil,
+        modifierParametersJson: String = "{}",
+        style: WarpParsedStyle,
+        enabled: Bool = true,
+        textArgs: WarpParsedTextArgs = WarpParsedTextArgs(),
+        contentAlignment: Alignment = .topLeading,
+        dividerThickness: Int = 1,
+        dividerColor: Color? = nil,
+        progressStyle: WarpParsedProgressStyle = .circular,
+        progress: Float? = nil,
+        progressColor: Color? = nil,
+        children: [WarpParsedNode] = []
+    ) -> WarpParsedNode {
+        WarpParsedNode(
+            kind: kind,
+            text: text,
+            nodeActionId: nodeActionId,
+            nodeParametersJson: nodeParametersJson,
+            modifierActionId: modifierActionId,
+            modifierParametersJson: modifierParametersJson,
+            style: style,
+            enabled: enabled,
+            textArgs: textArgs,
+            horizontalAlignment: .start,
+            verticalAlignment: .top,
+            contentAlignment: contentAlignment,
+            dividerThickness: dividerThickness,
+            dividerColor: dividerColor,
+            progressStyle: progressStyle,
+            progress: progress,
+            progressColor: progressColor,
+            children: children
+        )
     }
 }
 
@@ -455,6 +537,12 @@ enum WarpNodeParser {
                 textArgs: WarpParsedTextArgs(),
                 horizontalAlignment: horizontalAlignment,
                 verticalAlignment: verticalAlignment,
+                contentAlignment: .topLeading,
+                dividerThickness: 1,
+                dividerColor: nil,
+                progressStyle: .circular,
+                progress: nil,
+                progressColor: nil,
                 children: children
             )
         case "row":
@@ -470,6 +558,21 @@ enum WarpNodeParser {
                 textArgs: WarpParsedTextArgs(),
                 horizontalAlignment: horizontalAlignment,
                 verticalAlignment: verticalAlignment,
+                contentAlignment: .topLeading,
+                dividerThickness: 1,
+                dividerColor: nil,
+                progressStyle: .circular,
+                progress: nil,
+                progressColor: nil,
+                children: children
+            )
+        case "box":
+            return WarpParsedNode.leafDefaults(
+                kind: .box,
+                modifierActionId: modActionId,
+                modifierParametersJson: modParams,
+                style: style,
+                contentAlignment: parseContentAlignment(object["contentAlignment"] as? String),
                 children: children
             )
         case "text":
@@ -477,19 +580,13 @@ enum WarpNodeParser {
             if let maxLines = object["maxLines"] as? Int, maxLines != Int.max {
                 textArgs.maxLines = maxLines
             }
-            return WarpParsedNode(
+            return WarpParsedNode.leafDefaults(
                 kind: .text,
                 text: object["text"] as? String ?? "",
-                nodeActionId: nil,
-                nodeParametersJson: "{}",
                 modifierActionId: modActionId,
                 modifierParametersJson: modParams,
                 style: style,
-                enabled: true,
-                textArgs: textArgs,
-                horizontalAlignment: .start,
-                verticalAlignment: .top,
-                children: []
+                textArgs: textArgs
             )
         case "button":
             let click = object["onClick"] as? [String: Any]
@@ -498,7 +595,6 @@ enum WarpNodeParser {
             let parametersJson = jsonString(parameters) ?? "{}"
             var buttonStyle = style
             let colors = object["colors"] as? [String: Any]
-            // ButtonColors.background → chrome fill when modifier has no background.
             if buttonStyle.background == nil,
                let bg = parseColorValue(colors?["backgroundColor"]) {
                 buttonStyle.background = bg
@@ -510,7 +606,7 @@ enum WarpNodeParser {
             if let maxLines = object["maxLines"] as? Int, maxLines != Int.max {
                 textArgs.maxLines = maxLines
             }
-            return WarpParsedNode(
+            return WarpParsedNode.leafDefaults(
                 kind: .button,
                 text: object["text"] as? String ?? "",
                 nodeActionId: actionId,
@@ -519,13 +615,57 @@ enum WarpNodeParser {
                 modifierParametersJson: modParams,
                 style: buttonStyle,
                 enabled: object["enabled"] as? Bool ?? true,
-                textArgs: textArgs,
-                horizontalAlignment: .start,
-                verticalAlignment: .top,
-                children: []
+                textArgs: textArgs
+            )
+        case "spacer":
+            return WarpParsedNode.leafDefaults(
+                kind: .spacer,
+                modifierActionId: modActionId,
+                modifierParametersJson: modParams,
+                style: style
+            )
+        case "divider":
+            return WarpParsedNode.leafDefaults(
+                kind: .divider,
+                modifierActionId: modActionId,
+                modifierParametersJson: modParams,
+                style: style,
+                dividerThickness: object["thickness"] as? Int ?? 1,
+                dividerColor: parseColorValue(object["color"])
+            )
+        case "progress_indicator":
+            let progressStyle: WarpParsedProgressStyle =
+                (object["style"] as? String) == "linear" ? .linear : .circular
+            let progress: Float? = {
+                if let p = object["progress"] as? Double { return Float(p) }
+                if let p = object["progress"] as? Int { return Float(p) }
+                return nil
+            }()
+            return WarpParsedNode.leafDefaults(
+                kind: .progressIndicator,
+                modifierActionId: modActionId,
+                modifierParametersJson: modParams,
+                style: style,
+                progressStyle: progressStyle,
+                progress: progress,
+                progressColor: parseColorValue(object["color"])
             )
         default:
             return nil
+        }
+    }
+
+    private static func parseContentAlignment(_ raw: String?) -> Alignment {
+        switch raw {
+        case "topCenter": return .top
+        case "topEnd": return .topTrailing
+        case "centerStart": return .leading
+        case "center": return .center
+        case "centerEnd": return .trailing
+        case "bottomStart": return .bottomLeading
+        case "bottomCenter": return .bottom
+        case "bottomEnd": return .bottomTrailing
+        default: return .topLeading
         }
     }
 

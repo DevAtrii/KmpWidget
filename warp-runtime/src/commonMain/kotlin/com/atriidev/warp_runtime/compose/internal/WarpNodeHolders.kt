@@ -6,15 +6,22 @@
  */
 package com.atriidev.warp_runtime.compose.internal
 
+import com.atriidev.warp_runtime.nodes.WarpBox
 import com.atriidev.warp_runtime.nodes.WarpButton
 import com.atriidev.warp_runtime.nodes.actions.WarpAction
 import com.atriidev.warp_runtime.nodes.WarpColumn
+import com.atriidev.warp_runtime.nodes.WarpDivider
 import com.atriidev.warp_runtime.nodes.WarpNode
+import com.atriidev.warp_runtime.nodes.WarpProgressIndicator
 import com.atriidev.warp_runtime.nodes.WarpRow
+import com.atriidev.warp_runtime.nodes.WarpSpacer
 import com.atriidev.warp_runtime.nodes.WarpText
+import com.atriidev.warp_runtime.nodes.modifiers.WarpColor
 import com.atriidev.warp_runtime.nodes.modifiers.WarpModifier
 import com.atriidev.warp_runtime.nodes.style.WarpButtonColors
+import com.atriidev.warp_runtime.nodes.style.WarpContentAlignment
 import com.atriidev.warp_runtime.nodes.style.WarpHorizontalAlignment
+import com.atriidev.warp_runtime.nodes.style.WarpProgressIndicatorStyle
 import com.atriidev.warp_runtime.nodes.style.WarpTextStyle
 import com.atriidev.warp_runtime.nodes.style.WarpVerticalAlignment
 
@@ -117,6 +124,52 @@ internal class WarpButtonHolder(
         style = style,
         colors = colors,
         maxLines = maxLines,
+    )
+}
+
+internal class WarpBoxHolder(
+    var modifier: WarpModifier = WarpModifier(),
+    var contentAlignment: WarpContentAlignment = WarpContentAlignment.TopStart,
+    override val children: MutableList<Any> = mutableListOf(),
+) : WarpContainerNodeHolder {
+    override fun toWarpNode(): WarpNode = WarpBox(
+        modifier = modifier,
+        contentAlignment = contentAlignment,
+        children = children.map { (it as WarpNodeHolder).toWarpNode() },
+    )
+}
+
+internal class WarpSpacerHolder(
+    var modifier: WarpModifier = WarpModifier(),
+) : WarpNodeHolder {
+    override fun toWarpNode(): WarpNode = WarpSpacer(modifier = modifier)
+}
+
+internal class WarpDividerHolder(
+    var modifier: WarpModifier = WarpModifier(),
+    var thickness: Int = 1,
+    var color: WarpColor? = null,
+) : WarpNodeHolder {
+    override fun toWarpNode(): WarpNode = WarpDivider(
+        modifier = modifier,
+        thickness = thickness,
+        color = color,
+    )
+}
+
+internal class WarpProgressIndicatorHolder(
+    var modifier: WarpModifier = WarpModifier(),
+    var style: WarpProgressIndicatorStyle = WarpProgressIndicatorStyle.Circular,
+    var progress: Float? = null,
+    var color: WarpColor? = null,
+    var backgroundColor: WarpColor? = null,
+) : WarpNodeHolder {
+    override fun toWarpNode(): WarpNode = WarpProgressIndicator(
+        modifier = modifier,
+        style = style,
+        progress = progress,
+        color = color,
+        backgroundColor = backgroundColor,
     )
 }
 

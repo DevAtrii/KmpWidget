@@ -1,22 +1,37 @@
 package com.atriidev.warp_ui.glance.internal
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import androidx.glance.Button
 import androidx.glance.GlanceModifier
 import androidx.glance.action.Action
+import androidx.glance.appwidget.CircularProgressIndicator
+import androidx.glance.appwidget.LinearProgressIndicator
+import androidx.glance.appwidget.ProgressIndicatorDefaults
+import androidx.glance.background
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
 import androidx.glance.layout.Column
 import androidx.glance.layout.ColumnScope
 import androidx.glance.layout.Row
 import androidx.glance.layout.RowScope
+import androidx.glance.layout.Spacer
+import androidx.glance.layout.fillMaxWidth
+import androidx.glance.layout.height
 import androidx.glance.text.Text
+import androidx.glance.unit.ColorProvider
+import com.atriidev.warp_runtime.nodes.WarpBox
 import com.atriidev.warp_runtime.nodes.WarpButton
 import com.atriidev.warp_runtime.nodes.WarpColumn
+import com.atriidev.warp_runtime.nodes.WarpDivider
 import com.atriidev.warp_runtime.nodes.WarpNode
+import com.atriidev.warp_runtime.nodes.WarpProgressIndicator
 import com.atriidev.warp_runtime.nodes.WarpRow
+import com.atriidev.warp_runtime.nodes.WarpSpacer
 import com.atriidev.warp_runtime.nodes.WarpText
 import com.atriidev.warp_runtime.nodes.actions.ClickAction
+import com.atriidev.warp_runtime.nodes.style.WarpProgressIndicatorStyle
 import com.atriidev.warp_runtime.nodes.style.WarpTextAlign
 
 @PublishedApi
@@ -46,9 +61,20 @@ internal fun RenderWarpNode(
             }
         }
 
-        is WarpText -> RenderText(node, clickAction)
+        is WarpBox -> Box(
+            modifier = node.modifier.toGlanceModifier(clickAction),
+            contentAlignment = node.contentAlignment.toGlance(),
+        ) {
+            node.children.forEach { child ->
+                RenderWarpNode(child, clickAction)
+            }
+        }
 
+        is WarpText -> RenderText(node, clickAction)
         is WarpButton -> RenderButton(node, clickAction)
+        is WarpSpacer -> Spacer(modifier = node.modifier.toGlanceModifier(clickAction))
+        is WarpDivider -> RenderDivider(node, clickAction)
+        is WarpProgressIndicator -> RenderProgressIndicator(node, clickAction)
     }
 }
 
@@ -98,12 +124,64 @@ private fun RenderButton(
 }
 
 @Composable
+private fun RenderDivider(
+    node: WarpDivider,
+    clickAction: (ClickAction) -> Action,
+    extraModifier: GlanceModifier = GlanceModifier,
+) {
+    val color = node.color?.toComposeColor() ?: Color.Gray
+    Spacer(
+        modifier = node.modifier
+            .toGlanceModifier(clickAction)
+            .then(extraModifier)
+            .fillMaxWidth()
+            .height(node.thickness.dp)
+            .background(color),
+    )
+}
+
+@Composable
+private fun RenderProgressIndicator(
+    node: WarpProgressIndicator,
+    clickAction: (ClickAction) -> Action,
+    extraModifier: GlanceModifier = GlanceModifier,
+) {
+    val modifier = node.modifier.toGlanceModifier(clickAction).then(extraModifier)
+    val color = node.color?.let { ColorProvider(it.toComposeColor()) }
+        ?: ProgressIndicatorDefaults.IndicatorColorProvider
+    when (node.style) {
+        WarpProgressIndicatorStyle.Circular -> CircularProgressIndicator(
+            modifier = modifier,
+            color = color,
+        )
+
+        WarpProgressIndicatorStyle.Linear -> {
+            val background = node.backgroundColor?.let { ColorProvider(it.toComposeColor()) }
+                ?: ProgressIndicatorDefaults.BackgroundColorProvider
+            val progress = node.progress
+            if (progress != null) {
+                LinearProgressIndicator(
+                    progress = progress,
+                    modifier = modifier,
+                    color = color,
+                    backgroundColor = background,
+                )
+            } else {
+                LinearProgressIndicator(
+                    modifier = modifier,
+                    color = color,
+                    backgroundColor = background,
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun RowScope.RenderScopedChild(
     child: WarpNode,
     clickAction: (ClickAction) -> Action,
 ) {
-    // Glance: defaultWeight expands the slot; textAlign (only if set) places content in it.
-    // Never fillMaxWidth on the weighted child — that clips fixed-size siblings.
     if (child is WarpText && child.modifier.hasWeight()) {
         RenderWeightedText(child, clickAction, GlanceModifier.defaultWeight())
         return
@@ -135,11 +213,6 @@ private fun ColumnScope.RenderScopedChild(
     RenderNodeWithExtra(child, clickAction, extra)
 }
 
-/**
- * Weighted Text — Glance semantics:
- * - [weightModifier] expands the slot
- * - [WarpTextStyle.textAlign] only if set; otherwise content stays at Start
- */
 @Composable
 private fun RenderWeightedText(
     node: WarpText,
@@ -168,8 +241,12 @@ private fun WarpTextAlign.toBoxAlignment(): Alignment = when (this) {
 private fun WarpNode.warpModifier() = when (this) {
     is WarpColumn -> modifier
     is WarpRow -> modifier
+    is WarpBox -> modifier
     is WarpText -> modifier
     is WarpButton -> modifier
+    is WarpSpacer -> modifier
+    is WarpDivider -> modifier
+    is WarpProgressIndicator -> modifier
 }
 
 @Composable
@@ -199,7 +276,19 @@ private fun RenderNodeWithExtra(
             }
         }
 
+        is WarpBox -> Box(
+            modifier = node.modifier.toGlanceModifier(clickAction).then(extra),
+            contentAlignment = node.contentAlignment.toGlance(),
+        ) {
+            node.children.forEach { child ->
+                RenderWarpNode(child, clickAction)
+            }
+        }
+
         is WarpText -> RenderText(node, clickAction, extra)
         is WarpButton -> RenderButton(node, clickAction, extra)
+        is WarpSpacer -> Spacer(modifier = node.modifier.toGlanceModifier(clickAction).then(extra))
+        is WarpDivider -> RenderDivider(node, clickAction, extra)
+        is WarpProgressIndicator -> RenderProgressIndicator(node, clickAction, extra)
     }
 }
