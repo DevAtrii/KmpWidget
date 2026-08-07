@@ -28,6 +28,7 @@ import com.atriidev.warp_widget.ui.WarpAdaptiveSize
 import com.atriidev.warp_widget.ui.WarpTheme
 import com.atriidev.warp_widget.ui.adaptiveSize
 import com.atriidev.warp_widget.ui.adaptiveValue
+import com.atriidev.warp_widget.ui.isMediumAdaptive
 import com.atriidev.warp_widget.updateWarpWidgetState
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -131,6 +132,8 @@ private fun CounterWidgetContent(
     spacious: Boolean = false,
 ) {
     val colors = WarpTheme.colors
+    val isMedium = env.isMediumAdaptive()
+    val todoCompact = compact || (state.mode == WidgetMode.Todo && isMedium)
     val outerPadding = when {
         spacious -> 16
         compact -> 8
@@ -148,7 +151,11 @@ private fun CounterWidgetContent(
         WarpColumn(
             modifier = WarpModifier.fillMaxWidth(),
         ) {
-            ModeSwitcher(mode = state.mode, env = env, compact = compact)
+            ModeSwitcher(
+                mode = state.mode,
+                env = env,
+                compact = compact,
+            )
 
             WarpSpacer(modifier = WarpModifier.height(if (compact) 4 else 6))
 
@@ -158,11 +165,20 @@ private fun CounterWidgetContent(
                 color = colors.outline,
             )
 
-            WarpSpacer(modifier = WarpModifier.height(if (spacious) 12 else 8))
+            WarpSpacer(
+                modifier = WarpModifier.height(
+                    when {
+                        spacious -> 12
+                        state.mode == WidgetMode.Todo && isMedium -> 4
+                        compact -> 4
+                        else -> 8
+                    },
+                ),
+            )
 
             when (state.mode) {
                 WidgetMode.Counter -> CounterBody(state, env, spacious = spacious)
-                WidgetMode.Todo -> TodoBody(state, env, compact = compact)
+                WidgetMode.Todo -> TodoBody(state, env, compact = todoCompact)
             }
         }
     }
@@ -352,7 +368,7 @@ private fun TodoBody(
     val doneCount = state.todos.count { it.done }
     val total = state.todos.size
     val progress = if (total == 0) 0f else doneCount.toFloat() / total
-    val maxVisible = env.adaptiveValue(small = 2, medium = 3, large = 3)
+    val maxVisible = env.adaptiveValue(small = 2, medium = 2, large = 3)
     val visibleTodos = state.todos.take(maxVisible)
 
     // Nested column — keeps root under Glance's 10-child Column limit
@@ -368,7 +384,7 @@ private fun TodoBody(
             maxLines = 1,
         )
 
-        WarpSpacer(modifier = WarpModifier.height(6))
+        WarpSpacer(modifier = WarpModifier.height(if (compact) 4 else 6))
 
         visibleTodos.forEachIndexed { index, todo ->
             if (index > 0) {
@@ -390,7 +406,7 @@ private fun TodoBody(
             )
         }
 
-        WarpSpacer(modifier = WarpModifier.height(8))
+        WarpSpacer(modifier = WarpModifier.height(if (compact) 4 else 8))
 
         WarpProgressIndicator(
             modifier = WarpModifier.fillMaxWidth(),
