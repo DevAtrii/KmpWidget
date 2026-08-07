@@ -172,10 +172,20 @@ object WarpWidgetKitMapping {
 }
 
 /**
- * Wire Swift `WarpWidgetKitEnv.makeSession()` → Kotlin mapping.
- * Safe to call repeatedly. Call before the first `makeSession()`.
+ * Idempotent Kit↔Kotlin bridge install.
+ *
+ * Prefer [WarpWidgetHost.iosSession] with `kitFields` — that path installs automatically.
+ * Kept for rare `makeEnvironment()` / `makeSession()` callers that still use the Swift bridge.
  */
 @OptIn(ExperimentalForeignApi::class)
+@Deprecated(
+    message = "Unnecessary — WarpWidgetHost.iosSession(widget, kitFields) installs the bridge",
+    replaceWith = ReplaceWith(
+        "WarpWidgetHost.iosSession(widget, kitFields)",
+        "com.atriidev.warp_widget.WarpWidgetHost",
+        "com.atriidev.warp_widget.iosSession",
+    ),
+)
 fun installWarpWidgetKitBridge() {
     ensureWarpWidgetKitSharedInstalled()
 }

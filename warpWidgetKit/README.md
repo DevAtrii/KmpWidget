@@ -31,7 +31,27 @@ https://github.com/<org>/warpWidgetKit.git
 
 Keep **one** product name: `warpWidgetKit` — Kotlin `import warpWidgetKit.*` and Swift `import warpWidgetKit` stay stable.
 
+## Widget extension clicks
+
+Extension owns the `AppIntent` only; this package styles buttons.
+Install **once per** `WarpWidget.id` (multiple widgets OK):
+
+```swift
+struct CounterClickIntent: WarpClickAppIntent { /* … */ }
+struct WeatherClickIntent: WarpClickAppIntent { /* … */ }
+
+// WidgetBundle.init:
+WarpClickIntentRegistry.install(CounterClickIntent.self, for: CounterWarpWidget.shared.id)
+WarpClickIntentRegistry.install(WeatherClickIntent.self, for: WeatherWarpWidget.shared.id)
+
+// When rendering each timeline entry:
+WarpSwiftUIRootView(json: json, useIntents: true, widgetId: CounterWarpWidget.shared.id)
+```
+
+Do **not** build styled `Button` views in the extension — `WarpSwiftUIRootView` applies chrome.
+
 ## Do not
 
 - Copy these sources into the widget target (duplicate `WarpClickBridge` → broken clicks)
 - Point `SWIFT_INCLUDE_PATHS` at Gradle `build/spmKmpPlugin/.../scratch`
+- Re-style WARP buttons in the extension (use kit chrome; change styles in `WarpSwiftUIRenderer`)

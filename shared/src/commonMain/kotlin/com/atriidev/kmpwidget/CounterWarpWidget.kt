@@ -31,8 +31,12 @@ object CounterKeys {
  *
  * ### Swift (WidgetKit)
  * ```swift
- * let env = WarpWidgetKitEnv.from(context: context).makeEnvironment()
- * let session = WarpWidgetHost.shared.iosSession(widget: CounterWarpWidget.shared, environment: env)
+ * let session = WarpWidgetHost.shared.iosSession(
+ *     widget: CounterWarpWidget.shared,
+ *     kitFields: WarpWidgetKitEnv.from(context: context).asKitFields(
+ *         appGroupId: CounterWarpWidget.shared.iosGroupId
+ *     )
+ * )
  * ```
  */
 object CounterWarpWidget : WarpWidget {

@@ -5,13 +5,17 @@ import WidgetKit
 
 /// WidgetKit → WARP env snapshot (no Shared import — avoids SPM ↔ KMP cycle).
 ///
-/// Map to Shared types with generics (Kotlin bridge auto-installed on prepare):
+/// Map to Shared via [asKitFields] → `WarpWidgetHost.iosSession(widget:kitFields:)`
+/// (bridge installs inside Kotlin — no `installWarpWidgetKitBridge` in the extension):
 /// ```swift
-/// let env: WidgetEnvironment = WarpWidgetKitEnv.from(context: context).makeEnvironment()
-/// let session = WarpWidgetHost.shared.iosSession(widget: myWidget, environment: env)
-/// // or: kitEnv.makeSession(appGroupId: myWidget.iosGroupId)
+/// let session = WarpWidgetHost.shared.iosSession(
+///     widget: myWidget,
+///     kitFields: WarpWidgetKitEnv.from(context: context).asKitFields(
+///         appGroupId: myWidget.iosGroupId
+///     )
+/// )
 /// ```
-/// See `WarpWidgetKitShared` + Kotlin `WarpWidgetKitMapping`. App Group = `WarpWidget.iosGroupId`.
+/// See `WarpWidgetKitShared` + Kotlin `WarpWidgetKitMapping`.
 public struct WarpWidgetKitEnv: Sendable, Equatable {
     public enum Family: String, Sendable {
         case systemSmall

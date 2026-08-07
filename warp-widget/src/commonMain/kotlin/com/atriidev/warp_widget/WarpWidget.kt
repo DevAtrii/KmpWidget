@@ -16,8 +16,8 @@ import kotlinx.serialization.Serializable
  * Hosts **must** supply [environment] and [context] (never invented by [WarpWidgetHost]):
  *
  * - **Android:** [rememberGlanceWidgetSession] / [glanceWidgetEnvironment]
- * - **iOS:** [WarpWidgetHost.iosSession] / Kit env after [installWarpWidgetKitBridge]
- *   ([WarpWidget.iosGroupId] → App Group)
+ * - **iOS:** [WarpWidgetHost.iosSession] with Kit `asKitFields` (bridge auto-installs;
+ *   [WarpWidget.iosGroupId] → App Group)
  *
  * @property context Platform I/O handle ([PlatformContext])
  * @property environment Glance ∩ WidgetKit snapshot for this render
@@ -47,9 +47,12 @@ data class WarpWidgetSession(
  *
  * ### iOS (Swift)
  * ```swift
- * WarpWidgetKitMappingKt.installWarpWidgetKitBridge()
- * let env: WidgetEnvironment = WarpWidgetKitEnv.from(context: context).makeEnvironment()
- * let session = WarpWidgetHost.shared.iosSession(widget: CounterWarpWidget.shared, environment: env)
+ * let session = WarpWidgetHost.shared.iosSession(
+ *     widget: CounterWarpWidget.shared,
+ *     kitFields: WarpWidgetKitEnv.from(context: context).asKitFields(
+ *         appGroupId: CounterWarpWidget.shared.iosGroupId
+ *     )
+ * )
  * WarpWidgetHost.shared.prepare(widget: CounterWarpWidget.shared, session: session)
  * let json = WarpWidgetHost.shared.composeJson(widget: CounterWarpWidget.shared, session: session)
  * ```

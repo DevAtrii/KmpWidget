@@ -34,8 +34,9 @@ public class WarpWidgetKitShared: NSObject {
         guard let handler = makeSessionHandler else {
             fatalError(
                 """
-                WarpWidgetKitShared not installed. Call \
-                WarpWidgetKitMappingKt.installWarpWidgetKitBridge() once before makeSession().
+                WarpWidgetKitShared not installed. Prefer \
+                WarpWidgetHost.iosSession(widget:kitFields:) (auto-installs). \
+                Or call WarpWidgetKitMappingKt.installWarpWidgetKitBridge() once.
                 """
             )
         }
@@ -46,8 +47,9 @@ public class WarpWidgetKitShared: NSObject {
         guard let handler = makeEnvironmentHandler else {
             fatalError(
                 """
-                WarpWidgetKitShared not installed. Call \
-                WarpWidgetKitMappingKt.installWarpWidgetKitBridge() once before makeEnvironment().
+                WarpWidgetKitShared not installed. Prefer \
+                WarpWidgetHost.iosSession(widget:kitFields:) (auto-installs). \
+                Or call WarpWidgetKitMappingKt.installWarpWidgetKitBridge() once.
                 """
             )
         }
@@ -56,10 +58,11 @@ public class WarpWidgetKitShared: NSObject {
 }
 
 public extension WarpWidgetKitEnv {
-    /// Field bag consumed by Kotlin [WarpWidgetKitMapping].
+    /// Field bag for `WarpWidgetHost.iosSession(widget:kitFields:)`.
     ///
-    /// Pass [appGroupId] from Shared `WarpWidget.iosGroupId` (single source of truth).
-    func asKitFields(appGroupId: String) -> NSDictionary {
+    /// Returns a Swift dictionary so it matches Kotlin `Map` export (`[AnyHashable: Any]`).
+    /// Pass [appGroupId] from Shared `WarpWidget.iosGroupId`.
+    func asKitFields(appGroupId: String) -> [AnyHashable: Any] {
         [
             "family": family.rawValue,
             "widthDp": NSNumber(value: Float(width)),
@@ -78,27 +81,31 @@ public extension WarpWidgetKitEnv {
             "marginBottom": NSNumber(value: Float(marginBottom)),
             "showsContainerBackground": NSNumber(value: showsContainerBackground),
             "appGroupId": appGroupId,
-        ] as NSDictionary
+        ]
     }
 
     /// Field bag for environment-only mapping (no App Group).
-    func asKitFields() -> NSDictionary {
+    func asKitFields() -> [AnyHashable: Any] {
         asKitFields(appGroupId: "")
     }
 
     /**
-     * Shared `WarpWidgetSession` via Kotlin mapping.
+     * Shared `WarpWidgetSession` via Kotlin bridge (requires bridge installed).
      *
-     * Pass [appGroupId] from `WarpWidget.iosGroupId`:
+     * Prefer `WarpWidgetHost.iosSession(widget:kitFields:)` — no manual bridge install:
      * ```swift
-     * let session: WarpWidgetSession = WarpWidgetKitEnv.from(context: context)
-     *     .makeSession(appGroupId: CounterWarpWidget.shared.iosGroupId)
+     * WarpWidgetHost.shared.iosSession(
+     *     widget: CounterWarpWidget.shared,
+     *     kitFields: WarpWidgetKitEnv.from(context: context).asKitFields(
+     *         appGroupId: CounterWarpWidget.shared.iosGroupId
+     *     )
+     * )
      * ```
-     *
-     * Or prefer `WarpWidgetHost.iosSession(widget:environment:)`.
      */
     func makeSession<Session>(appGroupId: String) -> Session {
-        let object = WarpWidgetKitShared.shared.session(from: asKitFields(appGroupId: appGroupId))
+        let object = WarpWidgetKitShared.shared.session(
+            from: asKitFields(appGroupId: appGroupId) as NSDictionary
+        )
         guard let session = object as? Session else {
             fatalError("makeSession expected Shared.WarpWidgetSession, got \(type(of: object))")
         }
@@ -113,7 +120,9 @@ public extension WarpWidgetKitEnv {
      * ```
      */
     func makeEnvironment<Environment>() -> Environment {
-        let object = WarpWidgetKitShared.shared.environment(from: asKitFields())
+        let object = WarpWidgetKitShared.shared.environment(
+            from: asKitFields() as NSDictionary
+        )
         guard let environment = object as? Environment else {
             fatalError("makeEnvironment expected Shared.WidgetEnvironment, got \(type(of: object))")
         }

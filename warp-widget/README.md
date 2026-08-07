@@ -143,23 +143,24 @@ class CounterGlanceAppWidget : WarpGlanceWidget() {
 Hosts supply env from [`warpWidgetKit`](../warpWidgetKit/) (`WarpWidgetKitEnv`), then map to Shared types via Kotlin (package must not `import Shared` — that would cycle with spm4Kmp).
 
 ```swift
-WarpWidgetKitMappingKt.installWarpWidgetKitBridge()
-let env: WidgetEnvironment = WarpWidgetKitEnv.from(context: context).makeEnvironment()
-let session = WarpWidgetHost.shared.iosSession(widget: CounterWarpWidget.shared, environment: env)
+let session = WarpWidgetHost.shared.iosSession(
+    widget: CounterWarpWidget.shared,
+    kitFields: WarpWidgetKitEnv.from(context: context).asKitFields(
+        appGroupId: CounterWarpWidget.shared.iosGroupId
+    )
+)
 WarpWidgetHost.shared.prepare(widget: CounterWarpWidget.shared, session: session)
 let json = WarpWidgetHost.shared.composeJson(widget: CounterWarpWidget.shared, session: session)
-// SwiftUI: WarpSwiftUIRootView(json: json, useIntents: true)
+// SwiftUI: WarpSwiftUIRootView(json: json, useIntents: true, widgetId: CounterWarpWidget.shared.id)
 ```
 
-AppIntent: same `iosSession(widget:environment:)` — App Group comes from `widget.iosGroupId`.
+No `installWarpWidgetKitBridge()` — `iosSession(widget:kitFields:)` installs the bridge.
 
 | Piece | Role |
 |-------|------|
 | `WarpWidget.iosGroupId` | App Group suite (source of truth) |
-| `WarpWidgetKitEnv.from(context:)` | WidgetKit → field snapshot (SPM, no Shared) |
-| `makeEnvironment()` / `makeSession(appGroupId:)` | Generics → Shared via bridge; pass `widget.iosGroupId` if using `makeSession` |
-| `installWarpWidgetKitBridge()` | Kotlin installs dict → `WarpWidgetKitMapping` |
-| `WarpWidgetHost.iosSession(widget:environment:)` | `PlatformContext(widget.iosGroupId)` + env |
+| `WarpWidgetKitEnv.from(context:).asKitFields` | WidgetKit → field bag (SPM, no Shared) |
+| `WarpWidgetHost.iosSession(widget:kitFields:)` | Map fields → session; auto-install bridge |
 | `WarpWidgetStateStore` | App Group UserDefaults `"$widgetId.$key"` + `reloadTimelinesOfKind` |
 
 **Do not** copy `warpWidgetKit` sources into the extension (duplicate `WarpClickBridge` → broken clicks). Link the SPM product once.

@@ -1,25 +1,24 @@
 import AppIntents
 import Shared
-import SwiftUI
 import warpWidgetKit
-
-// MARK: - Extension AppIntent → WarpWidgetHost
 
 /// WidgetKit interactive tap. **Must live in this extension target**, not Shared.
 ///
-/// ### Why
-/// App Intents inside a static Shared / spm4Kmp library are not discovered by WidgetKit.
+/// Conform to [WarpClickAppIntent] and register with
+/// `WarpClickIntentRegistry.install(Self.self, for: CounterWarpWidget.shared.id)`.
+/// Button chrome lives in `warpWidgetKit`.
 ///
 /// ### Flow
 /// ```
-/// Button(intent: CounterWidgetClickIntent)
+/// WarpSwiftUIRootView(widgetId:) + WarpClickIntentRegistry
+///   → Button(intent: CounterWidgetClickIntent)
 ///   → perform()
 ///   → WarpWidgetHost.dispatchClick(widget: CounterWarpWidget…)
 ///   → WarpClicksRegistry → CounterWarpClickHandler
 ///   → updateWarpWidgetState (UserDefaults) + WidgetCenter.reload
 /// ```
 @available(iOS 17.0, *)
-struct CounterWidgetClickIntent: AppIntent {
+struct CounterWidgetClickIntent: WarpClickAppIntent {
     static var title: LocalizedStringResource = "Counter Widget Click"
     static var openAppWhenRun: Bool = false
 
@@ -42,11 +41,11 @@ struct CounterWidgetClickIntent: AppIntent {
     }
 
     func perform() async throws -> some IntentResult {
-        WarpWidgetKitMappingKt.installWarpWidgetKitBridge()
-        let env: WidgetEnvironment = WarpWidgetKitEnv.placeholder().makeEnvironment()
         let session = WarpWidgetHost.shared.iosSession(
             widget: CounterWarpWidget.shared,
-            environment: env
+            kitFields: WarpWidgetKitEnv.placeholder().asKitFields(
+                appGroupId: CounterWarpWidget.shared.iosGroupId
+            )
         )
         WarpWidgetHost.shared.dispatchClick(
             widget: CounterWarpWidget.shared,
@@ -55,32 +54,5 @@ struct CounterWidgetClickIntent: AppIntent {
             parametersJson: parametersJson
         )
         return .result()
-    }
-}
-
-// MARK: - Wire renderer → this intent
-
-/// Installs [WarpClickIntentRegistry.buttonBuilder] so Shared’s SwiftUI renderer
-/// creates buttons backed by [CounterWidgetClickIntent] (extension-local).
-///
-/// Call from `CounterWidgetBundle.init` before any timeline render.
-@available(iOS 17.0, *)
-enum CounterWidgetClickSetup {
-    static func install() {
-        WarpClickIntentRegistry.buttonBuilder = { actionId, parametersJson, label in
-            AnyView(
-                Button(intent: CounterWidgetClickIntent(
-                    actionId: actionId,
-                    parametersJson: parametersJson
-                )) {
-                    Text(label)
-                        .font(.title3.weight(.semibold))
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                }
-                .buttonStyle(.bordered)
-                .buttonBorderShape(.circle)
-                .controlSize(.small)
-            )
-        }
     }
 }

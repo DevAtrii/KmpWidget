@@ -3,23 +3,101 @@ import AppIntents
 
 // MARK: - AppIntent host hook
 
-/// Widget **extension** registers a button builder so `AppIntent` types live in the
-/// extension binary (WidgetKit does not discover intents that exist only inside Shared).
+/// Extension-local `AppIntent` for WARP widget buttons.
 ///
-/// ### Kotlin / Shared
-/// Renderer calls this when `useIntents == true`. Kotlin still owns click *logic*
-/// via `dispatchCounterWidgetClick` → `WarpClicksRegistry`.
+/// WidgetKit only discovers intents compiled into the **widget extension** — not Shared.
+/// Conform + call [WarpClickIntentRegistry.install(_:for:)]; `warpWidgetKit` owns button styling.
 ///
-/// ### Extension setup (`WidgetBundle.init`)
 /// ```swift
-/// WarpClickIntentRegistry.buttonBuilder = { actionId, parametersJson, label in
-///     AnyView(Button(intent: MyClickIntent(...)) { Text(label) } /* styles */)
-/// }
+/// struct MyClickIntent: WarpClickAppIntent { /* init(actionId:parametersJson:) + perform */ }
+///
+/// // WidgetBundle.init — one install per widget kind (`WarpWidget.id`):
+/// WarpClickIntentRegistry.install(CounterClickIntent.self, for: CounterWarpWidget.shared.id)
+/// WarpClickIntentRegistry.install(WeatherClickIntent.self, for: WeatherWarpWidget.shared.id)
 /// ```
 @available(iOS 17.0, *)
+public protocol WarpClickAppIntent: AppIntent {
+    init(actionId: String, parametersJson: String)
+}
+
+/// Per-widget-kind registry of [WarpClickAppIntent] factories.
+///
+/// Key = `WarpWidget.id` / WidgetKit `kind`. Multiple widgets in one extension each
+/// call [install(_:for:)]; [WarpSwiftUIRootView] passes the same `widgetId` when rendering.
+///
+/// Renderer builds styled `Button(intent:)` — extensions supply **intent type only**.
+@available(iOS 17.0, *)
 public enum WarpClickIntentRegistry {
-    /// `(actionId, parametersJson, label) → styled button view`
-    public static var buttonBuilder: ((String, String, String) -> AnyView)?
+    private static var factories: [String: (String, String) -> any AppIntent] = [:]
+
+    /// Register `I` for [widgetId] (`WarpWidget.id`). Safe to call for many widgets.
+    public static func install<I: WarpClickAppIntent>(_ type: I.Type, for widgetId: String) {
+        factories[widgetId] = { actionId, parametersJson in
+            I(actionId: actionId, parametersJson: parametersJson)
+        }
+    }
+
+    /// Remove factory for one widget kind.
+    public static func uninstall(for widgetId: String) {
+        factories.removeValue(forKey: widgetId)
+    }
+
+    /// Clears all factories (tests / host teardown).
+    public static func uninstallAll() {
+        factories.removeAll()
+    }
+
+    fileprivate static func intent(
+        widgetId: String,
+        actionId: String,
+        parametersJson: String
+    ) -> (any AppIntent)? {
+        factories[widgetId]?(actionId, parametersJson)
+    }
+}
+
+// MARK: - Shared button chrome (intent + bridge)
+
+/// Single place for WARP button look — keep WidgetKit + in-app preview aligned.
+@available(iOS 17.0, *)
+private struct WarpButtonLabel: View {
+    let title: String
+
+    var body: some View {
+        Text(title)
+            .font(.title3.weight(.semibold))
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+@available(iOS 17.0, *)
+private extension View {
+    func warpButtonChrome() -> some View {
+        self
+            .buttonStyle(.bordered)
+            .buttonBorderShape(.circle)
+            .controlSize(.small)
+    }
+}
+
+/// Opens `any AppIntent` into a generic `Button(intent:)` + [WarpButtonLabel] chrome.
+@available(iOS 17.0, *)
+private struct WarpIntentStyledButton: View {
+    let intent: any AppIntent
+    let label: String
+
+    var body: some View {
+        open(intent)
+    }
+
+    private func open<I: AppIntent>(_ intent: I) -> AnyView {
+        AnyView(
+            Button(intent: intent) {
+                WarpButtonLabel(title: label)
+            }
+            .warpButtonChrome()
+        )
+    }
 }
 
 // MARK: - SwiftUI root
@@ -30,20 +108,24 @@ public enum WarpClickIntentRegistry {
 /// 1. `renderXWidget(): WarpNode` + `registerWarpClicks`
 /// 2. `warpWidgetJson(node)` → this view’s `json`
 ///
-/// - `useIntents: true` — home-screen widget (needs [WarpClickIntentRegistry])
+/// - `useIntents: true` — home-screen; needs [WarpClickIntentRegistry.install(_:for:)]
+///   with the same [widgetId] (`WarpWidget.id`)
 /// - `useIntents: false` — in-app preview via [WarpClickBridge]
 public struct WarpSwiftUIRootView: View {
     let json: String
     let useIntents: Bool
+    /// `WarpWidget.id` / WidgetKit `kind` — selects the installed click intent factory.
+    let widgetId: String
 
-    public init(json: String, useIntents: Bool) {
+    public init(json: String, useIntents: Bool, widgetId: String = "") {
         self.json = json
         self.useIntents = useIntents
+        self.widgetId = widgetId
     }
 
     public var body: some View {
         if let root = WarpNodeParser.parse(json: json) {
-            WarpNodeView(node: root, useIntents: useIntents)
+            WarpNodeView(node: root, useIntents: useIntents, widgetId: widgetId)
                 .padding()
         } else {
             Text("Invalid WARP node JSON")
@@ -56,13 +138,14 @@ public struct WarpSwiftUIRootView: View {
 private struct WarpNodeView: View {
     let node: WarpParsedNode
     let useIntents: Bool
+    let widgetId: String
 
     var body: some View {
         switch node.kind {
         case .column:
             VStack(alignment: .center, spacing: 6) {
                 ForEach(Array(node.children.enumerated()), id: \.offset) { _, child in
-                    WarpNodeView(node: child, useIntents: useIntents)
+                    WarpNodeView(node: child, useIntents: useIntents, widgetId: widgetId)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -72,14 +155,14 @@ private struct WarpNodeView: View {
             HStack(spacing: 6) {
                 ForEach(Array(node.children.enumerated()), id: \.offset) { index, child in
                     if node.children.count == 3, index == 1, child.kind == .text {
-                        WarpNodeView(node: child, useIntents: useIntents)
+                        WarpNodeView(node: child, useIntents: useIntents, widgetId: widgetId)
                             .frame(maxWidth: .infinity)
                             .layoutPriority(1)
                     } else if child.kind == .button {
-                        WarpNodeView(node: child, useIntents: useIntents)
+                        WarpNodeView(node: child, useIntents: useIntents, widgetId: widgetId)
                             .frame(minWidth: 32, maxWidth: 40)
                     } else {
-                        WarpNodeView(node: child, useIntents: useIntents)
+                        WarpNodeView(node: child, useIntents: useIntents, widgetId: widgetId)
                     }
                 }
             }
@@ -97,28 +180,46 @@ private struct WarpNodeView: View {
                 .padding(node.padding)
 
         case .button:
-            if useIntents, #available(iOS 17.0, *), let actionId = node.actionId,
-               let builder = WarpClickIntentRegistry.buttonBuilder {
-                builder(actionId, node.parametersJson, node.text ?? "")
-                    .padding(node.padding)
-            } else if let actionId = node.actionId {
-                // In-app preview / fallback — home-screen widgets need registry + AppIntent.
-                Button(node.text ?? "") {
+            buttonView
+                .padding(node.padding)
+        }
+    }
+
+    @ViewBuilder
+    private var buttonView: some View {
+        let label = node.text ?? ""
+        if useIntents, #available(iOS 17.0, *), let actionId = node.actionId,
+           !widgetId.isEmpty,
+           let intent = WarpClickIntentRegistry.intent(
+            widgetId: widgetId,
+            actionId: actionId,
+            parametersJson: node.parametersJson
+           ) {
+            WarpIntentStyledButton(intent: intent, label: label)
+        } else if let actionId = node.actionId {
+            // In-app preview / fallback — home-screen widgets need install(_:for:).
+            if #available(iOS 17.0, *) {
+                Button {
+                    WarpClickBridge.shared.perform(
+                        actionId: actionId,
+                        parametersJson: node.parametersJson
+                    )
+                    WarpWidgetBridge.shared.reloadTimelines()
+                } label: {
+                    WarpButtonLabel(title: label)
+                }
+                .warpButtonChrome()
+            } else {
+                Button(label) {
                     WarpClickBridge.shared.perform(
                         actionId: actionId,
                         parametersJson: node.parametersJson
                     )
                     WarpWidgetBridge.shared.reloadTimelines()
                 }
-                .font(.title3.weight(.semibold))
-                .buttonStyle(.bordered)
-                .buttonBorderShape(.circle)
-                .controlSize(.small)
-                .padding(node.padding)
-            } else {
-                Text(node.text ?? "")
-                    .padding(node.padding)
             }
+        } else {
+            Text(label)
         }
     }
 }

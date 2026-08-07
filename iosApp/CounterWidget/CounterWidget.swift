@@ -36,7 +36,11 @@ struct CounterWidgetEntryView: View {
     var entry: CounterWidgetProvider.Entry
 
     var body: some View {
-        WarpSwiftUIRootView(json: entry.json, useIntents: true)
+        WarpSwiftUIRootView(
+            json: entry.json,
+            useIntents: true,
+            widgetId: CounterWarpWidget.shared.id
+        )
     }
 }
 

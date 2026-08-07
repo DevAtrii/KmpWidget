@@ -112,20 +112,29 @@ func counterWidgetRootView() -> WarpSwiftUIRootView {
 }
 ```
 
-**WidgetBundle + AppIntent** — intents must live in the **extension** target (not Shared):
+**WidgetBundle + AppIntent** — intents must live in the **extension** target (not Shared).
+Extension defines intent only; `warpWidgetKit` owns button styling:
 
 ```swift
+struct CounterWidgetClickIntent: WarpClickAppIntent { /* perform → WarpWidgetHost.dispatchClick */ }
+
 @main
 struct CounterWidgetBundle: WidgetBundle {
     init() {
-        CounterWidgetClickSetup.install() // registers WarpClickIntentRegistry.buttonBuilder
-        CounterWidgetIosKt.prepareCounterWidgetHandlers()
+        WarpClickIntentRegistry.install(
+            CounterWidgetClickIntent.self,
+            for: CounterWarpWidget.shared.id
+        )
+        // WarpClickIntentRegistry.install(OtherClickIntent.self, for: OtherWidget.shared.id)
+        // WarpWidgetHost.prepare(…)
     }
-    var body: some Widget { CounterWidget() }
+    var body: some Widget { CounterHomeWidget() }
 }
+
+// Entry view:
+WarpSwiftUIRootView(json: json, useIntents: true, widgetId: CounterWarpWidget.shared.id)
 ```
 
-`CounterWidgetClickIntent` (in the extension) calls `dispatchCounterWidgetClick`.  
 App Intents inside a static Shared library are **not** discovered by WidgetKit.
 
 ### `import warpWidgetKit` (SPM package)
@@ -159,7 +168,7 @@ remotePackageVersion(
 
 | Value | Use | Button |
 |-------|-----|--------|
-| `true` | Home-screen widget | Extension `AppIntent` via `WarpClickIntentRegistry` |
+| `true` | Home-screen widget | `install(MyIntent.self, for: widgetId)` + `WarpSwiftUIRootView(widgetId:)` |
 | `false` | In-app preview | `Button { WarpClickBridge.perform }` |
 
 ### In-app preview

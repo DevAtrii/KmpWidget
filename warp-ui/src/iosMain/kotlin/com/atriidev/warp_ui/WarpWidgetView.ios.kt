@@ -47,7 +47,7 @@ fun registerWarpClicks(handlers: List<WarpClickHandler<*>>) {
  *
  * let node = CounterWidgetIosKt.renderCounterWidget() // registers clicks
  * let json = WarpWidgetView_iosKt.warpWidgetJson(node: node)
- * return WarpSwiftUIView(json: json, useIntents: true).widgetRootView()
+ * return WarpSwiftUIRootView(json: json, useIntents: true, widgetId: MyWidget.id)
  * ```
  *
  * @see warpWidgetView for Kotlin / in-app use when you already hold the Swift type
@@ -58,13 +58,15 @@ fun warpWidgetJson(node: WarpNode): String = node.toJson()
  * Builds a [WarpSwiftUIView] holder for [node] (Kotlin / same-process use).
  *
  * - Does **not** register handlers — call [registerWarpClicks] or [warpRender] first.
- * - [useIntents] `true` → widget buttons expect [WarpClickIntentRegistry] (extension AppIntent).
+ * - [useIntents] `true` → intent buttons (needs [WarpClickIntentRegistry] when hosted
+ *   with a `widgetId`; in-app preview usually forces bridge via `makePreviewView`).
  * - [useIntents] `false` → buttons call [WarpClickBridge] (in-app preview).
  *
  * ### WidgetKit Swift
- * Use [warpWidgetJson] instead; construct `WarpSwiftUIView` in Swift so `widgetRootView()`
- * is visible.
+ * Prefer [warpWidgetJson] + `WarpSwiftUIRootView(json:useIntents:widgetId:)` so each
+ * widget kind maps to its installed intent.
  */
 @OptIn(ExperimentalForeignApi::class)
 fun warpWidgetView(node: WarpNode, useIntents: Boolean = true): WarpSwiftUIView =
+    // ObjC/cinterop exposes the 2-arg init; pass widgetId from Swift WidgetKit hosts.
     NativeWarpSwiftUIView(json = warpWidgetJson(node), useIntents = useIntents)
