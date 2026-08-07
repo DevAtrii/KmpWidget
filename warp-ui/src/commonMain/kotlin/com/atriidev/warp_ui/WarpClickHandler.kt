@@ -1,13 +1,13 @@
 package com.atriidev.warp_ui
 
-import com.atriidev.warp_runtime.nodes.actions.WarpActionId
-import kotlin.reflect.KClass
+import com.atriidev.warp_runtime.nodes.actions.WarpActionFamily
+import com.atriidev.warp_runtime.nodes.actions.warpActionFamily
+import kotlinx.serialization.KSerializer
 
 /**
- * Pure click handler for a widget action enum [T].
+ * Pure click handler for a widget `@Serializable` sealed click-action hierarchy.
  *
- * Register with [WarpClicksRegistry] via [WarpRender] (iOS: also `registerWarpClicks`).
- * Platform code looks up wire `actionId` and invokes [onClick].
+ * Pass the generated serializer — e.g. `CounterActions.serializer()` — wire codec is automatic.
  *
  * ### iOS
  * Swift `AppIntent` → `dispatchWarpClick` → registry → [onClick].
@@ -15,23 +15,22 @@ import kotlin.reflect.KClass
  * ### Android
  * Glance `ActionCallback` → registry → [onClick].
  */
-abstract class WarpClickHandler<T>(
-    val actionIdType: KClass<T>,
-    private val actionEntries: List<T>,
-) where T : Enum<T>, T : WarpActionId {
-    /** Handle a typed action after the platform forwarded the wire id. */
-    abstract suspend fun onClick(actionId: T, parameters: Map<String, String>)
+abstract class WarpClickHandler<A : Any>(
+    serializer: KSerializer<A>,
+) {
+    private val family: WarpActionFamily<A> = warpActionFamily(serializer)
+
+    /** Handle a typed action after the platform forwarded and decoded the wire payload. */
+    abstract suspend fun onClick(action: A)
 
     internal fun registerEntries(
         register: (wireId: String, handler: suspend (Map<String, String>) -> Unit) -> Unit,
     ) {
-        actionEntries.forEach { action ->
-            register(action.actionId) { parameters -> onClick(action, parameters) }
+        family.actionIds.forEach { wireId ->
+            register(wireId) { parameters ->
+                val action = family.decode(wireId, parameters) ?: return@register
+                onClick(action)
+            }
         }
-    }
-
-    internal suspend fun dispatch(actionId: Enum<*>, parameters: Map<String, String>) {
-        @Suppress("UNCHECKED_CAST")
-        onClick(actionId as T, parameters)
     }
 }

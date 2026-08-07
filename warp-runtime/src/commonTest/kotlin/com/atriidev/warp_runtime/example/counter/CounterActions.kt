@@ -1,14 +1,16 @@
 package com.atriidev.warp_runtime.example.counter
 
-import com.atriidev.warp_runtime.nodes.actions.WarpActionId
+import kotlinx.serialization.Serializable
 
-/**
- * Counter widget click action ids (test fixture).
- */
-enum class CounterActions(
-    override val actionId: String,
-) : WarpActionId {
-    Increment("increment"),
-    Decrement("decrement"),
-    Reset("reset"),
+/** Test fixture — param-less sealed actions for compose tests. */
+@Serializable
+sealed class CounterActions {
+    @Serializable
+    data object Increment : CounterActions()
+
+    @Serializable
+    data object Decrement : CounterActions()
+
+    @Serializable
+    data object Reset : CounterActions()
 }

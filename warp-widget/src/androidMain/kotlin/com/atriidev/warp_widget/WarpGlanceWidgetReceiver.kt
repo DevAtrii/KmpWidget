@@ -5,6 +5,8 @@ import android.content.Intent
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 
+private const val ACTION_UI_MODE_CHANGED = "android.intent.action.UI_MODE_CHANGED"
+
 /**
  * Glance [GlanceAppWidgetReceiver] that auto-registers with [WarpWidgetAndroidRegistry].
  *
@@ -20,6 +22,9 @@ import androidx.glance.appwidget.GlanceAppWidgetReceiver
  *
  * Pair with [WarpGlanceWidget]. Cold-start taps wake this receiver via
  * [WarpWidgetAndroidRegistry] → [ensureRegistered].
+ *
+ * Manifest intent-filter should include [Intent.ACTION_CONFIGURATION_CHANGED] so
+ * light/dark toggles trigger [WarpWidgetAndroidReload] (also installed via init provider).
  */
 abstract class WarpGlanceWidgetReceiver : GlanceAppWidgetReceiver() {
     /** Shared WARP definition (same instance as [WarpGlanceWidget.widget]). */
@@ -39,6 +44,11 @@ abstract class WarpGlanceWidgetReceiver : GlanceAppWidgetReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         ensureRegistered()
+        when (intent.action) {
+            Intent.ACTION_CONFIGURATION_CHANGED,
+            ACTION_UI_MODE_CHANGED,
+            -> WarpWidgetAndroidReload.scheduleReloadAll(context, "receiver:${intent.action}")
+        }
         super.onReceive(context, intent)
     }
 

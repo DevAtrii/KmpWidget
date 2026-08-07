@@ -23,13 +23,6 @@ data class WidgetEnvironment(
     /** Process / OS identity (Android vs iOS). */
     val platform: WidgetPlatform,
     /**
-     * Size class of the widget.
-     *
-     * - **WidgetKit:** `context.family`
-     * - **Glance:** mapped from [size] / `AppWidgetProviderInfo` min size
-     */
-    val family: WarpWidgetFamily,
-    /**
      * Light / dark appearance.
      *
      * - **WidgetKit:** `EnvironmentValues.colorScheme` / widget rendering
@@ -112,6 +105,13 @@ sealed interface WidgetPlatformEnvironment {
     @SerialName("ios")
     data class Ios(
         /**
+         * WidgetKit size class (`context.family`).
+         *
+         * Not stored on Android — Glance resize buckets from [WidgetEnvironment.size] are
+         * unreliable; use [WidgetEnvironment.size] on Android instead.
+         */
+        val family: WarpWidgetFamily,
+        /**
          * WidgetKit rendering mode (fullColor / accented / vibrant).
          * No Glance equivalent.
          */
@@ -134,9 +134,9 @@ sealed interface WidgetPlatformEnvironment {
 }
 
 /**
- * Widget size class shared across hosts.
+ * Widget size class (WidgetKit only).
  *
- * Maps from WidgetKit `WidgetFamily`. On Glance inferred from [WarpWidgetSize].
+ * Maps from WidgetKit `WidgetFamily`. On Android use [WidgetEnvironment.size] (dp) instead.
  */
 @Serializable
 enum class WarpWidgetFamily {
@@ -212,3 +212,7 @@ enum class WarpWidgetRenderingMode {
 data class WarpWidgetConfiguration(
     val parameters: Map<String, String> = emptyMap(),
 )
+
+/** WidgetKit [WarpWidgetFamily] — null on Android ([WidgetEnvironment.size] instead). */
+val WidgetEnvironment.widgetFamily: WarpWidgetFamily?
+    get() = (platformEnvironment as? WidgetPlatformEnvironment.Ios)?.family

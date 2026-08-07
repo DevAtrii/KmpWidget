@@ -16,6 +16,7 @@ import android.net.Uri
 class WarpWidgetAndroidInitProvider : ContentProvider() {
     override fun onCreate(): Boolean {
         WarpWidgetAndroidRegistry.installColdStartPrepare()
+        context?.let(WarpWidgetAndroidReload::install)
         return true
     }
 

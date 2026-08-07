@@ -5,25 +5,54 @@ import com.atriidev.warp_runtime.compose.composeWarpToJson
 import com.atriidev.warp_runtime.compose.toJson
 import com.atriidev.warp_runtime.example.counter.CounterActions
 import com.atriidev.warp_runtime.nodes.WarpButton as WarpButtonNode
+import kotlinx.serialization.Serializable
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
+
+/** Legacy enum fixture for [WarpActionId] / [decodeActionId] tests. */
+private enum class LegacyCounterActions(
+    override val actionId: String,
+) : WarpActionId {
+    Increment("increment"),
+    Decrement("decrement"),
+    Reset("reset"),
+}
+
+/** Parameterized fixture for auto-codec round-trip tests. */
+@Serializable
+private sealed class ParamCounterActions {
+    @Serializable
+    data class SetStep(val step: Int) : ParamCounterActions()
+}
+
+private val counterActionsFamily = warpActionFamily(CounterActions.serializer())
+private val paramCounterActionsFamily = warpActionFamily(ParamCounterActions.serializer())
+
+/** String-id fixture — numeric todo ids must round-trip as strings on the wire. */
+@Serializable
+private sealed class TodoIdActions {
+    @Serializable
+    data class Toggle(val todoId: String) : TodoIdActions()
+}
+
+private val todoIdActionsFamily = warpActionFamily(TodoIdActions.serializer())
 
 class ClickActionTest {
 
     @Test
-    fun actionClick_serializesWithTypeDiscriminator() {
+    fun typedAction_asClickAction_serializesWithTypeDiscriminator() {
         val json = composeWarpToJson {
             WarpButton(
                 text = "+",
-                onClick = actionClick(CounterActions.Increment, "step" to "1"),
+                onClick = CounterActions.Increment.asClickAction(),
             )
         }
 
         assertTrue(json.contains("\"onClick\""))
         assertTrue(json.contains("\"type\": \"click\""))
         assertTrue(json.contains("\"actionId\": \"increment\""))
-        assertTrue(json.contains("\"step\": \"1\""))
     }
 
     @Test
@@ -39,7 +68,7 @@ class ClickActionTest {
     }
 
     @Test
-    fun warpActionId_producesExpectedClickAction() {
+    fun typedAction_producesExpectedClickAction() {
         assertEquals(
             ClickAction(actionId = "decrement"),
             CounterActions.Decrement.asClickAction(),
@@ -47,24 +76,69 @@ class ClickActionTest {
     }
 
     @Test
-    fun decodeActionId_decodesWidgetEnumForExhaustiveWhen() {
-        val result = when (decodeActionId("increment", CounterActions::class)) {
-            CounterActions.Increment -> "incremented"
-            CounterActions.Decrement -> "decremented"
-            CounterActions.Reset -> "reset"
+    fun actionFamily_decodesWirePayload() {
+        assertEquals(
+            CounterActions.Increment,
+            counterActionsFamily.decode("increment", emptyMap()),
+        )
+        assertEquals(
+            CounterActions.Decrement,
+            counterActionsFamily.decode("decrement", emptyMap()),
+        )
+        assertNull(counterActionsFamily.decode("unknown", emptyMap()))
+    }
+
+    @Test
+    fun actionFamily_roundTripsThroughClickAction() {
+        val wire = CounterActions.Increment.asClickAction()
+        assertEquals(
+            CounterActions.Increment,
+            counterActionsFamily.decode(wire.actionId, wire.parameters),
+        )
+    }
+
+    @Test
+    fun paramFamily_registersActionIds() {
+        assertTrue(paramCounterActionsFamily.actionIds.contains("set_step"))
+    }
+
+    @Test
+    fun actionFamily_roundTripsStringIdParameterAction() {
+        val action = TodoIdActions.Toggle(todoId = "1")
+        val wire = action.asClickAction()
+        assertEquals("toggle", wire.actionId)
+        assertEquals("1", wire.parameters["todoId"])
+        assertEquals(action, todoIdActionsFamily.decode(wire.actionId, wire.parameters))
+    }
+
+    @Test
+    fun actionFamily_roundTripsParameterizedAction() {
+        val action = ParamCounterActions.SetStep(step = 3)
+        val wire = action.asClickAction()
+        assertEquals("set_step", wire.actionId)
+        assertEquals("3", wire.parameters["step"])
+        assertEquals(action, paramCounterActionsFamily.decode(wire.actionId, wire.parameters))
+    }
+
+    @Test
+    fun decodeActionId_decodesLegacyEnumForExhaustiveWhen() {
+        val result = when (decodeActionId("increment", LegacyCounterActions::class)) {
+            LegacyCounterActions.Increment -> "incremented"
+            LegacyCounterActions.Decrement -> "decremented"
+            LegacyCounterActions.Reset -> "reset"
         }
 
         assertEquals("incremented", result)
     }
 
     @Test
-    fun actionIdAs_decodesWidgetEnumForExhaustiveWhen() {
-        val action = CounterActions.Increment.asClickAction()
+    fun actionIdAs_decodesLegacyEnumForExhaustiveWhen() {
+        val action = actionClick(LegacyCounterActions.Increment)
 
-        val result = when (action.actionIdAs<CounterActions>()) {
-            CounterActions.Increment -> "incremented"
-            CounterActions.Decrement -> "decremented"
-            CounterActions.Reset -> "reset"
+        val result = when (action.actionIdAs<LegacyCounterActions>()) {
+            LegacyCounterActions.Increment -> "incremented"
+            LegacyCounterActions.Decrement -> "decremented"
+            LegacyCounterActions.Reset -> "reset"
         }
 
         assertEquals("incremented", result)

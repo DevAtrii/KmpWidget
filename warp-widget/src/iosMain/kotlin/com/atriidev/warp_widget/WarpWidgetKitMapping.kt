@@ -51,7 +51,6 @@ object WarpWidgetKitMapping {
         appGroupId: String = "",
     ): WidgetEnvironment = makeWidgetEnvironment(
         platformContext = PlatformContext(appGroupId = appGroupId),
-        family = family.toWarpFamily(),
         isPreview = isPreview,
         size = WarpWidgetSize(widthDp = widthDp, heightDp = heightDp),
         theme = theme.toWarpTheme(),
@@ -61,6 +60,7 @@ object WarpWidgetKitMapping {
         displayScale = displayScale,
         fontScale = fontScale,
         platformEnvironment = WidgetPlatformEnvironment.Ios(
+            family = family.toWarpFamily(),
             renderingMode = renderingMode.toWarpRenderingMode(),
             contentMargins = WarpWidgetPadding(
                 start = marginLeading,

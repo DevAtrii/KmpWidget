@@ -12,9 +12,11 @@ import androidx.datastore.preferences.core.stringPreferencesKey
  */
 fun Preferences.toWarpPreferences(): WarpWidgetPreferences =
     WarpWidgetPreferences(
-        values = asMap().entries.associate { (key, value) ->
-            key.name to value.toString()
-        },
+        values = asMap().entries
+            .filterNot { (key, _) -> GlanceInternalState.isInternalKey(key.name) }
+            .associate { (key, value) ->
+                key.name to value.toString()
+            },
     )
 
 /**
@@ -28,7 +30,9 @@ internal fun MutablePreferences.applyWarpPreferences(
 ) {
     val after = warp.values
     (beforeKeys - after.keys).forEach { name ->
-        remove(stringPreferencesKey(name))
+        if (!GlanceInternalState.isInternalKey(name)) {
+            remove(stringPreferencesKey(name))
+        }
     }
     after.forEach { (name, value) ->
         this[stringPreferencesKey(name)] = value

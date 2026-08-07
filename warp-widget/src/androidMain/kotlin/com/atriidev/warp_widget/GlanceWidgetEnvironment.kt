@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.unit.DpSize
 import androidx.datastore.preferences.core.Preferences
+import androidx.glance.LocalContext
 import androidx.glance.LocalSize
 import androidx.glance.appwidget.LocalAppWidgetOptions
 import androidx.glance.currentState
@@ -33,11 +34,12 @@ fun glanceWidgetEnvironment(
     isPreview: Boolean = false,
     appWidgetId: Int? = null,
     configuration: WarpWidgetConfiguration? = null,
+    nightModeMask: Int? = null,
 ): WidgetEnvironment {
     val config = context.resources.configuration
     val metrics = context.resources.displayMetrics
-    val night = (config.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
-            Configuration.UI_MODE_NIGHT_YES
+    val mask = nightModeMask ?: (config.uiMode and Configuration.UI_MODE_NIGHT_MASK)
+    val night = mask == Configuration.UI_MODE_NIGHT_YES
     val locale: Locale =
         if (android.os.Build.VERSION.SDK_INT >= 24) {
             config.locales[0] ?: Locale.getDefault()
@@ -48,7 +50,6 @@ fun glanceWidgetEnvironment(
     val rtl = config.layoutDirection == View.LAYOUT_DIRECTION_RTL
     return makeWidgetEnvironment(
         platformContext = PlatformContext(context),
-        family = size.toWarpWidgetFamily(),
         isPreview = isPreview,
         size = WarpWidgetSize(
             widthDp = size.width.value,
@@ -86,6 +87,7 @@ fun rememberGlanceWidgetSession(
     appWidgetId: Int? = null,
     isPreview: Boolean = false,
 ): WarpWidgetSession {
+    val glanceContext = LocalContext.current
     val size = LocalSize.current
     val prefs = currentState<Preferences>()
     val optionsBundle = LocalAppWidgetOptions.current
@@ -102,18 +104,43 @@ fun rememberGlanceWidgetSession(
         }
     }
 
-    val environment = remember(size, context, appWidgetId, isPreview, optionsConfig) {
+    val config = glanceContext.resources.configuration
+    val nightMode = GlanceInternalState.readNightModeMask(prefs, glanceContext)
+    val themeEpoch = prefs[GlanceInternalState.themeEpochKey] ?: 0L
+    val localeTag = config.let { cfg ->
+        if (android.os.Build.VERSION.SDK_INT >= 24) {
+            cfg.locales[0]?.toLanguageTag()
+        } else {
+            @Suppress("DEPRECATION")
+            cfg.locale?.toLanguageTag()
+        }
+    }
+    val layoutDirection = config.layoutDirection
+    val fontScale = config.fontScale
+
+    val environment = remember(
+        size,
+        nightMode,
+        themeEpoch,
+        localeTag,
+        layoutDirection,
+        fontScale,
+        appWidgetId,
+        isPreview,
+        optionsConfig,
+    ) {
         glanceWidgetEnvironment(
-            context = context,
+            context = glanceContext,
             size = size,
             isPreview = isPreview,
             appWidgetId = appWidgetId,
             configuration = optionsConfig,
+            nightModeMask = nightMode,
         )
     }
     return remember(environment, prefs) {
         WarpWidgetSession(
-            context = PlatformContext(context),
+            context = PlatformContext(glanceContext),
             environment = environment,
             preferences = prefs.toWarpPreferences(),
         )

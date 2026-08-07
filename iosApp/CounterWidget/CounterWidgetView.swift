@@ -3,22 +3,43 @@ import SwiftUI
 import WidgetKit
 import warpWidgetKit
 
-/// [CounterWarpWidget] via [WarpWidgetHost] + [WarpWidgetKitEnv] (kit fields → Kotlin; bridge auto).
-func counterWidgetJson(context: TimelineProviderContext) -> String {
-    let session = WarpWidgetHost.shared.iosSession(
-        widget: CounterWarpWidget.shared,
-        kitFields: WarpWidgetKitEnv.from(context: context).asKitFields(
-            appGroupId: CounterWarpWidget.shared.iosGroupId
-        )
+/// Timeline / AppIntent fallback — no SwiftUI environment (trait-based theme only).
+func composeWidgetJson(context: TimelineProviderContext) -> String {
+    composeWidgetJson(
+        kitEnv: WarpWidgetKitEnv.from(context: context)
     )
-    WarpWidgetHost.shared.prepare(widget: CounterWarpWidget.shared, session: session)
-    return WarpWidgetHost.shared.composeJson(widget: CounterWarpWidget.shared, session: session)
 }
 
-func counterWidgetPlaceholderJson() -> String {
+/// Live render path — uses SwiftUI environment (updates when appearance / tint changes).
+func composeWidgetJson(
+    colorScheme: ColorScheme,
+    widgetFamily: WidgetFamily,
+    widgetRenderingMode: WidgetRenderingMode? = nil,
+    displaySize: CGSize? = nil,
+    isPreview: Bool = false
+) -> String {
+    composeWidgetJson(
+        kitEnv: WarpWidgetKitEnv.from(
+            colorScheme: colorScheme,
+            family: WarpWidgetKitEnv.Family(widgetFamily: widgetFamily),
+            width: displaySize?.width,
+            height: displaySize?.height,
+            isPreview: isPreview,
+            widgetRenderingMode: widgetRenderingMode
+        )
+    )
+}
+
+func composeWidgetPlaceholderJson() -> String {
+    composeWidgetJson(
+        kitEnv: WarpWidgetKitEnv.placeholder()
+    )
+}
+
+private func composeWidgetJson(kitEnv: WarpWidgetKitEnv) -> String {
     let session = WarpWidgetHost.shared.iosSession(
         widget: CounterWarpWidget.shared,
-        kitFields: WarpWidgetKitEnv.placeholder().asKitFields(
+        kitFields: kitEnv.asKitFields(
             appGroupId: CounterWarpWidget.shared.iosGroupId
         )
     )

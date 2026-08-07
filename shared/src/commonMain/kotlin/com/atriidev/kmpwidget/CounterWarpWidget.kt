@@ -10,10 +10,8 @@ import com.atriidev.warp_runtime.compose.WarpProgressIndicator
 import com.atriidev.warp_runtime.compose.WarpRow
 import com.atriidev.warp_runtime.compose.WarpSpacer
 import com.atriidev.warp_runtime.compose.WarpText
-import com.atriidev.warp_runtime.nodes.actions.WarpActionId
 import com.atriidev.warp_runtime.nodes.actions.asClickAction
 import com.atriidev.warp_runtime.nodes.assets.WarpAssetId
-import com.atriidev.warp_runtime.nodes.modifiers.WarpColor
 import com.atriidev.warp_runtime.nodes.modifiers.WarpModifier
 import com.atriidev.warp_runtime.nodes.style.WarpButtonColors
 import com.atriidev.warp_runtime.nodes.style.WarpContentAlignment
@@ -25,22 +23,31 @@ import com.atriidev.warp_ui.WarpClickHandler
 import com.atriidev.warp_widget.WarpWidget
 import com.atriidev.warp_widget.WarpWidgetSession
 import com.atriidev.warp_widget.api.WidgetEnvironment
+import com.atriidev.warp_widget.ui.WarpTheme
 import com.atriidev.warp_widget.updateWarpWidgetState
-import kotlin.math.abs
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlin.math.abs
 
-/** Click action ids for [CounterWarpWidget]. */
-enum class CounterActions(
-    override val actionId: String,
-) : WarpActionId {
-    Increment("increment"),
-    Decrement("decrement"),
-    Reset("reset"),
-    /** Flip [CounterState.mode] between counter and todo. */
-    SwitchMode("switch_mode"),
-    /** Toggle a todo — pass `"todoId"`. */
-    ToggleTodo("toggle_todo"),
+/** Type-safe click actions for [CounterWarpWidget]. */
+@Serializable
+sealed class CounterActions {
+    @Serializable
+    data object Increment : CounterActions()
+
+    @Serializable
+    data object Decrement : CounterActions()
+
+    @Serializable
+    data object Reset : CounterActions()
+
+    /** Switch to [mode] (Count / To-do chip). */
+    @Serializable
+    data class SwitchMode(val mode: WidgetMode) : CounterActions()
+
+    /** Toggle done state for [todoId]. */
+    @Serializable
+    data class ToggleTodo(val todoId: String) : CounterActions()
 }
 
 @Serializable
@@ -98,32 +105,35 @@ object CounterWarpWidget : WarpWidget<CounterState>(CounterState.serializer()) {
     override fun Content(env: WidgetEnvironment, state: CounterState) {
         println("WIDGET_ENV $env")
 
-        WarpBox(
-            modifier = WarpModifier
-                .fillMaxSize()
-                .background("#1B2838")
-                .cornerRadius(16)
-                .padding(12),
-            contentAlignment = WarpContentAlignment.TopStart,
-        ) {
-            WarpColumn(
-                modifier = WarpModifier.fillMaxWidth(),
+        WarpTheme(environment = env) {
+            val colors = WarpTheme.colors
+            WarpBox(
+                modifier = WarpModifier
+                    .fillMaxSize()
+                    .background(colors.widgetBackground)
+                    .cornerRadius(16)
+                    .padding(12),
+                contentAlignment = WarpContentAlignment.TopStart,
             ) {
-                ModeSwitcher(mode = state.mode)
-
-                WarpSpacer(modifier = WarpModifier.height(6))
-
-                WarpDivider(
+                WarpColumn(
                     modifier = WarpModifier.fillMaxWidth(),
-                    thickness = 1,
-                    color = WarpColor("#33FFFFFF"),
-                )
+                ) {
+                    ModeSwitcher(mode = state.mode)
 
-                WarpSpacer(modifier = WarpModifier.height(8))
+                    WarpSpacer(modifier = WarpModifier.height(6))
 
-                when (state.mode) {
-                    WidgetMode.Counter -> CounterBody(state)
-                    WidgetMode.Todo -> TodoBody(state)
+                    WarpDivider(
+                        modifier = WarpModifier.fillMaxWidth(),
+                        thickness = 1,
+                        color = colors.outline,
+                    )
+
+                    WarpSpacer(modifier = WarpModifier.height(8))
+
+                    when (state.mode) {
+                        WidgetMode.Counter -> CounterBody(state)
+                        WidgetMode.Todo -> TodoBody(state)
+                    }
                 }
             }
         }
@@ -162,31 +172,28 @@ private fun ModeChip(
     selected: Boolean,
     targetMode: WidgetMode,
 ) {
-    val bg = if (selected) "#4FC3F7" else "#243447"
-    val fg = if (selected) "#1B2838" else "#B0BEC5"
+    val colors = WarpTheme.colors
+    val bg = if (selected) colors.primary else colors.surfaceVariant
+    val fg = if (selected) colors.onPrimary else colors.onSurfaceVariant
     WarpRow(
         modifier = WarpModifier
             .background(bg)
             .cornerRadius(20)
             .padding(horizontal = 10, vertical = 6)
-            .clickable(
-                CounterActions.SwitchMode.asClickAction(
-                    "mode" to targetMode.name.lowercase(),
-                ),
-            ),
+            .clickable(CounterActions.SwitchMode(targetMode)),
         verticalAlignment = WarpVerticalAlignment.Center,
     ) {
         WarpImage(
             asset = asset.asSystem(),
             contentDescription = label,
             modifier = WarpModifier.size(14),
-            tint = WarpColor(fg),
+            tint = fg,
         )
         WarpSpacer(modifier = WarpModifier.width(4))
         WarpText(
             text = label,
             style = WarpTextStyle(
-                color = WarpColor(fg),
+                color = fg,
                 fontSize = 12f,
                 fontWeight = WarpFontWeight.Medium,
             ),
@@ -197,6 +204,7 @@ private fun ModeChip(
 
 @Composable
 private fun CounterBody(state: CounterState) {
+    val colors = WarpTheme.colors
     // Nested column — Glance allows max 10 children per Column/Row.
     WarpColumn(modifier = WarpModifier.fillMaxWidth()) {
         val count = state.count
@@ -205,7 +213,7 @@ private fun CounterBody(state: CounterState) {
         WarpRow(
             modifier = WarpModifier
                 .fillMaxWidth()
-                .background("#243447")
+                .background(colors.surfaceVariant)
                 .cornerRadius(12)
                 .padding(8),
             verticalAlignment = WarpVerticalAlignment.Center,
@@ -229,9 +237,10 @@ private fun CounterBody(state: CounterState) {
                 text = count.toString(),
                 modifier = WarpModifier
                     .weight()
-                    .padding(horizontal = 8, vertical = 0),
+                    .padding(horizontal = 8, vertical = 0)
+                    .clickable(CounterActions.Reset),
                 style = WarpTextStyle(
-                    color = WarpColor("#FFFFFF"),
+                    color = colors.onSurface,
                     fontSize = 22f,
                     fontWeight = WarpFontWeight.Bold,
                 ),
@@ -260,14 +269,15 @@ private fun CounterBody(state: CounterState) {
             modifier = WarpModifier.fillMaxWidth(),
             style = WarpProgressIndicatorStyle.Linear,
             progress = progress,
-            color = WarpColor("#4FC3F7"),
-            backgroundColor = WarpColor("#243447"),
+            color = colors.primary,
+            backgroundColor = colors.surfaceVariant,
         )
     }
 }
 
 @Composable
 private fun TodoBody(state: CounterState) {
+    val colors = WarpTheme.colors
     val doneCount = state.todos.count { it.done }
     val total = state.todos.size
     val progress = if (total == 0) 0f else doneCount.toFloat() / total
@@ -278,7 +288,7 @@ private fun TodoBody(state: CounterState) {
         WarpText(
             text = "$doneCount / $total done",
             style = WarpTextStyle(
-                color = WarpColor("#B0BEC5"),
+                color = colors.onSurfaceVariant,
                 fontSize = 12f,
                 fontWeight = WarpFontWeight.Medium,
             ),
@@ -300,39 +310,38 @@ private fun TodoBody(state: CounterState) {
             modifier = WarpModifier.fillMaxWidth(),
             style = WarpProgressIndicatorStyle.Linear,
             progress = progress,
-            color = WarpColor("#4FC3F7"),
-            backgroundColor = WarpColor("#243447"),
+            color = colors.primary,
+            backgroundColor = colors.surfaceVariant,
         )
     }
 }
 
 @Composable
 private fun TodoRow(todo: TodoItem) {
+    val colors = WarpTheme.colors
     val icon = if (todo.done) CounterAssets.CheckCircle else CounterAssets.Circle
-    val titleColor = if (todo.done) "#6B7C8A" else "#FFFFFF"
+    val titleColor = if (todo.done) colors.onSurfaceVariant else colors.onSurface
     WarpRow(
         modifier = WarpModifier
             .fillMaxWidth()
-            .background("#243447")
+            .background(colors.surfaceVariant)
             .cornerRadius(10)
             .padding(horizontal = 10, vertical = 8)
-            .clickable(
-                CounterActions.ToggleTodo.asClickAction("todoId" to todo.id),
-            ),
+            .clickable(CounterActions.ToggleTodo(todo.id)),
         verticalAlignment = WarpVerticalAlignment.Center,
     ) {
         WarpImage(
             asset = icon.asSystem(),
             contentDescription = if (todo.done) "Done" else "Todo",
             modifier = WarpModifier.size(20),
-            tint = WarpColor(if (todo.done) "#4FC3F7" else "#B0BEC5"),
+            tint = if (todo.done) colors.primary else colors.onSurfaceVariant,
         )
         WarpSpacer(modifier = WarpModifier.width(8))
         WarpText(
             text = todo.title,
             modifier = WarpModifier.weight(),
             style = WarpTextStyle(
-                color = WarpColor(titleColor),
+                color = titleColor,
                 fontSize = 14f,
                 fontWeight = if (todo.done) WarpFontWeight.Normal else WarpFontWeight.Medium,
             ),
@@ -346,34 +355,21 @@ private fun TodoRow(todo: TodoItem) {
  */
 class CounterWarpClickHandler(
     private val session: WarpWidgetSession,
-) : WarpClickHandler<CounterActions>(CounterActions::class, CounterActions.entries) {
+) : WarpClickHandler<CounterActions>(CounterActions.serializer()) {
 
-    override suspend fun onClick(actionId: CounterActions, parameters: Map<String, String>) {
-        println("WARP_CLICK: id=$actionId, params=$parameters")
+    override suspend fun onClick(action: CounterActions) {
+        println("WARP_CLICK: action=$action")
         updateWarpWidgetState(session.context, CounterWarpWidget) { state ->
-            when (actionId) {
+            when (action) {
                 CounterActions.Increment -> state.copy(count = state.count + 1)
                 CounterActions.Decrement -> state.copy(count = state.count - 1)
                 CounterActions.Reset -> state.copy(count = 0)
-                CounterActions.SwitchMode -> {
-                    val next = when (parameters["mode"]) {
-                        "todo" -> WidgetMode.Todo
-                        "counter" -> WidgetMode.Counter
-                        else -> when (state.mode) {
-                            WidgetMode.Counter -> WidgetMode.Todo
-                            WidgetMode.Todo -> WidgetMode.Counter
-                        }
-                    }
-                    state.copy(mode = next)
-                }
-                CounterActions.ToggleTodo -> {
-                    val todoId = parameters["todoId"] ?: return@updateWarpWidgetState state
-                    state.copy(
-                        todos = state.todos.map { todo ->
-                            if (todo.id == todoId) todo.copy(done = !todo.done) else todo
-                        },
-                    )
-                }
+                is CounterActions.SwitchMode -> state.copy(mode = action.mode)
+                is CounterActions.ToggleTodo -> state.copy(
+                    todos = state.todos.map { todo ->
+                        if (todo.id == action.todoId) todo.copy(done = !todo.done) else todo
+                    },
+                )
             }
         }
     }

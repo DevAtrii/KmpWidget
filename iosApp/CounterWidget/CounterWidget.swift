@@ -8,36 +8,55 @@ import SwiftUI
 import WidgetKit
 import warpWidgetKit
 
-/// Timeline entry carries WARP JSON so reloads show fresh Kotlin state (not a cached view).
+/// Timeline entry — state lives in App Group prefs; [CounterWidgetEntryView] composes live JSON.
 struct CounterWidgetEntry: TimelineEntry {
     let date: Date
-    /// From [WarpWidgetHost.composeJson] — [CounterWarpWidget] + [WarpWidgetKitEnv].
-    let json: String
+    let displayWidth: CGFloat
+    let displayHeight: CGFloat
 }
 
-/// Builds entries by calling into Shared (Kotlin) on each snapshot / timeline refresh.
+/// Refreshes timeline schedule only. UI JSON is built in [CounterWidgetEntryView] from
+/// `@Environment(\.colorScheme)` so theme matches what WidgetKit is drawing (including
+/// light/dark pre-render passes).
 struct CounterWidgetProvider: TimelineProvider {
     func placeholder(in context: Context) -> CounterWidgetEntry {
-        CounterWidgetEntry(date: Date(), json: counterWidgetJson(context: context))
+        entry(from: context)
     }
 
     func getSnapshot(in context: Context, completion: @escaping (CounterWidgetEntry) -> Void) {
-        completion(CounterWidgetEntry(date: Date(), json: counterWidgetJson(context: context)))
+        completion(entry(from: context))
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<CounterWidgetEntry>) -> Void) {
-        let entry = CounterWidgetEntry(date: Date(), json: counterWidgetJson(context: context))
-        completion(Timeline(entries: [entry], policy: .atEnd))
+        completion(Timeline(entries: [entry(from: context)], policy: .atEnd))
+    }
+
+    private func entry(from context: Context) -> CounterWidgetEntry {
+        let size = context.displaySize
+        return CounterWidgetEntry(
+            date: Date(),
+            displayWidth: size.width,
+            displayHeight: size.height
+        )
     }
 }
 
-/// Renders [CounterWidgetEntry.json] via warp-ui SwiftUI (`WarpSwiftUIRootView`).
+/// Composes WARP JSON at render time — [EnvironmentValues.colorScheme] is the source of truth.
 struct CounterWidgetEntryView: View {
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.widgetFamily) private var widgetFamily
+    @Environment(\.widgetRenderingMode) private var widgetRenderingMode
+
     var entry: CounterWidgetProvider.Entry
 
     var body: some View {
         WarpSwiftUIRootView(
-            json: entry.json,
+            json: composeWidgetJson(
+                colorScheme: colorScheme,
+                widgetFamily: widgetFamily,
+                widgetRenderingMode: widgetRenderingMode,
+                displaySize: CGSize(width: entry.displayWidth, height: entry.displayHeight)
+            ),
             useIntents: true,
             widgetId: CounterWarpWidget.shared.id
         )
@@ -72,5 +91,5 @@ struct CounterHomeWidget: Widget {
 #Preview(as: .systemSmall) {
     CounterHomeWidget()
 } timeline: {
-    CounterWidgetEntry(date: .now, json: counterWidgetPlaceholderJson())
+    CounterWidgetEntry(date: .now, displayWidth: 155, displayHeight: 155)
 }

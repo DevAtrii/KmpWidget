@@ -64,6 +64,9 @@ data class WarpModifier(
         fun clickable(actionId: WarpActionId): WarpModifier =
             Default.clickable(actionId)
 
+        inline fun <reified A : Any> clickable(action: A): WarpModifier =
+            Default.clickable(action)
+
         fun visibility(visibility: WarpVisibility): WarpModifier =
             Default.visibility(visibility)
 
@@ -144,6 +147,9 @@ data class WarpModifier(
 
     fun clickable(actionId: WarpActionId): WarpModifier =
         clickable(actionId.asClickAction())
+
+    inline fun <reified A : Any> clickable(action: A): WarpModifier =
+        clickable(action.asClickAction())
 
     fun visibility(visibility: WarpVisibility): WarpModifier =
         then(WarpVisibilityElement(visibility))

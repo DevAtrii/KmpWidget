@@ -9,7 +9,6 @@ import androidx.glance.appwidget.GlanceAppWidgetManager
 import com.atriidev.warp_ui.WarpClicksRegistry
 import com.atriidev.warp_ui.setWarpGlanceClickPrepareHandler
 import com.atriidev.warp_widget.api.PlatformContext
-import com.atriidev.warp_widget.api.WarpWidgetFamily
 import com.atriidev.warp_widget.api.makeWidgetEnvironment
 
 private const val TAG = "WarpWidgetAndroidRegistry"
@@ -106,6 +105,46 @@ object WarpWidgetAndroidRegistry {
     internal fun isRegistered(widgetId: String): Boolean =
         entries.containsKey(widgetId)
 
+    /** Re-render every registered Glance widget (e.g. after uiMode / theme change). */
+    suspend fun reloadAll(context: PlatformContext) {
+        val android = context.context
+        ensureAllWidgetReceiversRegistered(android)
+
+        if (entries.isEmpty()) {
+            Log.w(TAG, "reloadAll: no widgets registered after receiver wake")
+            return
+        }
+
+        for (widgetId in entries.keys.toList()) {
+            WarpWidgetStateStore.reload(context, widgetId)
+        }
+        Log.d(TAG, "reloadAll: ${entries.size} widget(s)")
+    }
+
+    /**
+     * Instantiate every manifest [WarpGlanceWidgetReceiver] so [register] runs before reload/update.
+     *
+     * Opening the launcher app does not construct widget receivers; without this,
+     * [reloadAll] can no-op even though widgets are on the home screen.
+     */
+    fun ensureAllWidgetReceiversRegistered(context: Context) {
+        val appWidgetManager = AppWidgetManager.getInstance(context)
+        for (provider in appWidgetManager.installedProviders) {
+            if (provider.provider.packageName != context.packageName) continue
+            wakeReceiverClass(context, provider.provider.className)
+        }
+    }
+
+    private fun wakeReceiverClass(context: Context, className: String) {
+        try {
+            val clazz = Class.forName(className, true, context.classLoader)
+            val instance = clazz.getDeclaredConstructor().newInstance()
+            (instance as? WarpGlanceWidgetReceiver)?.ensureRegistered()
+        } catch (e: Exception) {
+            Log.w(TAG, "ensureAllWidgetReceiversRegistered: $className", e)
+        }
+    }
+
     /**
      * Re-bind [WarpClicksRegistry] for the WARP widget that owns [glanceId].
      */
@@ -129,7 +168,6 @@ object WarpWidgetAndroidRegistry {
             context = platformContext,
             environment = makeWidgetEnvironment(
                 platformContext = platformContext,
-                family = WarpWidgetFamily.SYSTEM_SMALL,
                 isPreview = false,
             ),
         )
@@ -149,11 +187,8 @@ object WarpWidgetAndroidRegistry {
                 Log.w(TAG, "wakeGlanceReceiver: no AppWidgetInfo for id=$appWidgetId")
                 return
             }
-            val className = info.provider.className
-            val clazz = Class.forName(className, true, context.classLoader)
-            val instance = clazz.getDeclaredConstructor().newInstance()
-            (instance as? WarpGlanceWidgetReceiver)?.ensureRegistered()
-            Log.d(TAG, "Woke Glance receiver $className")
+            wakeReceiverClass(context, info.provider.className)
+            Log.d(TAG, "Woke Glance receiver ${info.provider.className}")
         } catch (e: Exception) {
             Log.w(TAG, "wakeGlanceReceiver failed", e)
         }

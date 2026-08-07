@@ -26,6 +26,7 @@ import com.atriidev.warp_widget.WarpWidgetPreferences
 import com.atriidev.warp_widget.WarpWidgetSession
 import com.atriidev.warp_widget.api.PlatformContext
 import com.atriidev.warp_widget.api.WarpWidgetFamily
+import com.atriidev.warp_widget.api.WidgetPlatformEnvironment
 import com.atriidev.warp_widget.api.makeWidgetEnvironment
 import com.atriidev.warp_widget.api.platformContext
 import com.atriidev.warp_widget.readWarpWidgetState
@@ -97,8 +98,10 @@ private fun WarpUiKitPreview(
                     context = platformContext,
                     environment = makeWidgetEnvironment(
                         platformContext,
-                        family = WarpWidgetFamily.SYSTEM_SMALL,
                         isPreview = true,
+                        platformEnvironment = WidgetPlatformEnvironment.Ios(
+                            family = WarpWidgetFamily.SYSTEM_SMALL,
+                        ),
                     ),
                     preferences = WarpWidgetPreferences(
                         mapOf(

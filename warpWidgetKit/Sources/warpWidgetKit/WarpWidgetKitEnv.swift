@@ -111,8 +111,35 @@ public struct WarpWidgetKitEnv: Sendable, Equatable {
             timeZoneIdentifier: TimeZone.current.identifier,
             displayScale: UIScreen.main.scale,
             fontScale: 1,
-            theme: .unspecified,
+            theme: Theme.resolve(from: context),
+            // widgetRenderingMode is view-only (@Environment); not in timeline environmentVariants.
             renderingMode: .fullColor
+        )
+    }
+
+    /// SwiftUI widget view path — live [ColorScheme] and [WidgetRenderingMode].
+    public static func from(
+        colorScheme: ColorScheme,
+        family: Family,
+        width: CGFloat? = nil,
+        height: CGFloat? = nil,
+        isPreview: Bool = false,
+        widgetRenderingMode: WidgetRenderingMode? = nil
+    ) -> WarpWidgetKitEnv {
+        let size = defaultSize(for: family, width: width, height: height)
+        let locale = Locale.current
+        return WarpWidgetKitEnv(
+            family: family,
+            width: size.width,
+            height: size.height,
+            isPreview: isPreview,
+            localeIdentifier: locale.identifier,
+            layoutDirection: locale.language.characterDirection == .rightToLeft ? .rtl : .ltr,
+            timeZoneIdentifier: TimeZone.current.identifier,
+            displayScale: UIScreen.main.scale,
+            fontScale: 1,
+            theme: Theme(colorScheme: colorScheme),
+            renderingMode: RenderingMode(widgetRenderingMode: widgetRenderingMode)
         )
     }
 
@@ -122,18 +149,91 @@ public struct WarpWidgetKitEnv: Sendable, Equatable {
         isPreview: Bool = false
     ) -> WarpWidgetKitEnv {
         let locale = Locale.current
+        let size = defaultSize(for: family)
         return WarpWidgetKitEnv(
             family: family,
-            width: family == .systemSmall ? 155 : 329,
-            height: 155,
+            width: size.width,
+            height: size.height,
             isPreview: isPreview,
             localeIdentifier: locale.identifier,
             layoutDirection: locale.language.characterDirection == .rightToLeft ? .rtl : .ltr,
             timeZoneIdentifier: TimeZone.current.identifier,
             displayScale: UIScreen.main.scale,
             fontScale: 1,
-            theme: .unspecified
+            theme: Theme.resolveFromCurrentTraits(),
+            renderingMode: .fullColor
         )
+    }
+
+    private static func defaultSize(
+        for family: Family,
+        width: CGFloat? = nil,
+        height: CGFloat? = nil
+    ) -> (width: CGFloat, height: CGFloat) {
+        if let width, let height {
+            return (width, height)
+        }
+        switch family {
+        case .systemSmall:
+            return (155, 155)
+        case .systemMedium:
+            return (329, 155)
+        case .systemLarge:
+            return (329, 345)
+        case .systemExtraLarge:
+            return (690, 345)
+        case .unknown:
+            return (329, 155)
+        }
+    }
+}
+
+public extension WarpWidgetKitEnv.Theme {
+    init(colorScheme: ColorScheme) {
+        switch colorScheme {
+        case .dark:
+            self = .dark
+        case .light:
+            self = .light
+        @unknown default:
+            self = .unspecified
+        }
+    }
+
+    static func resolve(from context: TimelineProvider.Context) -> WarpWidgetKitEnv.Theme {
+        // WidgetKit lists every colorScheme in environmentVariants (often [.light, .dark]).
+        // Never pick schemes[0] — use the trait for *this* render pass (pre-render sets it per variant).
+        resolveFromCurrentTraits()
+    }
+
+    static func resolveFromCurrentTraits() -> WarpWidgetKitEnv.Theme {
+        switch UITraitCollection.current.userInterfaceStyle {
+        case .dark:
+            return .dark
+        case .light:
+            return .light
+        default:
+            return .unspecified
+        }
+    }
+}
+
+public extension WarpWidgetKitEnv.RenderingMode {
+    /// Map SwiftUI [WidgetRenderingMode] — only valid inside a widget [View] (`@Environment`).
+    init(widgetRenderingMode: WidgetRenderingMode?) {
+        guard let widgetRenderingMode else {
+            self = .fullColor
+            return
+        }
+        if widgetRenderingMode == .fullColor {
+            self = .fullColor
+        } else if widgetRenderingMode == .accented {
+            self = .accented
+        } else if widgetRenderingMode == .vibrant {
+            self = .vibrant
+        } else {
+            self = .fullColor
+        }
     }
 }
 

@@ -46,7 +46,7 @@ One shared definition with `@Serializable` state `S`:
 - `Content(env, state)` — WARP composables with decoded `S`
 - `clickHandlers(session)` — persist via `updateWarpWidgetState { (S) -> S }`
 
-Supported size classes are **not** on `WarpWidget` — the host is the source of truth (WidgetKit `.supportedFamilies` / Glance sizes). Use `env.family` for the **current** family at render time.
+Supported size classes are **not** on `WarpWidget` — the host is the source of truth (WidgetKit `.supportedFamilies` / Glance sizes). On **iOS** use `env.widgetFamily` ([WidgetPlatformEnvironment.Ios.family]). On **Android** use `env.size` (dp) — inferred Glance buckets are not exposed on [WidgetEnvironment].
 
 ### `WarpWidgetSession`
 
@@ -115,12 +115,51 @@ State JSON is stored under prefs key = [WarpWidget.id].
 
 See demo: [`CounterWarpWidget.kt`](../shared/src/commonMain/kotlin/com/atriidev/kmpwidget/CounterWarpWidget.kt).
 
+## Theming (`WarpTheme`)
+
+Material-style color roles for widget UI — cross-platform `WarpColor` values for Glance + WidgetKit.
+
+Wrap `Content` in `WarpTheme(environment = env)` and read colors via `WarpTheme.colors`:
+
+```kotlin
+@Composable
+override fun Content(env: WidgetEnvironment, state: CounterState) {
+    WarpTheme(environment = env) {
+        val colors = WarpTheme.colors
+        WarpBox(
+            modifier = WarpModifier
+                .fillMaxSize()
+                .background(colors.widgetBackground),
+        ) {
+            WarpText(
+                text = "${state.count}",
+                style = WarpTextStyle(color = colors.onSurface),
+            )
+        }
+    }
+}
+```
+
+| API | Role |
+|-----|------|
+| `WarpTheme(environment = env) { … }` | Pick light/dark from `env.theme` |
+| `WarpTheme.colors` | Current `WarpColors` inside the theme subtree |
+| `WarpColors.defaultLight(platform)` / `defaultDark(platform)` | Platform defaults (Material 3 on Android, system blue on iOS) |
+| `WarpColors.Material3Light` / `Material3Dark` | Explicit Material 3 baseline |
+| `WarpColors.IosLight` / `IosDark` | Explicit iOS-style blue baseline |
+| `env.warpColors()` | Resolve colors outside compose (no `WarpTheme` wrapper) |
+
+On **Android**, `env.theme` comes from Glance `Configuration.uiMode` (stored in internal Glance prefs on reload — see below).  
+On **iOS**, compose at view time with live `@Environment(\.colorScheme)` so WidgetKit pre-render passes get the correct scheme.
+
 ## Android (Jetpack Glance)
 
 1. Subclass [WarpGlanceWidgetReceiver](src/androidMain/kotlin/com/atriidev/warp_widget/WarpGlanceWidgetReceiver.kt) + [WarpGlanceWidget](src/androidMain/kotlin/com/atriidev/warp_widget/WarpGlanceWidget.kt) — registry + `PreferencesGlanceStateDefinition` + `WarpRender` are automatic:
 
 ```kotlin
 class CounterWidgetReceiver : WarpGlanceWidgetReceiver() {
+    init { ensureRegistered() }  // eager registry when receiver class loads
+
     override val widget get() = CounterWarpWidget
     override fun createGlanceWidget() = CounterGlanceAppWidget()
 }
@@ -130,16 +169,49 @@ class CounterGlanceAppWidget : WarpGlanceWidget() {
 }
 ```
 
+2. **Manifest** — add ui-mode / config actions so system light/dark toggles reload widgets (subclassing `WarpGlanceWidgetReceiver` handles the broadcast; the intent filter must be declared in the app manifest):
+
+```xml
+<receiver android:name=".CounterWidgetReceiver" android:exported="true">
+    <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+        <action android:name="android.intent.action.CONFIGURATION_CHANGED" />
+        <action android:name="android.intent.action.UI_MODE_CHANGED" />
+    </intent-filter>
+    <meta-data
+        android:name="android.appwidget.provider"
+        android:resource="@xml/my_app_widget_info" />
+</receiver>
+```
+
+No custom `Application` or ContentProvider is required — [WarpWidgetAndroidInitProvider](src/androidMain/kotlin/com/atriidev/warp_widget/WarpWidgetAndroidInitProvider.kt) installs cold-start click prepare and ui-mode reload listeners at process start.
+
 | Helper | Role |
 |--------|------|
-| `WarpGlanceWidgetReceiver` | Auto [WarpWidgetAndroidRegistry.register]; cold-start wake → `ensureRegistered` |
+| `WarpGlanceWidgetReceiver` | Auto [WarpWidgetAndroidRegistry.register]; handles `UI_MODE_CHANGED` / `CONFIGURATION_CHANGED` |
 | `WarpGlanceWidget` | `PreferencesGlanceStateDefinition` + `WarpWidgetHost` / `WarpRender` |
 | `rememberGlanceWidgetSession(context)` | `LocalSize` + Glance prefs → `WarpWidgetSession` (used inside `WarpGlanceWidget`) |
 | `glanceWidgetEnvironment(context, size)` | Map config / density / theme → `WidgetEnvironment` |
-| `Preferences.toWarpPreferences()` | Glance prefs → WARP bag |
+| `Preferences.toWarpPreferences()` | Glance prefs → WARP bag (filters internal `__warp_*` keys) |
+| `WarpTheme(environment = env)` | Material-style colors from `env.theme` — see [Theming](#theming-warptheme) |
 
 **State:** Glance `PreferencesGlanceStateDefinition` via `WarpWidgetStateStore`.  
 **Update from app:** `updateWarpWidgetState(PlatformContext(context), widget) { … }`.
+
+### System light / dark reload
+
+Glance keeps a long-lived composition session whose `Context` can retain a stale `uiMode`. A bare `GlanceAppWidget.update()` with unchanged user prefs may not recompose — which is why widgets often stayed on the old theme until a click changed state.
+
+`warp-widget` handles this automatically:
+
+1. **[WarpWidgetAndroidReload](src/androidMain/kotlin/com/atriidev/warp_widget/WarpWidgetAndroidReload.kt)** listens for `UI_MODE_CHANGED` / `CONFIGURATION_CHANGED` (dynamic receiver at process start + manifest actions on `WarpGlanceWidgetReceiver`).
+2. **[WarpWidgetAndroidRegistry.reloadAll](src/androidMain/kotlin/com/atriidev/warp_widget/WarpWidgetAndroidRegistry.kt)** wakes every installed widget receiver, then calls `WarpWidgetStateStore.reload` per registered widget.
+3. **`reload`** writes internal Glance prefs (`__warp_ui_mode`, `__warp_theme_epoch`) via [GlanceInternalState](src/androidMain/kotlin/com/atriidev/warp_widget/GlanceInternalState.kt), then calls `update()` — same “prefs changed → recompose” path as a user click.
+4. **`rememberGlanceWidgetSession`** reads theme from those internal prefs (fallback: live `Configuration`) so `WarpTheme(environment = env)` picks up the new scheme.
+
+**Requirements:** manifest intent filter above; open the app once after install so the init provider registers receivers (or interact with the widget once). Reload only runs while the app process is alive (standard Android widget limitation).
+
+**Debug logcat tags:** `WarpWidgetAndroidReload`, `WarpWidgetStateStore`, `WarpWidgetAndroidRegistry`.
 
 ## iOS (WidgetKit)
 
@@ -205,8 +277,11 @@ warp-widget/
   src/commonMain/…/WarpWidget.kt          # WarpWidget, session, host
   src/commonMain/…/WarpWidgetState*.kt    # prefs, currentState, store expect
   src/commonMain/…/api/                   # WidgetEnvironment, PlatformContext, …
+  src/commonMain/…/ui/WarpTheme.kt        # WarpTheme, WarpColors
   src/androidMain/…/WarpGlance*.kt        # GlanceAppWidget / Receiver bases
   src/androidMain/…/Glance*.kt            # Glance env/session helpers, registry
+  src/androidMain/…/GlanceInternalState.kt  # internal uiMode prefs for theme reload
+  src/androidMain/…/WarpWidgetAndroidReload.kt  # UI_MODE_CHANGED → reloadAll
   src/iosMain/…/WarpWidgetKitMapping.kt   # Kit env dict → Shared types
   src/iosMain/…/WarpWidgetHost.ios.kt     # iosSession()
   src/swift/warpBridge/                   # spm4Kmp thin bridge

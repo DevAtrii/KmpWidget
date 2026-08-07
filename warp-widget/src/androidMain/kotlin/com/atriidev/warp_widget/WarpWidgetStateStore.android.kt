@@ -72,13 +72,22 @@ actual object WarpWidgetStateStore {
         val android = context.context
         val widget = requireWidget(widgetId) ?: return
         val glanceIds = GlanceAppWidgetManager(android).getGlanceIds(widget.javaClass)
+        if (glanceIds.isEmpty()) {
+            Log.w(TAG, "reload($widgetId): no Glance ids")
+            return
+        }
         glanceIds.forEach { glanceId ->
             try {
+                // Glance keeps a long-lived session with a stale Context; bare update() does not
+                // recompose when prefs are unchanged. Touch internal theme keys first (same effect
+                // as a user click that mutates state).
+                GlanceInternalState.touchTheme(android, glanceId)
                 widget.update(android, glanceId)
             } catch (e: Exception) {
                 Log.e(TAG, "reload($widgetId) failed for $glanceId", e)
             }
         }
+        Log.d(TAG, "reload($widgetId): ${glanceIds.size} instance(s)")
     }
 
     private fun requireWidget(widgetId: String): GlanceAppWidget? {

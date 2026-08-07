@@ -1,5 +1,6 @@
 package com.atriidev.warp_ui.glance.internal
 
+import android.annotation.SuppressLint
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -201,6 +202,7 @@ private fun RenderDivider(
     )
 }
 
+@SuppressLint("RestrictedApi")
 @Composable
 private fun RenderProgressIndicator(
     node: WarpProgressIndicator,
