@@ -16,6 +16,8 @@ internal class WarpRegistryActionCallback : ActionCallback {
         val actionParameters = WarpGlanceActionKeys.decodeParameters(
             parameters[WarpGlanceActionKeys.ParametersJson],
         )
+        // Cold start: process may never have run WarpRender → registry empty.
+        WarpGlanceClickPrepare.prepareIfNeeded(context.applicationContext, glanceId)
         WarpClicksRegistry.dispatch(actionId, actionParameters)
     }
 }

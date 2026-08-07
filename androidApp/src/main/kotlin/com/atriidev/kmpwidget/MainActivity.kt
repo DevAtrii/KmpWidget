@@ -13,7 +13,6 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
-        installCounterWarpWidget()
 
         setContent {
             val context = LocalContext.current

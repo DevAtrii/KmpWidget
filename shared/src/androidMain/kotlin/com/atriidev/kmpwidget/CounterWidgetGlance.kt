@@ -14,7 +14,11 @@ import com.atriidev.warp_widget.rememberGlanceWidgetSession
 
 class CounterWidgetReceiver : GlanceAppWidgetReceiver() {
     init {
-        WarpWidgetAndroidRegistry.register(CounterWarpWidget.id) { CounterGlanceAppWidget() }
+        // Cold-start taps wake this receiver → register runs → handlers re-bound in warp-widget.
+        WarpWidgetAndroidRegistry.register(
+            CounterWarpWidget.id,
+            CounterWarpWidget,
+        ) { glanceAppWidget }
     }
 
     override val glanceAppWidget: GlanceAppWidget
@@ -30,7 +34,6 @@ class CounterGlanceAppWidget : GlanceAppWidget() {
         context: Context,
         id: GlanceId,
     ) {
-        WarpWidgetAndroidRegistry.register(CounterWarpWidget.id) { CounterGlanceAppWidget() }
         provideContent {
             val session = rememberGlanceWidgetSession(context)
             WarpRender(

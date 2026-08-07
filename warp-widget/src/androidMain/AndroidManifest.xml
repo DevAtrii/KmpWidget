@@ -1,4 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <application>
+        <!-- Installs Glance cold-start click prepare; apps register from Receiver.init only. -->
+        <provider
+            android:name="com.atriidev.warp_widget.WarpWidgetAndroidInitProvider"
+            android:authorities="${applicationId}.warp-widget-init"
+            android:exported="false"
+            android:initOrder="100" />
+    </application>
+
 </manifest>

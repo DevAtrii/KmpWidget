@@ -20,9 +20,19 @@ object WarpClicksRegistry {
      * Invokes the handler for [actionId], if registered.
      *
      * @param actionId WARP JSON `onClick.actionId` (e.g. `"increment"`)
+     * @return true if a handler ran
      */
-    suspend fun dispatch(actionId: String, parameters: Map<String, String>) {
-        handlers[actionId]?.invoke(parameters)
+    suspend fun dispatch(actionId: String, parameters: Map<String, String>): Boolean {
+        val handler = handlers[actionId]
+        if (handler == null) {
+            println(
+                "WARP_CLICK: no handler for id=$actionId " +
+                    "(registry empty or cold start without prepare). keys=${handlers.keys}",
+            )
+            return false
+        }
+        handler.invoke(parameters)
+        return true
     }
 
     private fun registerOne(handler: WarpClickHandler<*>) {

@@ -65,6 +65,7 @@ class CounterWarpClickHandler(
 ) : WarpClickHandler<CounterActions>(CounterActions::class, CounterActions.entries) {
 
     override suspend fun onClick(actionId: CounterActions, parameters: Map<String, String>) {
+        println("WARP_CLICK: id=$actionId, params=$parameters")
         val delta = when (actionId) {
             CounterActions.Increment -> +1
             CounterActions.Decrement -> -1

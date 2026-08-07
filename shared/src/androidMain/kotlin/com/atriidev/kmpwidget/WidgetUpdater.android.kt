@@ -9,7 +9,6 @@ actual class WidgetUpdater(
     private val context: Context,
 ) {
     actual suspend fun update(counter: Int) {
-        WarpWidgetAndroidRegistry.register(CounterWarpWidget.id) { CounterGlanceAppWidget() }
         updateWarpWidgetState(PlatformContext(context), CounterWarpWidget) {
             this[CounterKeys.Count] = counter
         }

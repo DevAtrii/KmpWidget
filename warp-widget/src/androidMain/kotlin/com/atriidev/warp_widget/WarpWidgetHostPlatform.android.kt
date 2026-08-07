@@ -10,7 +10,7 @@ internal actual fun platformRegisterClickHandlers(handlers: List<WarpClickHandle
 }
 
 internal actual fun platformInstallPrepareHandler(reprepare: () -> Unit) {
-    // No AppIntent cold-start path on Android Glance.
+    // Glance cold-start uses WarpWidgetAndroidRegistry → setWarpGlanceClickPrepareHandler.
 }
 
 internal actual fun platformDispatchClick(actionId: String, parametersJson: String) {

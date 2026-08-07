@@ -112,10 +112,18 @@ See demo: [`CounterWarpWidget.kt`](../shared/src/commonMain/kotlin/com/atriidev/
 
 ## Android (Jetpack Glance)
 
-1. Register the Glance class once (app / receiver startup):
+1. Register WARP widget + Glance class in the **receiver `init`** (library handles cold-start taps — no app ContentProvider):
 
 ```kotlin
-WarpWidgetAndroidRegistry.register(CounterWarpWidget.id) { CounterGlanceAppWidget() }
+class CounterWidgetReceiver : GlanceAppWidgetReceiver() {
+    init {
+        WarpWidgetAndroidRegistry.register(
+            CounterWarpWidget.id,
+            CounterWarpWidget,
+        ) { CounterGlanceAppWidget() }
+    }
+    override val glanceAppWidget get() = CounterGlanceAppWidget()
+}
 ```
 
 2. In `provideContent`, build a session with Glance helpers:
