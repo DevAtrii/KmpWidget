@@ -523,7 +523,7 @@ warp-runtime/
 ├── example/
 │   └── counter/            # Sample counter widget (not core API)
 │       ├── CounterWidget.kt        # State, UI, toJson()
-│       └── CounterActions.kt       # Widget-specific WarpActionId enum
+│       └── (tests) example/counter # Counter fixture for compose / click tests
 ├── nodes/
 │   ├── WarpNode.kt         # Sealed serializable interface
 │   ├── WarpColumn.kt       # Public node data classes

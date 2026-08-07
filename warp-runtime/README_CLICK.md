@@ -254,5 +254,5 @@ This is the intended extension mechanism.
 - `nodes/actions/ClickAction.kt` — `actionId`, parameters, factories
 - `nodes/WarpButton.kt` — stores `onClick: WarpAction`
 - `compose/WarpUi.kt` — public `WarpButton` API
-- `example/counter/CounterActions.kt` — action IDs defined once
+- `commonTest/.../example/counter/` — counter fixture (actions + UI) for tests
 - `example/counter/CounterWidget.kt` — shared UI example

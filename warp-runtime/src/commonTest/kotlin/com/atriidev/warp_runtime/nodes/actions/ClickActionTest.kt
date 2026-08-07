@@ -51,6 +51,7 @@ class ClickActionTest {
         val result = when (decodeActionId("increment", CounterActions::class)) {
             CounterActions.Increment -> "incremented"
             CounterActions.Decrement -> "decremented"
+            CounterActions.Reset -> "reset"
         }
 
         assertEquals("incremented", result)
@@ -63,6 +64,7 @@ class ClickActionTest {
         val result = when (action.actionIdAs<CounterActions>()) {
             CounterActions.Increment -> "incremented"
             CounterActions.Decrement -> "decremented"
+            CounterActions.Reset -> "reset"
         }
 
         assertEquals("incremented", result)

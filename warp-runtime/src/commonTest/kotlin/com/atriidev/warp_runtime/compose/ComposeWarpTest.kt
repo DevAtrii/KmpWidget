@@ -5,7 +5,6 @@ import com.atriidev.warp_runtime.nodes.WarpColumn
 import com.atriidev.warp_runtime.nodes.WarpButton
 import com.atriidev.warp_runtime.nodes.actions.ClickAction
 import com.atriidev.warp_runtime.nodes.actions.clickActionIdOrNull
-import com.atriidev.warp_runtime.example.counter.CounterActions
 import com.atriidev.warp_runtime.example.counter.CounterState
 import com.atriidev.warp_runtime.example.counter.sampleCounterWidgetJson
 import com.atriidev.warp_runtime.example.counter.sampleCounterWidgetUi
@@ -18,8 +17,8 @@ import kotlin.test.assertTrue
 /**
  * Cross-platform tests for [composeWarp], [composeWarpToJson], [WarpComposition], and samples.
  *
- * Uses composable lambdas from `commonMain` because test source sets are not processed
- * by the Compose Compiler.
+ * Counter fixture: [com.atriidev.warp_runtime.example.counter].
+ * [mutableStateCounterUi] lives in `commonMain` ([WarpSamples]) for Compose Compiler coverage.
  */
 class ComposeWarpTest {
 

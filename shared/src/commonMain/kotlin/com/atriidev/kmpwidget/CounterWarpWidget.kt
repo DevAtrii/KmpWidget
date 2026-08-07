@@ -9,7 +9,7 @@ import com.atriidev.warp_runtime.compose.WarpProgressIndicator
 import com.atriidev.warp_runtime.compose.WarpRow
 import com.atriidev.warp_runtime.compose.WarpSpacer
 import com.atriidev.warp_runtime.compose.WarpText
-import com.atriidev.warp_runtime.example.counter.CounterActions
+import com.atriidev.warp_runtime.nodes.actions.WarpActionId
 import com.atriidev.warp_runtime.nodes.actions.asClickAction
 import com.atriidev.warp_runtime.nodes.modifiers.WarpColor
 import com.atriidev.warp_runtime.nodes.modifiers.WarpModifier
@@ -26,7 +26,15 @@ import com.atriidev.warp_widget.api.WidgetEnvironment
 import com.atriidev.warp_widget.updateWarpWidgetState
 import kotlin.math.abs
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.builtins.serializer
+
+/** Click action ids for [CounterWarpWidget]. */
+enum class CounterActions(
+    override val actionId: String,
+) : WarpActionId {
+    Increment("increment"),
+    Decrement("decrement"),
+    Reset("reset"),
+}
 
 /** Serializable state for [CounterWarpWidget] — persisted as JSON under prefs key = widget id. */
 @Serializable
@@ -42,7 +50,6 @@ data class CounterState(
 object CounterWarpWidget : WarpWidget<CounterState>(CounterState.serializer()) {
     override val id: String = "CounterWidget"
 
-    /** App Group suite — keep in sync with Xcode entitlements / [APP_GROUP_ID]. */
     override val iosGroupId: String = APP_GROUP_ID
 
     override val defaultState: CounterState = CounterState()
