@@ -44,7 +44,8 @@ One shared definition with `@Serializable` state `S`:
 - `iosGroupId` — iOS App Group suite (`group.*`); ignored on Android
 - `defaultState` — used when prefs empty / decode fails
 - `Content(env, state)` — WARP composables with decoded `S`
-- `clickHandlers(session)` — persist via `updateWarpWidgetState { (S) -> S }`
+- `clickHandlers(session)` — persist via `updateWarpWidgetState(session, widget) { (S) -> S }`
+- `stateScope` — [WarpWidgetStateScope.Shared] (default) or [WarpWidgetStateScope.Instance] for per-placement state
 
 Supported size classes are **not** on `WarpWidget` — the host is the source of truth (WidgetKit `.supportedFamilies` / Glance sizes). On **iOS** use `env.widgetFamily` ([WidgetPlatformEnvironment.Ios.family]). On **Android** use `env.size` (dp) — inferred Glance buckets are not exposed on [WidgetEnvironment].
 
@@ -57,6 +58,7 @@ WarpWidgetSession(
     context = PlatformContext(/* Android Context / iOS app group */),
     environment = /* from Glance or WarpWidgetKitEnv */,
     preferences = /* optional preloaded prefs */,
+    widgetId = /* this instance — aw:… / ios:… / kind id when Shared */,
 )
 ```
 
@@ -97,7 +99,7 @@ object CounterWarpWidget : WarpWidget<CounterState>(CounterState.serializer()) {
     override fun clickHandlers(session: WarpWidgetSession) = listOf(
         object : WarpClickHandler<CounterActions>(…) {
             override suspend fun onClick(actionId: CounterActions, parameters: Map<String, String>) {
-                updateWarpWidgetState(session.context, CounterWarpWidget) { state ->
+                updateWarpWidgetState(session, CounterWarpWidget) { state ->
                     state.copy(
                         count = when (actionId) {
                             CounterActions.Increment -> state.count + 1
@@ -336,13 +338,42 @@ No `installWarpWidgetKitBridge()` — `iosSession(widget:kitFields:)` installs t
 
 ## State API
 
+Glance-style: **always pass [WarpWidgetId]** for update / read / reload. Changing [WarpWidget.stateScope] only changes fan-out — never whether an id is required (no runtime “missing id” when flipping Shared ↔ Instance).
+
 | API | Role |
 |-----|------|
 | `WarpWidget<S>(serializer)` + `defaultState` | Typed serializable widget state |
-| `updateWarpWidgetState(context, widget) { S -> S }` | Encode JSON under `id` + reload |
-| `readWarpWidgetState(context, widget)` | Decode typed state |
+| `WarpWidget.stateScope` | [Shared] (mirror all) or [Instance] (one id) |
+| `WarpWidgetId` | `"aw:$appWidgetId"` (Android), `"ios:$family"` (iOS, Kotlin-derived), or kind id when Shared |
+| `updateWarpWidgetState(context, widget, id) { S -> S }` | Required [id] — Shared still fans out |
+| `updateWarpWidgetState(session, widget) { S -> S }` | Uses [WarpWidgetSession.widgetId] |
+| `readWarpWidgetState(context, widget, id)` | Decode typed state for [id] |
+| `listWarpWidgetIds(context, widget)` | Active instance ids |
+| `reloadWarpWidget(context, widget, id)` | Reload for scope rules |
 | `WarpStateKey` / `currentState` | Low-level string-key bag (optional) |
-| `reloadWarpWidget(context, widget)` | Reload only |
+
+### Shared vs instance state
+
+**Shared:** all instances share one JSON blob. Android mirrors WARP prefs to every active `GlanceId`; iOS App Group `"$kind.$key"`. Still pass an id (`WarpWidgetId.ofKind(widget.id)` or any from `listWarpWidgetIds`).
+
+**Instance** — personal widgets:
+
+```kotlin
+object StocksWarpWidget : WarpWidget<StocksState>(StocksState.serializer()) {
+    override val stateScope = WarpWidgetStateScope.Instance
+    …
+}
+
+val ids = listWarpWidgetIds(context, StocksWarpWidget)
+updateWarpWidgetState(context, StocksWarpWidget, ids.first()) {
+    it.copy(symbols = listOf("AAPL"))
+}
+
+// Click handler:
+updateWarpWidgetState(session, StocksWarpWidget) { it.copy(symbols = …) }
+```
+
+**iOS Swift stays normal** — no instance id in kit fields. Kotlin derives `WarpWidgetId` from kit `family` and injects it into click JSON for AppIntent cold starts.
 
 ## Gradle
 

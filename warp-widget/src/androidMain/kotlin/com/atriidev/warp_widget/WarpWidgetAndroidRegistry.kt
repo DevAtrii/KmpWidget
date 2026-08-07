@@ -163,16 +163,26 @@ object WarpWidgetAndroidRegistry {
             )
             return
         }
+        val appWidgetId = GlanceAppWidgetManager(context).getAppWidgetId(glanceId)
         val platformContext = PlatformContext(context.applicationContext)
+        val warpWidgetId = resolveSessionWidgetId(
+            widget = widget,
+            androidAppWidgetId = appWidgetId,
+        )
         val session = WarpWidgetSession(
             context = platformContext,
             environment = makeWidgetEnvironment(
                 platformContext = platformContext,
                 isPreview = false,
+                platformEnvironment = com.atriidev.warp_widget.api.WidgetPlatformEnvironment.Android(
+                    appWidgetId = appWidgetId,
+                ),
             ),
+            widgetId = warpWidgetId,
         )
+        // Bind handlers to *this* GlanceId's session (registry is process-global).
         WarpClicksRegistry.register(widget.clickHandlers(session))
-        Log.d(TAG, "Cold-start prepare: handlers for widgetId=${widget.id}")
+        Log.d(TAG, "prepare: kind=${widget.id} warpWidgetId=$warpWidgetId appWidgetId=$appWidgetId")
     }
 
     /**

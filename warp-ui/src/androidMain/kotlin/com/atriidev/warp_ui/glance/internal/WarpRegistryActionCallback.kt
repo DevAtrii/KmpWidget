@@ -16,10 +16,9 @@ internal class WarpRegistryActionCallback : ActionCallback {
         val actionParameters = WarpGlanceActionKeys.decodeParameters(
             parameters[WarpGlanceActionKeys.ParametersJson],
         )
-        if (!WarpClicksRegistry.hasHandler(actionId)) {
-            // Cold start: process may never have run WarpRender → registry empty.
-            WarpGlanceClickPrepare.prepareIfNeeded(context.applicationContext, glanceId)
-        }
+        // Always re-bind handlers for *this* GlanceId. Registry is process-global —
+        // last WarpRender would otherwise leave Instance-scoped handlers on the wrong widget.
+        WarpGlanceClickPrepare.prepareIfNeeded(context.applicationContext, glanceId)
         WarpClicksRegistry.dispatch(actionId, actionParameters)
     }
 }

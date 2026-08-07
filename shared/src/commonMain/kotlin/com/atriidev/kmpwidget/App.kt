@@ -23,8 +23,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.atriidev.warp_widget.api.PlatformContext
-import com.atriidev.warp_widget.readWarpWidgetState
-import com.atriidev.warp_widget.updateWarpWidgetState
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
@@ -38,7 +36,7 @@ fun App(
 
         fun refreshCount() {
             count = runBlocking {
-                readWarpWidgetState(platformContext, CounterWarpWidget).count
+                readCounterWidgetState(platformContext).count
             }
         }
 
@@ -48,7 +46,7 @@ fun App(
         }
 
         suspend fun persist(next: Int) {
-            updateWarpWidgetState(platformContext, CounterWarpWidget) {
+            updateAllCounterWidgetInstances(platformContext) {
                 it.copy(count = next)
             }
         }

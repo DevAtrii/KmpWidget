@@ -24,6 +24,8 @@ data class WarpWidgetSession(
     val context: PlatformContext,
     val environment: WidgetEnvironment,
     val preferences: WarpWidgetPreferences? = null,
+    /** This instance (or [WarpWidgetId.ofKind] when [WarpWidget.stateScope] is [WarpWidgetStateScope.Shared]). */
+    val widgetId: WarpWidgetId,
 )
 
 /**
@@ -62,8 +64,8 @@ interface WarpWidgetHostApi {
  *     }
  * }
  *
- * // update:
- * updateWarpWidgetState(context, CounterWarpWidget) { it.copy(count = it.count + 1) }
+ * // update (Glance-style — always pass WarpWidgetId):
+ * updateWarpWidgetState(session, CounterWarpWidget) { it.copy(count = it.count + 1) }
  * ```
  */
 abstract class WarpWidget<S : Any>(
@@ -84,6 +86,14 @@ abstract class WarpWidget<S : Any>(
 
     /** Used when prefs are empty or decode fails. */
     abstract val defaultState: S
+
+    /**
+     * Shared vs per-instance state.
+     *
+     * - [WarpWidgetStateScope.Shared] — all home-screen instances mirror the same JSON (default).
+     * - [WarpWidgetStateScope.Instance] — each [WarpWidgetId] has its own prefs blob.
+     */
+    open val stateScope: WarpWidgetStateScope get() = WarpWidgetStateScope.Shared
 
     /**
      * Declarative UI for [env] + decoded [state].
@@ -150,7 +160,13 @@ object WarpWidgetHost {
      */
     fun preferences(widget: WarpWidgetHostApi, session: WarpWidgetSession): WarpWidgetPreferences =
         session.preferences
-            ?: runBlocking { WarpWidgetStateStore.read(session.context, widget.id) }
+            ?: runBlocking {
+                WarpWidgetStateStore.read(
+                    context = session.context,
+                    widget = widget,
+                    id = session.widgetId,
+                )
+            }
 
     /**
      * Run [WarpWidgetHostApi.ComposeContent] under [ProvideWarpWidgetPreferences] → [WarpNode].
@@ -164,9 +180,14 @@ object WarpWidgetHost {
         }
     }
 
-    /** [compose] then serialize to JSON for WidgetKit. */
+    /**
+     * [compose] then serialize to JSON for WidgetKit.
+     *
+     * Embeds [session.widgetId] at the JSON root (`__warpWidgetId`) so warpWidgetKit
+     * can attach it to AppIntent parameters — no per-click Swift plumbing in the app.
+     */
     fun composeJson(widget: WarpWidgetHostApi, session: WarpWidgetSession): String =
-        compose(widget, session).toJson()
+        embedWarpWidgetIdInRootJson(compose(widget, session).toJson(), session.widgetId)
 
     fun handlers(
         widget: WarpWidgetHostApi,
@@ -192,13 +213,39 @@ object WarpWidgetHost {
         actionId: String,
         parametersJson: String,
     ) {
-        prepare(widget, session)
-        platformDispatchClick(actionId, parametersJson)
+        val resolvedId = extractWarpWidgetIdFromParametersJson(parametersJson) ?: session.widgetId
+        val resolved = if (resolvedId == session.widgetId) {
+            session
+        } else {
+            session.copy(widgetId = resolvedId)
+        }
+        println(
+            "WARP_CLICK: dispatch kind=${widget.id} actionId=$actionId " +
+                "widgetId=$resolvedId params=$parametersJson",
+        )
+        WarpWidgetClickScope.withWidgetId(resolvedId) {
+            prepare(widget, resolved)
+            platformDispatchClick(actionId, parametersJson)
+        }
     }
 
     fun dispatchClick(actionId: String, parametersJson: String) {
-        reprepare()
-        platformDispatchClick(actionId, parametersJson)
+        val widget = lastWidget
+        val session = lastSession
+        if (widget != null && session != null) {
+            dispatchClick(widget, session, actionId, parametersJson)
+        } else {
+            val fromParams = extractWarpWidgetIdFromParametersJson(parametersJson)
+            if (fromParams != null) {
+                WarpWidgetClickScope.withWidgetId(fromParams) {
+                    reprepare()
+                    platformDispatchClick(actionId, parametersJson)
+                }
+            } else {
+                reprepare()
+                platformDispatchClick(actionId, parametersJson)
+            }
+        }
     }
 
     fun snapshot(widget: WarpWidgetHostApi, session: WarpWidgetSession): WarpWidgetSnapshot {

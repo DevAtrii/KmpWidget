@@ -23,13 +23,13 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.atriidev.warp_ui.warpRender
 import com.atriidev.warp_widget.WarpWidgetHost
 import com.atriidev.warp_widget.WarpWidgetPreferences
+import com.atriidev.warp_widget.WarpWidgetId
 import com.atriidev.warp_widget.WarpWidgetSession
 import com.atriidev.warp_widget.api.PlatformContext
 import com.atriidev.warp_widget.api.WarpWidgetFamily
 import com.atriidev.warp_widget.api.WidgetPlatformEnvironment
 import com.atriidev.warp_widget.api.makeWidgetEnvironment
 import com.atriidev.warp_widget.api.platformContext
-import com.atriidev.warp_widget.readWarpWidgetState
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -44,7 +44,7 @@ fun MainViewController() = ComposeUIViewController {
 
     fun refreshCount() {
         count = runBlocking {
-            readWarpWidgetState(platformContext, CounterWarpWidget).count
+            readCounterWidgetState(platformContext).count
         }
     }
 
@@ -56,7 +56,7 @@ fun MainViewController() = ComposeUIViewController {
     LaunchedEffect(platformContext) {
         while (isActive) {
             val latest = runBlocking {
-                readWarpWidgetState(platformContext, CounterWarpWidget).count
+                readCounterWidgetState(platformContext).count
             }
             if (latest != count) count = latest
             delay(200)
@@ -109,6 +109,7 @@ private fun WarpUiKitPreview(
                                 CounterWarpWidget.encodeState(CounterState(count = count)),
                         ),
                     ),
+                    widgetId = WarpWidgetId.ios("preview"),
                 )
             }
             val holder = remember(session) {

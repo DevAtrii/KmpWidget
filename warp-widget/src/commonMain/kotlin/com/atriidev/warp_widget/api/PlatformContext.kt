@@ -1,5 +1,7 @@
 package com.atriidev.warp_widget.api
 
+import androidx.compose.runtime.Stable
+
 /**
  * Opaque host handle for I/O (prefs, reload).
  *
@@ -8,4 +10,5 @@ package com.atriidev.warp_widget.api
  *
  * Built by the platform host and stored on [com.atriidev.warp_widget.WarpWidgetSession].
  */
+@Stable
 expect class PlatformContext

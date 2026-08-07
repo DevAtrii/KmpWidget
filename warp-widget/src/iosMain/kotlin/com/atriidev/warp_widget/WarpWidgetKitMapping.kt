@@ -49,6 +49,7 @@ object WarpWidgetKitMapping {
         marginBottom: Float,
         showsContainerBackground: Boolean,
         appGroupId: String = "",
+        instanceId: String? = null,
     ): WidgetEnvironment = makeWidgetEnvironment(
         platformContext = PlatformContext(appGroupId = appGroupId),
         isPreview = isPreview,
@@ -70,6 +71,7 @@ object WarpWidgetKitMapping {
             ),
             showsContainerBackground = showsContainerBackground,
             configuration = null,
+            instanceId = instanceId,
         ),
     )
 
@@ -98,6 +100,7 @@ object WarpWidgetKitMapping {
         marginBottom: Float,
         showsContainerBackground: Boolean,
         appGroupId: String,
+        instanceId: String? = null,
     ): WarpWidgetSession = WarpWidgetSession(
         context = PlatformContext(appGroupId = appGroupId),
         environment = makeEnvironment(
@@ -118,8 +121,14 @@ object WarpWidgetKitMapping {
             marginBottom = marginBottom,
             showsContainerBackground = showsContainerBackground,
             appGroupId = appGroupId,
+            instanceId = instanceId,
         ),
+        widgetId = fieldsInstanceId(instanceId),
     )
+
+    private fun fieldsInstanceId(instanceId: String?): WarpWidgetId =
+        instanceId?.takeIf { it.isNotBlank() }?.let { WarpWidgetId.ios(it) }
+            ?: WarpWidgetId.ofKind("unknown")
 
     internal fun makeSessionFromMap(fields: Map<*, *>): WarpWidgetSession {
         val appGroupId = fields.str("appGroupId")
@@ -128,6 +137,7 @@ object WarpWidgetKitMapping {
                 "(e.g. makeSession(appGroupId: CounterWarpWidget.shared.iosGroupId)) " +
                 "or use WarpWidgetHost.iosSession(widget:environment:)."
         }
+        val instanceId = fields.str("instanceId").takeIf { it.isNotBlank() }
         return makeSession(
             family = fields.str("family", "systemSmall"),
             widthDp = fields.float("widthDp"),
@@ -146,6 +156,7 @@ object WarpWidgetKitMapping {
             marginBottom = fields.float("marginBottom"),
             showsContainerBackground = fields.bool("showsContainerBackground", true),
             appGroupId = appGroupId,
+            instanceId = instanceId,
         )
     }
 
@@ -168,6 +179,7 @@ object WarpWidgetKitMapping {
             marginBottom = fields.float("marginBottom"),
             showsContainerBackground = fields.bool("showsContainerBackground", true),
             appGroupId = fields.str("appGroupId"),
+            instanceId = fields.str("instanceId").takeIf { it.isNotBlank() },
         )
 }
 

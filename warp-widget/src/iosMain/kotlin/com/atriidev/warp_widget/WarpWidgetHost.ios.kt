@@ -1,13 +1,15 @@
 package com.atriidev.warp_widget
 
+import com.atriidev.warp_widget.api.WarpWidgetFamily
 import com.atriidev.warp_widget.api.WidgetEnvironment
+import com.atriidev.warp_widget.api.WidgetPlatformEnvironment
 import com.atriidev.warp_widget.api.platformContext
 
 /**
  * Preferred Swift entry: Kit field bag → [WarpWidgetSession].
  *
- * Pass `WarpWidgetKitEnv.asKitFields(...)` as a Swift `[AnyHashable: Any]` (Kotlin [Map]).
- * Auto-installs the Kit↔Kotlin bridge.
+ * Pass `WarpWidgetKitEnv.asKitFields(appGroupId:)` — Kotlin derives [WarpWidgetSession.widgetId]
+ * from kit `family` (Instance) or kind id (Shared). No Swift instance-id plumbing.
  *
  * ```swift
  * let session = WarpWidgetHost.shared.iosSession(
@@ -33,6 +35,11 @@ fun WarpWidgetHost.iosSession(
         context = widget.platformContext(),
         environment = WarpWidgetKitMapping.makeEnvironmentFromMap(kitFields),
         preferences = preferences,
+        widgetId = resolveSessionWidgetId(
+            widget = widget,
+            kitInstanceId = kitFields["instanceId"]?.toString()?.takeIf { it.isNotBlank() },
+            kitFamily = kitFields["family"]?.toString()?.takeIf { it.isNotBlank() },
+        ),
     )
 }
 
@@ -52,9 +59,22 @@ fun WarpWidgetHost.iosSession(
     preferences: WarpWidgetPreferences?,
 ): WarpWidgetSession {
     ensureWarpWidgetKitSharedInstalled()
+    val iosEnv = environment.platformEnvironment as? WidgetPlatformEnvironment.Ios
     return WarpWidgetSession(
         context = widget.platformContext(),
         environment = environment,
         preferences = preferences,
+        widgetId = resolveSessionWidgetId(
+            widget = widget,
+            kitInstanceId = iosEnv?.instanceId,
+            kitFamily = iosEnv?.family?.toKitFamilyString(),
+        ),
     )
+}
+
+private fun WarpWidgetFamily.toKitFamilyString(): String = when (this) {
+    WarpWidgetFamily.SYSTEM_SMALL -> "systemSmall"
+    WarpWidgetFamily.SYSTEM_MEDIUM -> "systemMedium"
+    WarpWidgetFamily.SYSTEM_LARGE -> "systemLarge"
+    WarpWidgetFamily.SYSTEM_EXTRA_LARGE -> "systemExtraLarge"
 }

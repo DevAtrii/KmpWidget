@@ -56,11 +56,11 @@ abstract class WarpGlanceWidget : GlanceAppWidget() {
         ensureAssetsRegistered()
         val warp = widget
         provideContent {
-            val session = rememberGlanceWidgetSession(context)
+            val session = rememberGlanceWidgetSession(context, widget = warp)
             val node = remember(session.preferences, session.environment) {
                 WarpWidgetHost.compose(warp, session)
             }
-            val handlers = remember(warp.id, session.context) {
+            val handlers = remember(warp.id, session.widgetId) {
                 WarpWidgetHost.handlers(warp, session)
             }
             WarpRender(

@@ -130,6 +130,13 @@ sealed interface WidgetPlatformEnvironment {
          * App Intent / intent-configuration parameters when using configurable widgets.
          */
         val configuration: WarpWidgetConfiguration? = null,
+        /**
+         * WidgetKit instance id (App Intent entity / config UUID) for
+         * [com.atriidev.warp_widget.WarpWidgetStateScope.Instance] widgets.
+         *
+         * Maps to [com.atriidev.warp_widget.WarpWidgetId] `"ios:$instanceId"`.
+         */
+        val instanceId: String? = null,
     ) : WidgetPlatformEnvironment
 }
 

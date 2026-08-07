@@ -3,30 +3,14 @@ import Shared
 import warpWidgetKit
 
 /// WidgetKit interactive tap. **Must live in this extension target**, not Shared.
-///
-/// Conform to [WarpClickAppIntent] and register with
-/// `WarpClickIntentRegistry.install(Self.self, for: CounterWarpWidget.shared.id)`.
-/// Button chrome lives in `warpWidgetKit`.
-///
-/// ### Flow
-/// ```
-/// WarpSwiftUIRootView(widgetId:) + WarpClickIntentRegistry
-///   → Button(intent: CounterWidgetClickIntent)
-///   → perform()
-///   → WarpWidgetHost.dispatchClick(widget: CounterWarpWidget…)
-///   → WarpClicksRegistry → CounterWarpClickHandler
-///   → updateWarpWidgetState (UserDefaults) + WidgetCenter.reload
-/// ```
 @available(iOS 17.0, *)
 struct CounterWidgetClickIntent: WarpClickAppIntent {
     static var title: LocalizedStringResource = "Counter Widget Click"
     static var openAppWhenRun: Bool = false
 
-    /// WARP wire id (`"increment"` / `"decrement"`) from Kotlin JSON.
     @Parameter(title: "Action ID")
     var actionId: String
 
-    /// JSON object of string params from WARP `onClick.parameters`, or `"{}"`.
     @Parameter(title: "Parameters JSON")
     var parametersJson: String
 
@@ -41,6 +25,7 @@ struct CounterWidgetClickIntent: WarpClickAppIntent {
     }
 
     func perform() async throws -> some IntentResult {
+        print("CounterWidgetClickIntent.perform actionId=\(actionId) params=\(parametersJson)")
         let session = WarpWidgetHost.shared.iosSession(
             widget: CounterWarpWidget.shared,
             kitFields: WarpWidgetKitEnv.placeholder().asKitFields(
@@ -53,6 +38,8 @@ struct CounterWidgetClickIntent: WarpClickAppIntent {
             actionId: actionId,
             parametersJson: parametersJson
         )
+        // Ensure timelines refresh even if Kotlin reload is skipped.
+        WarpWidgetBridge.shared.reloadTimelinesOfKind(CounterWarpWidget.shared.id)
         return .result()
     }
 }

@@ -5,9 +5,7 @@ import warpWidgetKit
 
 /// Timeline / AppIntent fallback — no SwiftUI environment (trait-based theme only).
 func composeWidgetJson(context: TimelineProviderContext) -> String {
-    composeWidgetJson(
-        kitEnv: WarpWidgetKitEnv.from(context: context)
-    )
+    composeWidgetJson(kitEnv: WarpWidgetKitEnv.from(context: context))
 }
 
 /// Live render path — uses SwiftUI environment (updates when appearance / tint changes).
@@ -31,9 +29,7 @@ func composeWidgetJson(
 }
 
 func composeWidgetPlaceholderJson() -> String {
-    composeWidgetJson(
-        kitEnv: WarpWidgetKitEnv.placeholder()
-    )
+    composeWidgetJson(kitEnv: WarpWidgetKitEnv.placeholder())
 }
 
 private func composeWidgetJson(kitEnv: WarpWidgetKitEnv) -> String {

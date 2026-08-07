@@ -87,6 +87,7 @@ fun glanceWidgetEnvironment(
 @Composable
 fun rememberGlanceWidgetSession(
     context: Context,
+    widget: WarpWidgetHostApi? = null,
     appWidgetId: Int? = null,
     isPreview: Boolean = false,
 ): WarpWidgetSession {
@@ -173,11 +174,21 @@ fun rememberGlanceWidgetSession(
             nightModeMask = nightMode,
         )
     }
-    return remember(environment, prefs) {
+    val resolvedAppWidgetId = boundAppWidgetId ?: appWidgetId
+    return remember(environment, prefs, resolvedAppWidgetId, widget?.id) {
+        val widgetId = when {
+            widget != null -> resolveSessionWidgetId(
+                widget = widget,
+                androidAppWidgetId = resolvedAppWidgetId,
+            )
+            resolvedAppWidgetId != null -> WarpWidgetId.android(resolvedAppWidgetId)
+            else -> WarpWidgetId.ofKind(widget?.id ?: "unknown")
+        }
         WarpWidgetSession(
             context = PlatformContext(glanceContext),
             environment = environment,
             preferences = prefs.toWarpPreferences(),
+            widgetId = widgetId,
         )
     }
 }

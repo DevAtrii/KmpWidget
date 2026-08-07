@@ -22,6 +22,7 @@ import com.atriidev.warp_runtime.nodes.style.WarpVerticalAlignment
 import com.atriidev.warp_ui.WarpClickHandler
 import com.atriidev.warp_widget.WarpWidget
 import com.atriidev.warp_widget.WarpWidgetSession
+import com.atriidev.warp_widget.WarpWidgetStateScope
 import com.atriidev.warp_widget.api.WidgetEnvironment
 import com.atriidev.warp_widget.ui.WarpAdaptiveContent
 import com.atriidev.warp_widget.ui.WarpAdaptiveSize
@@ -113,8 +114,9 @@ object CounterAssets {
 }
 
 /**
- * Shared counter + todo [WarpWidget] — one definition for Glance + WidgetKit.
+ * Counter + todo [WarpWidget] — one definition for Glance + WidgetKit.
  *
+ * State is **per home-screen instance** ([WarpWidgetStateScope.Instance]).
  * Tap mode chips to switch. In todo mode, tap a row to mark done / undone.
  */
 object CounterWarpWidget : WarpWidget<CounterState>(CounterState.serializer()) {
@@ -122,12 +124,13 @@ object CounterWarpWidget : WarpWidget<CounterState>(CounterState.serializer()) {
 
     override val iosGroupId: String = APP_GROUP_ID
 
+    override val stateScope: WarpWidgetStateScope = WarpWidgetStateScope.Instance
+
     override val defaultState: CounterState = CounterState()
 
     @Composable
     override fun Content(env: WidgetEnvironment, state: CounterState) {
         val state = state.withMergedSampleTodos()
-
         WarpTheme(environment = env) {
             WarpAdaptiveContent(
                 environment = env,
@@ -485,7 +488,7 @@ class CounterWarpClickHandler(
 ) : WarpClickHandler<CounterActions>(CounterActions.serializer()) {
 
     override suspend fun onClick(action: CounterActions) {
-        updateWarpWidgetState(session.context, CounterWarpWidget) { raw ->
+        updateWarpWidgetState(session, CounterWarpWidget) { raw ->
             val state = raw.withMergedSampleTodos()
             when (action) {
                 CounterActions.Increment -> state.copy(count = state.count + 1)

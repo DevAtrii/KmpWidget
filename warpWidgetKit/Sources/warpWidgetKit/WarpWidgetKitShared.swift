@@ -62,6 +62,7 @@ public extension WarpWidgetKitEnv {
     ///
     /// Returns a Swift dictionary so it matches Kotlin `Map` export (`[AnyHashable: Any]`).
     /// Pass [appGroupId] from Shared `WarpWidget.iosGroupId`.
+    /// Kotlin derives [WarpWidgetId] from `family` — no Swift instance-id needed.
     func asKitFields(appGroupId: String) -> [AnyHashable: Any] {
         [
             "family": family.rawValue,

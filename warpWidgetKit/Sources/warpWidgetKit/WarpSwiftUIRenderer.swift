@@ -1,3 +1,4 @@
+import Foundation
 import SwiftUI
 import AppIntents
 import UIKit
@@ -66,8 +67,13 @@ public struct WarpSwiftUIRootView: View {
     }
 
     public var body: some View {
-        if let root = WarpNodeParser.parse(json: json) {
-            WarpNodeView(node: root, useIntents: useIntents, widgetId: widgetId)
+        if let parsed = WarpNodeParser.parseRoot(json: json) {
+            WarpNodeView(
+                node: parsed.node,
+                useIntents: useIntents,
+                widgetId: widgetId,
+                warpWidgetId: parsed.warpWidgetId
+            )
         } else {
             Text("Invalid WARP node JSON")
         }
@@ -79,6 +85,7 @@ private struct WarpNodeView: View {
     let node: WarpParsedNode
     let useIntents: Bool
     let widgetId: String
+    let warpWidgetId: String?
 
     var body: some View {
         content
@@ -92,7 +99,8 @@ private struct WarpNodeView: View {
                 actionId: node.enabled ? node.effectiveActionId : nil,
                 parametersJson: node.effectiveParametersJson,
                 useIntents: useIntents,
-                widgetId: widgetId
+                widgetId: widgetId,
+                warpWidgetId: warpWidgetId
             ))
     }
 
@@ -103,21 +111,21 @@ private struct WarpNodeView: View {
             // Cross-axis only (Glance Column.horizontalAlignment).
             VStack(alignment: node.horizontalAlignment.stackAlignment, spacing: 0) {
                 ForEach(Array(node.children.enumerated()), id: \.offset) { _, child in
-                    WarpNodeView(node: child, useIntents: useIntents, widgetId: widgetId)
+                    WarpNodeView(node: child, useIntents: useIntents, widgetId: widgetId, warpWidgetId: warpWidgetId)
                 }
             }
 
         case .row:
             HStack(alignment: node.verticalAlignment.stackAlignment, spacing: 0) {
                 ForEach(Array(node.children.enumerated()), id: \.offset) { _, child in
-                    WarpNodeView(node: child, useIntents: useIntents, widgetId: widgetId)
+                    WarpNodeView(node: child, useIntents: useIntents, widgetId: widgetId, warpWidgetId: warpWidgetId)
                 }
             }
 
         case .box:
             ZStack(alignment: node.contentAlignment) {
                 ForEach(Array(node.children.enumerated()), id: \.offset) { _, child in
-                    WarpNodeView(node: child, useIntents: useIntents, widgetId: widgetId)
+                    WarpNodeView(node: child, useIntents: useIntents, widgetId: widgetId, warpWidgetId: warpWidgetId)
                 }
             }
 
@@ -369,15 +377,17 @@ private struct WarpClickModifier: ViewModifier {
     let parametersJson: String
     let useIntents: Bool
     let widgetId: String
+    let warpWidgetId: String?
 
     func body(content: Content) -> some View {
         guard let actionId else { return AnyView(content) }
+        let params = mergeWarpWidgetId(into: parametersJson, warpWidgetId: warpWidgetId)
 
         if useIntents, #available(iOS 17.0, *), !widgetId.isEmpty,
            let intent = WarpClickIntentRegistry.intent(
             widgetId: widgetId,
             actionId: actionId,
-            parametersJson: parametersJson
+            parametersJson: params
            ) {
             return AnyView(WarpIntentPlainButton(intent: intent, label: content))
         }
@@ -387,7 +397,7 @@ private struct WarpClickModifier: ViewModifier {
                 if #available(iOS 17.0, *) {
                     WarpClickBridge.shared.perform(
                         actionId: actionId,
-                        parametersJson: parametersJson
+                        parametersJson: params
                     )
                     WarpWidgetBridge.shared.reloadTimelines()
                 }
@@ -397,6 +407,23 @@ private struct WarpClickModifier: ViewModifier {
             .buttonStyle(.plain)
         )
     }
+}
+
+/// Merge Kotlin root `__warpWidgetId` into AppIntent parameters JSON.
+private func mergeWarpWidgetId(into parametersJson: String, warpWidgetId: String?) -> String {
+    guard let warpWidgetId, !warpWidgetId.isEmpty else { return parametersJson }
+    var object: [String: Any] = [:]
+    if let data = parametersJson.data(using: .utf8),
+       let parsed = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+        object = parsed
+    }
+    object["__warpWidgetId"] = warpWidgetId
+    guard JSONSerialization.isValidJSONObject(object),
+          let data = try? JSONSerialization.data(withJSONObject: object),
+          let json = String(data: data, encoding: .utf8) else {
+        return parametersJson
+    }
+    return json
 }
 
 @available(iOS 17.0, *)
@@ -612,14 +639,26 @@ struct WarpParsedNode {
 }
 
 enum WarpNodeParser {
-    static func parse(json: String) -> WarpParsedNode? {
+    struct Root {
+        let node: WarpParsedNode
+        /// From Kotlin [composeJson] root embedding — instance id for AppIntent clicks.
+        let warpWidgetId: String?
+    }
+
+    static func parseRoot(json: String) -> Root? {
         guard
             let data = json.data(using: .utf8),
             let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
         else {
             return nil
         }
-        return parseNode(object)
+        guard let node = parseNode(object) else { return nil }
+        let warpWidgetId = object["__warpWidgetId"] as? String
+        return Root(node: node, warpWidgetId: warpWidgetId)
+    }
+
+    static func parse(json: String) -> WarpParsedNode? {
+        parseRoot(json: json)?.node
     }
 
     private static func parseNode(_ object: [String: Any]) -> WarpParsedNode? {
@@ -707,8 +746,7 @@ enum WarpNodeParser {
         case "button":
             let click = object["onClick"] as? [String: Any]
             let actionId = click?["actionId"] as? String
-            let parameters = click?["parameters"] as? [String: String] ?? [:]
-            let parametersJson = jsonString(parameters) ?? "{}"
+            let parametersJson = jsonString(stringParameters(click?["parameters"])) ?? "{}"
             var buttonStyle = style
             let colors = object["colors"] as? [String: Any]
             if buttonStyle.background == nil,
@@ -885,10 +923,28 @@ enum WarpNodeParser {
         for element in elements.reversed() where element["type"] as? String == "clickable" {
             let action = element["action"] as? [String: Any]
             let actionId = action?["actionId"] as? String
-            let parameters = action?["parameters"] as? [String: String] ?? [:]
-            return (actionId, jsonString(parameters) ?? "{}")
+            return (actionId, jsonString(stringParameters(action?["parameters"])) ?? "{}")
         }
         return (nil, "{}")
+    }
+
+    /// JSONSerialization yields `[String: Any]` — `as? [String: String]` fails when non-empty.
+    private static func stringParameters(_ value: Any?) -> [String: String] {
+        guard let dict = value as? [String: Any] else { return [:] }
+        var out: [String: String] = [:]
+        for (key, raw) in dict {
+            switch raw {
+            case let s as String:
+                out[key] = s
+            case let n as NSNumber:
+                out[key] = n.stringValue
+            case let b as Bool:
+                out[key] = b ? "true" : "false"
+            default:
+                out[key] = String(describing: raw)
+            }
+        }
+        return out
     }
 
     private static func parseStyle(_ modifier: [String: Any]?) -> WarpParsedStyle {
