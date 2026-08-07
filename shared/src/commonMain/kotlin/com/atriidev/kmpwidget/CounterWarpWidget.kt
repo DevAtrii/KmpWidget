@@ -1,7 +1,6 @@
 package com.atriidev.kmpwidget
 
 import androidx.compose.runtime.Composable
-import com.atriidev.kmpwidget.CounterWarpWidget.id
 import com.atriidev.warp_runtime.compose.WarpBox
 import com.atriidev.warp_runtime.compose.WarpButton
 import com.atriidev.warp_runtime.compose.WarpColumn
@@ -21,34 +20,37 @@ import com.atriidev.warp_runtime.nodes.style.WarpProgressIndicatorStyle
 import com.atriidev.warp_runtime.nodes.style.WarpTextStyle
 import com.atriidev.warp_runtime.nodes.style.WarpVerticalAlignment
 import com.atriidev.warp_ui.WarpClickHandler
-import com.atriidev.warp_widget.WarpStateKey
 import com.atriidev.warp_widget.WarpWidget
 import com.atriidev.warp_widget.WarpWidgetSession
 import com.atriidev.warp_widget.api.WidgetEnvironment
-import com.atriidev.warp_widget.currentState
 import com.atriidev.warp_widget.updateWarpWidgetState
 import kotlin.math.abs
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.serializer
 
-/** Preference keys for [CounterWarpWidget] (Glance prefs / App Group UserDefaults). */
-object CounterKeys {
-    val Count: WarpStateKey<Int> = WarpStateKey.int(COUNTER_KEY)
-}
+/** Serializable state for [CounterWarpWidget] — persisted as JSON under prefs key = widget id. */
+@Serializable
+data class CounterState(
+    val count: Int = 0,
+)
 
 /**
  * Shared counter [WarpWidget] — one definition for Glance + WidgetKit.
  *
  * Demo layout also uses [WarpBox], [WarpSpacer], [WarpDivider], [WarpProgressIndicator].
  */
-object CounterWarpWidget : WarpWidget {
+object CounterWarpWidget : WarpWidget<CounterState>(CounterState.serializer()) {
     override val id: String = "CounterWidget"
 
     /** App Group suite — keep in sync with Xcode entitlements / [APP_GROUP_ID]. */
     override val iosGroupId: String = APP_GROUP_ID
 
+    override val defaultState: CounterState = CounterState()
+
     @Composable
-    override fun Content(env: WidgetEnvironment) {
+    override fun Content(env: WidgetEnvironment, state: CounterState) {
         println("WIDGET_ENV $env")
-        val count = currentState(CounterKeys.Count) ?: 0
+        val count = state.count
         // 0..99 cycle for the linear bar (Glance determinate progress is 0f..1f).
         val progress = (abs(count) % 100) / 100f
 
@@ -156,7 +158,7 @@ object CounterWarpWidget : WarpWidget {
 }
 
 /**
- * Persists count via [updateWarpWidgetState] (Glance prefs / UserDefaults + reload).
+ * Persists [CounterState] via [updateWarpWidgetState] (Glance prefs / UserDefaults + reload).
  */
 class CounterWarpClickHandler(
     private val session: WarpWidgetSession,
@@ -164,13 +166,14 @@ class CounterWarpClickHandler(
 
     override suspend fun onClick(actionId: CounterActions, parameters: Map<String, String>) {
         println("WARP_CLICK: id=$actionId, params=$parameters")
-        updateWarpWidgetState(session.context, CounterWarpWidget) {
-            val cur = this[CounterKeys.Count] ?: 0
-            this[CounterKeys.Count] = when (actionId) {
-                CounterActions.Increment -> cur + 1
-                CounterActions.Decrement -> cur - 1
-                CounterActions.Reset -> 0
-            }
+        updateWarpWidgetState(session.context, CounterWarpWidget) { state ->
+            state.copy(
+                count = when (actionId) {
+                    CounterActions.Increment -> state.count + 1
+                    CounterActions.Decrement -> state.count - 1
+                    CounterActions.Reset -> 0
+                },
+            )
         }
     }
 }

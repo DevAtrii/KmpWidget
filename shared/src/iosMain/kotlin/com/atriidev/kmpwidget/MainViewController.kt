@@ -24,11 +24,11 @@ import com.atriidev.warp_ui.warpRender
 import com.atriidev.warp_widget.WarpWidgetHost
 import com.atriidev.warp_widget.WarpWidgetPreferences
 import com.atriidev.warp_widget.WarpWidgetSession
-import com.atriidev.warp_widget.WarpWidgetStateStore
 import com.atriidev.warp_widget.api.PlatformContext
 import com.atriidev.warp_widget.api.WarpWidgetFamily
 import com.atriidev.warp_widget.api.makeWidgetEnvironment
 import com.atriidev.warp_widget.api.platformContext
+import com.atriidev.warp_widget.readWarpWidgetState
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -43,8 +43,7 @@ fun MainViewController() = ComposeUIViewController {
 
     fun refreshCount() {
         count = runBlocking {
-            WarpWidgetStateStore.read(platformContext, CounterWarpWidget.id)[CounterKeys.Count]
-                ?: 0
+            readWarpWidgetState(platformContext, CounterWarpWidget).count
         }
     }
 
@@ -56,8 +55,7 @@ fun MainViewController() = ComposeUIViewController {
     LaunchedEffect(platformContext) {
         while (isActive) {
             val latest = runBlocking {
-                WarpWidgetStateStore.read(platformContext, CounterWarpWidget.id)[CounterKeys.Count]
-                    ?: 0
+                readWarpWidgetState(platformContext, CounterWarpWidget).count
             }
             if (latest != count) count = latest
             delay(200)
@@ -103,7 +101,10 @@ private fun WarpUiKitPreview(
                         isPreview = true,
                     ),
                     preferences = WarpWidgetPreferences(
-                        mapOf(COUNTER_KEY to count.toString()),
+                        mapOf(
+                            CounterWarpWidget.id to
+                                CounterWarpWidget.encodeState(CounterState(count = count)),
+                        ),
                     ),
                 )
             }

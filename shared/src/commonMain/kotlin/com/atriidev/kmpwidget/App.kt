@@ -22,13 +22,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
-import com.atriidev.warp_widget.WarpWidgetStateStore
 import com.atriidev.warp_widget.api.PlatformContext
+import com.atriidev.warp_widget.readWarpWidgetState
 import com.atriidev.warp_widget.updateWarpWidgetState
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-
-const val COUNTER_KEY = "counter"
 
 @Composable
 fun App(
@@ -40,8 +38,7 @@ fun App(
 
         fun refreshCount() {
             count = runBlocking {
-                WarpWidgetStateStore.read(platformContext, CounterWarpWidget.id)[CounterKeys.Count]
-                    ?: 0
+                readWarpWidgetState(platformContext, CounterWarpWidget).count
             }
         }
 
@@ -50,10 +47,9 @@ fun App(
             onPauseOrDispose { }
         }
 
-
         suspend fun persist(next: Int) {
             updateWarpWidgetState(platformContext, CounterWarpWidget) {
-                this[CounterKeys.Count] = next
+                it.copy(count = next)
             }
         }
 

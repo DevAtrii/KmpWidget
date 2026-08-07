@@ -14,5 +14,5 @@ actual class PlatformContext(
 )
 
 /** [PlatformContext] using [WarpWidget.iosGroupId]. */
-fun WarpWidget.platformContext(): PlatformContext =
+fun WarpWidget<*>.platformContext(): PlatformContext =
     PlatformContext(appGroupId = iosGroupId)

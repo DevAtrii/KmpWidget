@@ -5,58 +5,51 @@ import com.atriidev.warp_widget.api.PlatformContext
 /**
  * Platform persistence for widget prefs + timeline / Glance reload.
  *
- * | Platform | Read / write | Reload UI |
- * |----------|--------------|-----------|
- * | Android  | Glance `PreferencesGlanceStateDefinition` via `getAppWidgetState` / `updateAppWidgetState` | `GlanceAppWidget.update` |
- * | iOS      | App Group `UserDefaults(suiteName:)` | `WidgetCenter.reloadTimelines(ofKind:)` |
- *
- * Hosts and apps must not talk to Glance / UserDefaults directly — use [read],
- * [updateWarpWidgetState], [reloadWarpWidget].
- *
- * **Android:** register each widget id with [WarpWidgetAndroidRegistry] before update/reload.
+ * Typed [WarpWidget] state is stored as JSON under prefs key = [WarpWidget.id].
  */
 expect object WarpWidgetStateStore {
-    /**
-     * Load prefs for [widgetId].
-     *
-     * - **Android:** first Glance id’s preferences (register via [WarpWidgetAndroidRegistry])
-     * - **iOS:** App Group UserDefaults keys `"$widgetId.*"`
-     */
     suspend fun read(context: PlatformContext, widgetId: String): WarpWidgetPreferences
 
-    /**
-     * Apply [transform] and persist.
-     *
-     * - **Android:** `updateAppWidgetState` on each Glance id for this widget kind
-     * - **iOS:** write UserDefaults suite
-     */
     suspend fun update(
         context: PlatformContext,
         widgetId: String,
         transform: MutableWarpWidgetPreferences.() -> Unit,
     )
 
-    /**
-     * Ask the host to re-render after prefs change.
-     *
-     * - **Android:** `GlanceAppWidget.update` for matching ids
-     * - **iOS:** `WidgetCenter.reloadTimelines(ofKind: widgetId)`
-     */
     suspend fun reload(context: PlatformContext, widgetId: String)
 }
 
 /**
- * Update widget prefs from the **app** or a click handler, then reload the surface.
+ * Update typed widget state, persist JSON under [WarpWidget.id], then reload UI.
  *
  * ```
- * updateWarpWidgetState(context, CounterWarpWidget) {
- *     this[CounterKeys.Count] = 42
+ * updateWarpWidgetState(context, CounterWarpWidget) { state ->
+ *     state.copy(count = state.count + 1)
  * }
  * ```
- *
- * Android: requires [WarpWidgetAndroidRegistry] registration for [widgetId].
  */
-suspend fun updateWarpWidgetState(
+suspend fun <S : Any> updateWarpWidgetState(
+    context: PlatformContext,
+    widget: WarpWidget<S>,
+    transform: (S) -> S,
+) {
+    WarpWidgetStateStore.update(context, widget.id) {
+        val current = widget.decodeState(toPreferences())
+        setRaw(widget.id, widget.encodeState(transform(current)))
+    }
+    WarpWidgetStateStore.reload(context, widget.id)
+}
+
+/** Read typed state (or [WarpWidget.defaultState] when missing). */
+suspend fun <S : Any> readWarpWidgetState(
+    context: PlatformContext,
+    widget: WarpWidget<S>,
+): S = widget.decodeState(WarpWidgetStateStore.read(context, widget.id))
+
+/**
+ * Low-level string-key prefs update (advanced). Prefer typed [updateWarpWidgetState].
+ */
+suspend fun updateWarpWidgetPreferences(
     context: PlatformContext,
     widgetId: String,
     transform: MutableWarpWidgetPreferences.() -> Unit,
@@ -65,12 +58,12 @@ suspend fun updateWarpWidgetState(
     WarpWidgetStateStore.reload(context, widgetId)
 }
 
-/** [updateWarpWidgetState] using [WarpWidget.id]. */
-suspend fun updateWarpWidgetState(
+/** [updateWarpWidgetPreferences] using [WarpWidget.id]. */
+suspend fun updateWarpWidgetPreferences(
     context: PlatformContext,
-    widget: WarpWidget,
+    widget: WarpWidget<*>,
     transform: MutableWarpWidgetPreferences.() -> Unit,
-) = updateWarpWidgetState(context, widget.id, transform)
+) = updateWarpWidgetPreferences(context, widget.id, transform)
 
 /** Reload home-screen UI without changing prefs. */
 suspend fun reloadWarpWidget(
@@ -81,5 +74,5 @@ suspend fun reloadWarpWidget(
 /** [reloadWarpWidget] using [WarpWidget.id]. */
 suspend fun reloadWarpWidget(
     context: PlatformContext,
-    widget: WarpWidget,
+    widget: WarpWidget<*>,
 ) = reloadWarpWidget(context, widget.id)

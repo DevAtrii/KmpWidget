@@ -23,7 +23,7 @@ import androidx.glance.appwidget.GlanceAppWidgetReceiver
  */
 abstract class WarpGlanceWidgetReceiver : GlanceAppWidgetReceiver() {
     /** Shared WARP definition (same instance as [WarpGlanceWidget.widget]). */
-    abstract val widget: WarpWidget
+    abstract val widget: WarpWidget<*>
 
     /** Fresh Glance host instance (do not cache a single instance across updates). */
     protected abstract fun createGlanceWidget(): WarpGlanceWidget

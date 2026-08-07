@@ -19,12 +19,12 @@ import com.atriidev.warp_widget.api.platformContext
  * ```
  */
 fun WarpWidgetHost.iosSession(
-    widget: WarpWidget,
+    widget: WarpWidget<*>,
     kitFields: Map<Any?, *>,
 ): WarpWidgetSession = iosSession(widget, kitFields, preferences = null)
 
 fun WarpWidgetHost.iosSession(
-    widget: WarpWidget,
+    widget: WarpWidget<*>,
     kitFields: Map<Any?, *>,
     preferences: WarpWidgetPreferences?,
 ): WarpWidgetSession {
@@ -42,12 +42,12 @@ fun WarpWidgetHost.iosSession(
  * Swift hosts should prefer [iosSession] with `kitFields` so the bridge installs itself.
  */
 fun WarpWidgetHost.iosSession(
-    widget: WarpWidget,
+    widget: WarpWidget<*>,
     environment: WidgetEnvironment,
 ): WarpWidgetSession = iosSession(widget, environment, preferences = null)
 
 fun WarpWidgetHost.iosSession(
-    widget: WarpWidget,
+    widget: WarpWidget<*>,
     environment: WidgetEnvironment,
     preferences: WarpWidgetPreferences?,
 ): WarpWidgetSession {

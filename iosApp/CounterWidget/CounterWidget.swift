@@ -62,6 +62,7 @@ struct CounterHomeWidget: Widget {
                     .padding()
             }
         }
+        .contentMarginsDisabled()
         .configurationDisplayName("Counter")
         .description("WARP counter widget")
         .supportedFamilies([.systemSmall,.systemMedium])

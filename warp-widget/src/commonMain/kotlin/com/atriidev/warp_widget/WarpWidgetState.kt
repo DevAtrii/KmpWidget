@@ -7,17 +7,12 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import kotlinx.serialization.Serializable
 
 /**
- * Typed key for widget preference state (Glance-style).
+ * Low-level typed preference key (advanced).
  *
- * Values are stored as strings in [WarpWidgetPreferences] and mapped by platform store:
- * - **Android:** Glance `Preferences` / `PreferencesGlanceStateDefinition`
- * - **iOS:** App Group `UserDefaults` keys `"$widgetId.$name"`
+ * Prefer [WarpWidget] with a `@Serializable` state class + [updateWarpWidgetState].
+ * Keep [WarpStateKey] for ad-hoc string bags alongside the typed JSON blob.
  *
- * ```
- * object CounterKeys {
- *     val Count = WarpStateKey.int("counter")
- * }
- * ```
+ * Values live in [WarpWidgetPreferences]; iOS keys are `"$widgetId.$name"`.
  */
 class WarpStateKey<T> internal constructor(
     /** Wire / datastore key name (not namespaced; iOS store adds widget id prefix). */
@@ -82,6 +77,17 @@ class MutableWarpWidgetPreferences(
         map.remove(key.name)
     }
 
+    /** Raw string put (used for typed [WarpWidget] JSON blobs keyed by widget id). */
+    fun setRaw(name: String, value: String) {
+        map[name] = value
+    }
+
+    fun removeRaw(name: String) {
+        map.remove(name)
+    }
+
+    fun getRaw(name: String): String? = map[name]
+
     fun toPreferences(): WarpWidgetPreferences =
         WarpWidgetPreferences(map.toMap())
 
@@ -119,6 +125,17 @@ fun currentPreferences(): WarpWidgetPreferences = LocalWarpWidgetPreferences.cur
 @Composable
 @ReadOnlyComposable
 fun <T> currentState(key: WarpStateKey<T>): T? = currentPreferences()[key]
+
+/**
+ * Typed widget state for the current [WarpWidget.Content] render.
+ *
+ * Prefer the `state` parameter on [WarpWidget.Content]; use this when nesting
+ * composables that need [S] without threading it through every call.
+ */
+@Composable
+@ReadOnlyComposable
+fun <S : Any> currentWidgetState(widget: WarpWidget<S>): S =
+    widget.decodeState(currentPreferences())
 
 @Composable
 internal fun ProvideWarpWidgetPreferences(

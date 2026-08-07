@@ -8,14 +8,14 @@ Shared **widget definition + host API** for WARP. Write one [`WarpWidget`](src/c
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  App defines WarpWidget (Content + clickHandlers + id)      │
+│  App defines WarpWidget<S> (Content + state + id)           │
 └────────────────────────────┬────────────────────────────────┘
                              ▼
 ┌─────────────────────────────────────────────────────────────┐
 │  warp-widget                                                │
 │  · WarpWidgetSession (PlatformContext + WidgetEnvironment)│
 │  · WarpWidgetHost (compose / JSON / prepare / dispatch)     │
-│  · currentState / prefs + WarpWidgetStateStore              │
+│  · typed state JSON (key = id) + WarpWidgetStateStore       │
 │  · Glance helpers (Android) · Kit bridge (iOS)              │
 └───────────────┬─────────────────────────────┬───────────────┘
                 ▼                             ▼
@@ -36,14 +36,15 @@ Shared **widget definition + host API** for WARP. Write one [`WarpWidget`](src/c
 
 ## Core concepts
 
-### `WarpWidget`
+### `WarpWidget<S>`
 
-One shared definition:
+One shared definition with `@Serializable` state `S`:
 
-- `id` — stable kind (`"CounterWidget"`); matches iOS `Widget.kind` for timeline reload
-- `iosGroupId` — iOS App Group suite (`group.*`); single source of truth for prefs (ignored on Android)
-- `Content(env)` — WARP composables; read prefs with `currentState(key)` (Glance-style)
-- `clickHandlers(session)` — persist via `updateWarpWidgetState`
+- `id` — stable kind (`"CounterWidget"`); prefs JSON key + iOS `Widget.kind`
+- `iosGroupId` — iOS App Group suite (`group.*`); ignored on Android
+- `defaultState` — used when prefs empty / decode fails
+- `Content(env, state)` — WARP composables with decoded `S`
+- `clickHandlers(session)` — persist via `updateWarpWidgetState { (S) -> S }`
 
 Supported size classes are **not** on `WarpWidget` — the host is the source of truth (WidgetKit `.supportedFamilies` / Glance sizes). Use `env.family` for the **current** family at render time.
 
@@ -73,22 +74,21 @@ WarpWidgetSession(
 ## Define a widget
 
 ```kotlin
-object CounterKeys {
-    val Count = WarpStateKey.int("counter")
-}
+@Serializable
+data class CounterState(val count: Int = 0)
 
-object CounterWarpWidget : WarpWidget {
+object CounterWarpWidget : WarpWidget<CounterState>(CounterState.serializer()) {
     override val id = "CounterWidget"
     override val iosGroupId = "group.com.example.app"
+    override val defaultState = CounterState()
 
     @Composable
-    override fun Content(env: WidgetEnvironment) {
-        val count = currentState(CounterKeys.Count) ?: 0
+    override fun Content(env: WidgetEnvironment, state: CounterState) {
         WarpColumn {
             WarpText("Counter")
             WarpRow {
                 WarpButton("-", CounterActions.Decrement.asClickAction())
-                WarpText("$count")
+                WarpText("${state.count}")
                 WarpButton("+", CounterActions.Increment.asClickAction())
             }
         }
@@ -97,18 +97,21 @@ object CounterWarpWidget : WarpWidget {
     override fun clickHandlers(session: WarpWidgetSession) = listOf(
         object : WarpClickHandler<CounterActions>(…) {
             override suspend fun onClick(actionId: CounterActions, parameters: Map<String, String>) {
-                updateWarpWidgetState(session.context, CounterWarpWidget) {
-                    val cur = this[CounterKeys.Count] ?: 0
-                    this[CounterKeys.Count] = when (actionId) {
-                        CounterActions.Increment -> cur + 1
-                        CounterActions.Decrement -> cur - 1
-                    }
+                updateWarpWidgetState(session.context, CounterWarpWidget) { state ->
+                    state.copy(
+                        count = when (actionId) {
+                            CounterActions.Increment -> state.count + 1
+                            CounterActions.Decrement -> state.count - 1
+                        },
+                    )
                 }
             }
         },
     )
 }
 ```
+
+State JSON is stored under prefs key = [WarpWidget.id].
 
 See demo: [`CounterWarpWidget.kt`](../shared/src/commonMain/kotlin/com/atriidev/kmpwidget/CounterWarpWidget.kt).
 
@@ -169,9 +172,10 @@ No `installWarpWidgetKitBridge()` — `iosSession(widget:kitFields:)` installs t
 
 | API | Role |
 |-----|------|
-| `WarpStateKey.int/string/…` | Typed preference keys |
-| `currentState(key)` / `currentPreferences()` | Inside `Content` (Glance-style) |
-| `updateWarpWidgetState(context, widget) { … }` | Write + reload (app or click handler) |
+| `WarpWidget<S>(serializer)` + `defaultState` | Typed serializable widget state |
+| `updateWarpWidgetState(context, widget) { S -> S }` | Encode JSON under `id` + reload |
+| `readWarpWidgetState(context, widget)` | Decode typed state |
+| `WarpStateKey` / `currentState` | Low-level string-key bag (optional) |
 | `reloadWarpWidget(context, widget)` | Reload only |
 
 ## Gradle

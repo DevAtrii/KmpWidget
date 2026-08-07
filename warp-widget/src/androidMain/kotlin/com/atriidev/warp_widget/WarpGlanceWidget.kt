@@ -22,7 +22,7 @@ import com.atriidev.warp_ui.WarpRender
  */
 abstract class WarpGlanceWidget : GlanceAppWidget() {
     /** Shared WARP definition composed into this Glance surface. */
-    abstract val widget: WarpWidget
+    abstract val widget: WarpWidget<*>
 
     override val stateDefinition: GlanceStateDefinition<*>
         get() = PreferencesGlanceStateDefinition
