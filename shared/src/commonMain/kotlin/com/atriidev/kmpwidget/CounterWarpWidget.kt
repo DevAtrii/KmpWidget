@@ -76,6 +76,13 @@ val SampleTodos: List<TodoItem> = listOf(
     TodoItem(id = "1", title = "Ship WarpImage"),
     TodoItem(id = "2", title = "Add todo mode", done = true),
     TodoItem(id = "3", title = "Polish SF Symbols"),
+    TodoItem(id = "4", title = "LazyColumn on large widget"),
+    TodoItem(id = "5", title = "Wire WidgetKit reload"),
+//    TodoItem(id = "6", title = "Add adaptive sizing", done = true),
+//    TodoItem(id = "7", title = "Test Android resize"),
+//    TodoItem(id = "8", title = "Document WarpButton API"),
+//    TodoItem(id = "9", title = "Ship iOS medium layout"),
+//    TodoItem(id = "10", title = "Release v1.0"),
 )
 
 /** Serializable state for [CounterWarpWidget] — persisted as JSON under prefs key = widget id. */
@@ -85,6 +92,17 @@ data class CounterState(
     val count: Int = 0,
     val todos: List<TodoItem> = SampleTodos,
 )
+
+/** Merges newly added [SampleTodos] into persisted state (keeps [TodoItem.done] by id). */
+internal fun CounterState.withMergedSampleTodos(): CounterState {
+    if (todos.size >= SampleTodos.size) return this
+    val byId = todos.associateBy { it.id }
+    return copy(
+        todos = SampleTodos.map { sample ->
+            byId[sample.id]?.let { existing -> sample.copy(done = existing.done) } ?: sample
+        },
+    )
+}
 
 /** Type-safe asset keys — share with [CounterGlanceAppWidget.assets]. */
 object CounterAssets {
@@ -108,7 +126,7 @@ object CounterWarpWidget : WarpWidget<CounterState>(CounterState.serializer()) {
 
     @Composable
     override fun Content(env: WidgetEnvironment, state: CounterState) {
-        println("WIDGET_ENV $env")
+        val state = state.withMergedSampleTodos()
 
         WarpTheme(environment = env) {
             WarpAdaptiveContent(
@@ -368,7 +386,8 @@ private fun TodoBody(
     val doneCount = state.todos.count { it.done }
     val total = state.todos.size
     val progress = if (total == 0) 0f else doneCount.toFloat() / total
-    val maxVisible = env.adaptiveValue(small = 2, medium = 2, large = 3)
+    // Large shows all sample todos (pre-lazy A/B); small/medium stay capped.
+    val maxVisible = env.adaptiveValue(small = 2, medium = 2, large = 10)
     val visibleTodos = state.todos.take(maxVisible)
 
     // Nested column — keeps root under Glance's 10-child Column limit
@@ -466,8 +485,8 @@ class CounterWarpClickHandler(
 ) : WarpClickHandler<CounterActions>(CounterActions.serializer()) {
 
     override suspend fun onClick(action: CounterActions) {
-        println("WARP_CLICK: action=$action")
-        updateWarpWidgetState(session.context, CounterWarpWidget) { state ->
+        updateWarpWidgetState(session.context, CounterWarpWidget) { raw ->
+            val state = raw.withMergedSampleTodos()
             when (action) {
                 CounterActions.Increment -> state.copy(count = state.count + 1)
                 CounterActions.Decrement -> state.copy(count = state.count - 1)

@@ -60,6 +60,7 @@ internal object ComposeWarpInternals {
         repeat(3) {
             clock.sendFrame(nextFrame())
             recomposer.awaitIdle()
+            if (!recomposer.hasPendingWork) return
         }
     }
 }

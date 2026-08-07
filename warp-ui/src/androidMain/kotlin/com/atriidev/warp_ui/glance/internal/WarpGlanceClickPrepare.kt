@@ -11,7 +11,7 @@ import androidx.glance.GlanceId
  * has never run — so the registry is empty unless something re-registers handlers.
  *
  * [com.atriidev.warp_widget.WarpWidgetAndroidRegistry] installs the prepare
- * callback; [prepareIfNeeded] runs it on every action.
+ * callback; [prepareIfNeeded] runs only when the registry lacks the action id.
  */
 internal object WarpGlanceClickPrepare {
     @Volatile

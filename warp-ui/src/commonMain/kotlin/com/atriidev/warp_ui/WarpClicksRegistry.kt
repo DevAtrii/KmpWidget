@@ -16,6 +16,9 @@ object WarpClicksRegistry {
         handlers.forEach(::registerOne)
     }
 
+    /** True when [actionId] was registered (warm process / after [WarpRender]). */
+    fun hasHandler(actionId: String): Boolean = handlers.containsKey(actionId)
+
     /**
      * Invokes the handler for [actionId], if registered.
      *

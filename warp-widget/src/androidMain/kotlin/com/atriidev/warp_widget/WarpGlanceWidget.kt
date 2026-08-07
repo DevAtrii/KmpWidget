@@ -1,6 +1,7 @@
 package com.atriidev.warp_widget
 
 import android.content.Context
+import androidx.compose.runtime.remember
 import androidx.glance.GlanceId
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.provideContent
@@ -56,9 +57,15 @@ abstract class WarpGlanceWidget : GlanceAppWidget() {
         val warp = widget
         provideContent {
             val session = rememberGlanceWidgetSession(context)
+            val node = remember(session.preferences, session.environment) {
+                WarpWidgetHost.compose(warp, session)
+            }
+            val handlers = remember(warp.id, session.context) {
+                WarpWidgetHost.handlers(warp, session)
+            }
             WarpRender(
-                node = WarpWidgetHost.compose(warp, session),
-                handlers = WarpWidgetHost.handlers(warp, session),
+                node = node,
+                handlers = handlers,
             )
         }
     }

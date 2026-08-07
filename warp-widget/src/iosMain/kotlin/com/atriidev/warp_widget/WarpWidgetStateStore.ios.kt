@@ -52,6 +52,14 @@ actual object WarpWidgetStateStore {
     }
 
     @OptIn(ExperimentalForeignApi::class)
+    actual suspend fun refreshAfterUpdate(
+        context: PlatformContext,
+        widgetId: String,
+    ) {
+        WarpWidgetBridge.shared().reloadTimelinesOfKind(widgetId)
+    }
+
+    @OptIn(ExperimentalForeignApi::class)
     actual suspend fun reload(
         context: PlatformContext,
         widgetId: String,

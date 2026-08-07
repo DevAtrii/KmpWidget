@@ -16,6 +16,9 @@ expect object WarpWidgetStateStore {
         transform: MutableWarpWidgetPreferences.() -> Unit,
     )
 
+    /** Refresh UI after prefs were already mutated (no theme bump). */
+    suspend fun refreshAfterUpdate(context: PlatformContext, widgetId: String)
+
     suspend fun reload(context: PlatformContext, widgetId: String)
 }
 
@@ -37,7 +40,7 @@ suspend fun <S : Any> updateWarpWidgetState(
         val current = widget.decodeState(toPreferences())
         setRaw(widget.id, widget.encodeState(transform(current)))
     }
-    WarpWidgetStateStore.reload(context, widget.id)
+    WarpWidgetStateStore.refreshAfterUpdate(context, widget.id)
 }
 
 /** Read typed state (or [WarpWidget.defaultState] when missing). */
@@ -55,7 +58,7 @@ suspend fun updateWarpWidgetPreferences(
     transform: MutableWarpWidgetPreferences.() -> Unit,
 ) {
     WarpWidgetStateStore.update(context, widgetId, transform)
-    WarpWidgetStateStore.reload(context, widgetId)
+    WarpWidgetStateStore.refreshAfterUpdate(context, widgetId)
 }
 
 /** [updateWarpWidgetPreferences] using [WarpWidgetHostApi.id]. */
