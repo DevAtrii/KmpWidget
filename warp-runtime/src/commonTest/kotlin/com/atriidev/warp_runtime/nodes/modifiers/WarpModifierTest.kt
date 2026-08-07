@@ -1,7 +1,9 @@
 package com.atriidev.warp_runtime.nodes.modifiers
 
+import com.atriidev.warp_runtime.nodes.actions.ClickAction
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class WarpModifierTest {
@@ -34,9 +36,27 @@ class WarpModifierTest {
     @Test
     fun json_preservesSequentialElements() {
         val json = com.atriidev.warp_runtime.compose.ComposeWarpInternals.warpJson.encodeToString(
-            WarpModifier.padding(8).padding(4),
+            WarpModifier.padding(8).background("#FF0000").fillMaxWidth(),
         )
         assertTrue(json.contains("\"elements\""))
         assertTrue(json.contains("\"type\": \"padding\""))
+        assertTrue(json.contains("\"type\": \"background\""))
+        assertTrue(json.contains("\"type\": \"fillMaxWidth\""))
+    }
+
+    @Test
+    fun resolveClickAction_prefersModifierOverNodeOnClick() {
+        val modifierAction = ClickAction("from_modifier")
+        val nodeAction = ClickAction("from_button")
+        val modifier = WarpModifier.clickable(modifierAction)
+
+        assertEquals(modifierAction, modifier.resolveClickAction(nodeAction))
+    }
+
+    @Test
+    fun resolveClickAction_fallsBackToNodeOnClick() {
+        val nodeAction = ClickAction("from_button")
+        assertEquals(nodeAction, WarpModifier.Default.resolveClickAction(nodeAction))
+        assertNull(WarpModifier.Default.resolveClickAction(null))
     }
 }

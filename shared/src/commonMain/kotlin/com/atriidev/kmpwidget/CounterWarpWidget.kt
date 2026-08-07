@@ -8,7 +8,12 @@ import com.atriidev.warp_runtime.compose.WarpRow
 import com.atriidev.warp_runtime.compose.WarpText
 import com.atriidev.warp_runtime.example.counter.CounterActions
 import com.atriidev.warp_runtime.nodes.actions.asClickAction
+import com.atriidev.warp_runtime.nodes.modifiers.WarpColor
 import com.atriidev.warp_runtime.nodes.modifiers.WarpModifier
+import com.atriidev.warp_runtime.nodes.style.WarpButtonColors
+import com.atriidev.warp_runtime.nodes.style.WarpFontWeight
+import com.atriidev.warp_runtime.nodes.style.WarpTextStyle
+import com.atriidev.warp_runtime.nodes.style.WarpVerticalAlignment
 import com.atriidev.warp_ui.WarpClickHandler
 import com.atriidev.warp_widget.WarpStateKey
 import com.atriidev.warp_widget.WarpWidget
@@ -27,15 +32,7 @@ object CounterKeys {
  *
  * [id] matches iOS `Widget.kind` (`"CounterWidget"`) for timeline reload.
  *
- * ### Swift (WidgetKit)
- * ```swift
- * let session = WarpWidgetHost.shared.iosSession(
- *     widget: CounterWarpWidget.shared,
- *     kitFields: WarpWidgetKitEnv.from(context: context).asKitFields(
- *         appGroupId: CounterWarpWidget.shared.iosGroupId
- *     )
- * )
- * ```
+ * Alignments / textAlign use Glance defaults (Start / Top) unless set explicitly.
  */
 object CounterWarpWidget : WarpWidget {
     override val id: String = "CounterWidget"
@@ -49,13 +46,75 @@ object CounterWarpWidget : WarpWidget {
         val count = currentState(CounterKeys.Count) ?: 0
         WarpColumn(
             modifier = WarpModifier
-                .padding(16),
+                .fillMaxSize()
+                .background("#1B2838")
+                .cornerRadius(16)
+                .padding(12),
         ) {
-            WarpText("Count")
-            WarpRow {
-                WarpButton(text = "-", onClick = CounterActions.Decrement.asClickAction())
-                WarpText(count.toString())
-                WarpButton(text = "+", onClick = CounterActions.Increment.asClickAction())
+            WarpText(
+                text = "Count",
+                modifier = WarpModifier
+                    .fillMaxWidth()
+                    .padding(start = 0, end = 0, top = 0, bottom = 8)
+                    .clickable(CounterActions.Reset.asClickAction()),
+                style = WarpTextStyle(
+                    color = WarpColor("#B0BEC5"),
+                    fontSize = 14f,
+                    fontWeight = WarpFontWeight.Medium,
+                ),
+                maxLines = 1,
+            )
+            WarpRow(
+                modifier = WarpModifier
+                    .fillMaxWidth()
+                    .background("#243447")
+                    .cornerRadius(12)
+                    .padding(8),
+                verticalAlignment = WarpVerticalAlignment.Center,
+            ) {
+                WarpButton(
+                    text = "−",
+                    onClick = CounterActions.Decrement.asClickAction(),
+                    modifier = WarpModifier
+                        .size(40)
+                        .cornerRadius(20),
+                    style = WarpTextStyle(
+                        fontSize = 18f,
+                        fontWeight = WarpFontWeight.Bold,
+                    ),
+                    colors = WarpButtonColors.of(
+                        backgroundColor = "#E74C3C",
+                        contentColor = "#FFFFFF",
+                    ),
+                )
+                // weight = take leftover space; text stays Start (Glance default) — no textAlign.
+                WarpText(
+                    text = count.toString(),
+                    modifier = WarpModifier
+                        .weight()
+                        .padding(horizontal = 8, vertical = 0),
+                    style = WarpTextStyle(
+                        color = WarpColor("#FFFFFF"),
+                        fontSize = 22f,
+                        fontWeight = WarpFontWeight.Bold,
+                    ),
+                    maxLines = 1,
+                )
+                WarpButton(
+                    text = "+",
+                    onClick = CounterActions.Increment.asClickAction(),
+                    modifier = WarpModifier
+                        .size(40)
+                        .cornerRadius(20),
+                    style = WarpTextStyle(
+                        fontSize = 18f,
+                        fontWeight = WarpFontWeight.Bold,
+                    ),
+                    colors = WarpButtonColors.of(
+                        backgroundColor = "#27AE60",
+                        contentColor = "#FFFFFF",
+                    ),
+                )
             }
         }
     }
@@ -73,13 +132,13 @@ class CounterWarpClickHandler(
 
     override suspend fun onClick(actionId: CounterActions, parameters: Map<String, String>) {
         println("WARP_CLICK: id=$actionId, params=$parameters")
-        val delta = when (actionId) {
-            CounterActions.Increment -> +1
-            CounterActions.Decrement -> -1
-        }
         updateWarpWidgetState(session.context, CounterWarpWidget) {
             val cur = this[CounterKeys.Count] ?: 0
-            this[CounterKeys.Count] = cur + delta
+            this[CounterKeys.Count] = when (actionId) {
+                CounterActions.Increment -> cur + 1
+                CounterActions.Decrement -> cur - 1
+                CounterActions.Reset -> 0
+            }
         }
     }
 }

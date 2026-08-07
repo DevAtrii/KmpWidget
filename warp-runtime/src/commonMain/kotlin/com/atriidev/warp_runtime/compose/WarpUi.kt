@@ -17,74 +17,121 @@ import com.atriidev.warp_runtime.compose.internal.WarpColumnComposable
 import com.atriidev.warp_runtime.compose.internal.WarpRowComposable
 import com.atriidev.warp_runtime.compose.internal.WarpTextComposable
 import com.atriidev.warp_runtime.nodes.modifiers.WarpModifier
+import com.atriidev.warp_runtime.nodes.style.WarpButtonColors
+import com.atriidev.warp_runtime.nodes.style.WarpHorizontalAlignment
+import com.atriidev.warp_runtime.nodes.style.WarpTextStyle
+import com.atriidev.warp_runtime.nodes.style.WarpVerticalAlignment
 
 /**
- * Arranges child nodes vertically (top to bottom).
+ * Arranges child nodes vertically — Glance `Column`-shaped API.
  *
  * Maps to [com.atriidev.warp_runtime.nodes.WarpColumn] in the output tree.
  *
- * @param modifier Optional layout styling such as padding.
+ * @param modifier Layout styling.
+ * @param verticalAlignment Pack children when shorter than the column.
+ * @param horizontalAlignment Align children across the width.
  * @param content Nested composables placed inside this column.
  */
 @Composable
 fun WarpColumn(
     modifier: WarpModifier = WarpModifier(),
+    verticalAlignment: WarpVerticalAlignment = WarpVerticalAlignment.Top,
+    horizontalAlignment: WarpHorizontalAlignment = WarpHorizontalAlignment.Start,
     content: @Composable () -> Unit,
 ) {
-    WarpColumnComposable(modifier = modifier, content = content)
+    WarpColumnComposable(
+        modifier = modifier,
+        verticalAlignment = verticalAlignment,
+        horizontalAlignment = horizontalAlignment,
+        content = content,
+    )
 }
 
 /**
- * Arranges child nodes horizontally (left to right).
+ * Arranges child nodes horizontally — Glance `Row`-shaped API.
  *
  * Maps to [com.atriidev.warp_runtime.nodes.WarpRow] in the output tree.
  *
- * @param modifier Optional layout styling such as padding.
+ * @param modifier Layout styling.
+ * @param horizontalAlignment Pack children when narrower than the row.
+ * @param verticalAlignment Align children across the height.
  * @param content Nested composables placed inside this row.
  */
 @Composable
 fun WarpRow(
     modifier: WarpModifier = WarpModifier(),
+    horizontalAlignment: WarpHorizontalAlignment = WarpHorizontalAlignment.Start,
+    verticalAlignment: WarpVerticalAlignment = WarpVerticalAlignment.Top,
     content: @Composable () -> Unit,
 ) {
-    WarpRowComposable(modifier = modifier, content = content)
+    WarpRowComposable(
+        modifier = modifier,
+        horizontalAlignment = horizontalAlignment,
+        verticalAlignment = verticalAlignment,
+        content = content,
+    )
 }
 
 /**
- * Displays read-only text in the widget.
+ * Displays read-only text — Glance `Text`-shaped API.
  *
  * Maps to [com.atriidev.warp_runtime.nodes.WarpText] in the output tree.
  *
  * @param text The string shown in the widget.
- * @param modifier Optional styling such as padding.
+ * @param modifier Layout styling (padding, weight, …).
+ * @param style Optional [WarpTextStyle].
+ * @param maxLines Max lines for the text.
  */
 @Composable
 fun WarpText(
     text: String,
     modifier: WarpModifier = WarpModifier(),
+    style: WarpTextStyle? = null,
+    maxLines: Int = Int.MAX_VALUE,
 ) {
-    WarpTextComposable(text = text, modifier = modifier)
+    WarpTextComposable(
+        text = text,
+        modifier = modifier,
+        style = style,
+        maxLines = maxLines,
+    )
 }
 
 /**
- * Displays a clickable button in the widget.
+ * Displays a clickable button — Glance `Button`-shaped API.
  *
  * Maps to [com.atriidev.warp_runtime.nodes.WarpButton] in the output tree.
  *
- * [onClick] is stored in JSON as a [WarpAction] — use [actionClick] or [ClickAction] directly.
- * Platform code forwards [ClickAction.actionId] and [ClickAction.parameters] to native handlers.
+ * [onClick] is stored in JSON as a [WarpAction]. When [modifier] includes
+ * [com.atriidev.warp_runtime.nodes.modifiers.WarpModifier.clickable], that wins.
  *
  * @param text Label shown on the button.
- * @param onClick Serializable action for the tap (typically [actionClick] or a [ClickAction]).
- * @param modifier Optional styling such as padding.
+ * @param onClick Serializable action for the tap.
+ * @param modifier Layout/behavior styling.
+ * @param enabled When false, taps are ignored.
+ * @param style Optional label [WarpTextStyle].
+ * @param colors Optional [WarpButtonColors] chrome.
+ * @param maxLines Max lines for the label.
  */
 @Composable
 fun WarpButton(
     text: String,
     onClick: WarpAction,
     modifier: WarpModifier = WarpModifier(),
+    enabled: Boolean = true,
+    style: WarpTextStyle? = null,
+    colors: WarpButtonColors? = null,
+    maxLines: Int = Int.MAX_VALUE,
 ) {
-    WarpButtonComposable(text = text, onClick = onClick, modifier = modifier)
+    WarpButtonComposable(
+        text = text,
+        onClick = onClick,
+        modifier = modifier,
+        enabled = enabled,
+        style = style,
+        colors = colors,
+        maxLines = maxLines,
+    )
 }
 
 /**
@@ -95,6 +142,18 @@ fun WarpButton(
     text: String,
     actionId: WarpActionId,
     modifier: WarpModifier = WarpModifier(),
+    enabled: Boolean = true,
+    style: WarpTextStyle? = null,
+    colors: WarpButtonColors? = null,
+    maxLines: Int = Int.MAX_VALUE,
 ) {
-    WarpButton(text = text, onClick = actionClick(actionId), modifier = modifier)
+    WarpButton(
+        text = text,
+        onClick = actionClick(actionId),
+        modifier = modifier,
+        enabled = enabled,
+        style = style,
+        colors = colors,
+        maxLines = maxLines,
+    )
 }

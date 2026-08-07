@@ -13,6 +13,10 @@ import com.atriidev.warp_runtime.nodes.WarpNode
 import com.atriidev.warp_runtime.nodes.WarpRow
 import com.atriidev.warp_runtime.nodes.WarpText
 import com.atriidev.warp_runtime.nodes.modifiers.WarpModifier
+import com.atriidev.warp_runtime.nodes.style.WarpButtonColors
+import com.atriidev.warp_runtime.nodes.style.WarpHorizontalAlignment
+import com.atriidev.warp_runtime.nodes.style.WarpTextStyle
+import com.atriidev.warp_runtime.nodes.style.WarpVerticalAlignment
 
 /**
  * Something that can be converted to a serializable [WarpNode] after composition ends.
@@ -44,65 +48,75 @@ internal class RootHolder(
 
 /**
  * Mutable holder for a [WarpColumn] while composables run.
- *
- * @property modifier Column modifier captured from the composable call.
- * @property children Child holders added by nested composables.
  */
 internal class WarpColumnHolder(
     var modifier: WarpModifier = WarpModifier(),
+    var verticalAlignment: WarpVerticalAlignment = WarpVerticalAlignment.Top,
+    var horizontalAlignment: WarpHorizontalAlignment = WarpHorizontalAlignment.Start,
     override val children: MutableList<Any> = mutableListOf(),
 ) : WarpContainerNodeHolder {
     override fun toWarpNode(): WarpNode = WarpColumn(
         modifier = modifier,
+        verticalAlignment = verticalAlignment,
+        horizontalAlignment = horizontalAlignment,
         children = children.map { (it as WarpNodeHolder).toWarpNode() },
     )
 }
 
 /**
  * Mutable holder for a [WarpRow] while composables run.
- *
- * @property modifier Row modifier captured from the composable call.
- * @property children Child holders added by nested composables.
  */
 internal class WarpRowHolder(
     var modifier: WarpModifier = WarpModifier(),
+    var horizontalAlignment: WarpHorizontalAlignment = WarpHorizontalAlignment.Start,
+    var verticalAlignment: WarpVerticalAlignment = WarpVerticalAlignment.Top,
     override val children: MutableList<Any> = mutableListOf(),
 ) : WarpContainerNodeHolder {
     override fun toWarpNode(): WarpNode = WarpRow(
         modifier = modifier,
+        horizontalAlignment = horizontalAlignment,
+        verticalAlignment = verticalAlignment,
         children = children.map { (it as WarpNodeHolder).toWarpNode() },
     )
 }
 
 /**
  * Mutable holder for a [WarpText] leaf node.
- *
- * @property text Text content from the composable call.
- * @property modifier Text modifier from the composable call.
  */
 internal class WarpTextHolder(
     var text: String,
     var modifier: WarpModifier = WarpModifier(),
+    var style: WarpTextStyle? = null,
+    var maxLines: Int = Int.MAX_VALUE,
 ) : WarpNodeHolder {
-    override fun toWarpNode(): WarpNode = WarpText(text = text, modifier = modifier)
+    override fun toWarpNode(): WarpNode = WarpText(
+        text = text,
+        modifier = modifier,
+        style = style,
+        maxLines = maxLines,
+    )
 }
 
 /**
  * Mutable holder for a [WarpButton] leaf node.
- *
- * @property text Button label from the composable call.
- * @property onClick Serializable action from the composable call.
- * @property modifier Button modifier from the composable call.
  */
 internal class WarpButtonHolder(
     var text: String,
     var onClick: WarpAction,
     var modifier: WarpModifier = WarpModifier(),
+    var enabled: Boolean = true,
+    var style: WarpTextStyle? = null,
+    var colors: WarpButtonColors? = null,
+    var maxLines: Int = Int.MAX_VALUE,
 ) : WarpNodeHolder {
     override fun toWarpNode(): WarpNode = WarpButton(
         text = text,
         onClick = onClick,
         modifier = modifier,
+        enabled = enabled,
+        style = style,
+        colors = colors,
+        maxLines = maxLines,
     )
 }
 

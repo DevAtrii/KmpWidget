@@ -1,42 +1,29 @@
 /**
  * Serializable styling modifiers attached to [com.atriidev.warp_runtime.nodes.WarpNode] instances.
  *
- * Modifiers describe **what** to apply (padding values, etc.), not how a specific platform draws them.
- * Platform renderers interpret these values when converting a [WarpNode] tree to native widget UI.
+ * Modifiers describe **what** to apply; platform renderers interpret them.
+ * Native code must not invent styles — only apply elements present in this chain.
+ *
+ * Text/typography is **not** a modifier (Compose-style) — pass as args on text composables later.
  */
 package com.atriidev.warp_runtime.nodes.modifiers
 
+import com.atriidev.warp_runtime.nodes.actions.ClickAction
+import com.atriidev.warp_runtime.nodes.actions.WarpAction
+import com.atriidev.warp_runtime.nodes.actions.WarpActionId
+import com.atriidev.warp_runtime.nodes.actions.asClickAction
 import kotlinx.serialization.Serializable
 
 /**
- * Sequential modifier chain — like Compose `Modifier.padding().padding()`.
+ * Sequential modifier chain — like Compose `Modifier.padding().background()`.
  *
- * Each factory appends an element; renderers fold them (padding **adds** per edge).
- *
- * ```
- * WarpColumn(
- *     modifier = WarpModifier
- *         .padding(8)
- *         .padding(horizontal = 4, vertical = 12),
- * ) { … }
- * ```
- *
- * JSON preserves order:
- * ```json
- * "modifier": {
- *   "elements": [
- *     { "type": "padding", "start": 8, "end": 8, "top": 8, "bottom": 8 },
- *     { "type": "padding", "start": 4, "end": 4, "top": 12, "bottom": 12 }
- *   ]
- * }
- * ```
+ * JSON preserves order in `elements[]`.
  */
 @Serializable
 data class WarpModifier(
     val elements: List<WarpModifierElement> = emptyList(),
 ) {
     companion object {
-        /** Empty chain — same as `WarpModifier()`. */
         val Default: WarpModifier = WarpModifier()
 
         fun padding(all: Int): WarpModifier = Default.padding(all)
@@ -55,15 +42,59 @@ data class WarpModifier(
 
         fun padding(paddingValues: WarpPadding): WarpModifier =
             Default.padding(paddingValues)
+
+        fun background(color: WarpColor): WarpModifier = Default.background(color)
+
+        fun background(hex: String): WarpModifier = Default.background(hex)
+
+        fun cornerRadius(radius: Int): WarpModifier = Default.cornerRadius(radius)
+
+        fun alpha(alpha: Float): WarpModifier = Default.alpha(alpha)
+
+        fun border(width: Int, color: WarpColor): WarpModifier =
+            Default.border(width, color)
+
+        fun border(width: Int, hex: String): WarpModifier =
+            Default.border(width, hex)
+
+        fun clickable(action: ClickAction): WarpModifier = Default.clickable(action)
+
+        fun clickable(actionId: WarpActionId): WarpModifier =
+            Default.clickable(actionId)
+
+        fun visibility(visibility: WarpVisibility): WarpModifier =
+            Default.visibility(visibility)
+
+        fun fillMaxWidth(): WarpModifier = Default.fillMaxWidth()
+
+        fun fillMaxHeight(): WarpModifier = Default.fillMaxHeight()
+
+        fun fillMaxSize(): WarpModifier = Default.fillMaxSize()
+
+        fun width(width: Int): WarpModifier = Default.width(width)
+
+        fun height(height: Int): WarpModifier = Default.height(height)
+
+        fun size(size: Int): WarpModifier = Default.size(size)
+
+        fun size(width: Int, height: Int): WarpModifier = Default.size(width, height)
+
+        fun weight(weight: Float = 1f): WarpModifier = Default.weight(weight)
+
+        fun wrapContentWidth(): WarpModifier = Default.wrapContentWidth()
+
+        fun wrapContentHeight(): WarpModifier = Default.wrapContentHeight()
+
+        fun wrapContentSize(): WarpModifier = Default.wrapContentSize()
     }
 
-    /** Append another chain (Compose `then`). */
     fun then(other: WarpModifier): WarpModifier =
         WarpModifier(elements = elements + other.elements)
 
-    /** Append a single element. */
     fun then(element: WarpModifierElement): WarpModifier =
         copy(elements = elements + element)
+
+    // region Spacing / appearance
 
     fun padding(paddingValues: WarpPadding): WarpModifier =
         then(WarpPaddingElement(paddingValues))
@@ -88,14 +119,102 @@ data class WarpModifier(
         bottom = vertical,
     )
 
-    /**
-     * Fold sequential padding elements (Compose stacks insets).
-     *
-     * Renderers should use this rather than reading a single padding field.
-     */
+    fun background(color: WarpColor): WarpModifier =
+        then(WarpBackgroundElement(color))
+
+    fun background(hex: String): WarpModifier =
+        background(WarpColor(hex))
+
+    fun cornerRadius(radius: Int): WarpModifier =
+        then(WarpCornerRadiusElement(radius))
+
+    fun alpha(alpha: Float): WarpModifier =
+        then(WarpAlphaElement(alpha))
+
+    fun border(width: Int, color: WarpColor): WarpModifier =
+        then(WarpBorderElement(width, color))
+
+    fun border(width: Int, hex: String): WarpModifier =
+        border(width, WarpColor(hex))
+
+    fun clickable(action: ClickAction): WarpModifier =
+        then(WarpClickableElement(action))
+
+    fun clickable(actionId: WarpActionId): WarpModifier =
+        clickable(actionId.asClickAction())
+
+    fun visibility(visibility: WarpVisibility): WarpModifier =
+        then(WarpVisibilityElement(visibility))
+
+    // endregion
+
+    // region Layout size
+
+    fun fillMaxWidth(): WarpModifier = then(WarpFillMaxWidthElement)
+
+    fun fillMaxHeight(): WarpModifier = then(WarpFillMaxHeightElement)
+
+    fun fillMaxSize(): WarpModifier = then(WarpFillMaxSizeElement)
+
+    fun width(width: Int): WarpModifier = then(WarpWidthElement(width))
+
+    fun height(height: Int): WarpModifier = then(WarpHeightElement(height))
+
+    fun size(size: Int): WarpModifier = size(size, size)
+
+    fun size(width: Int, height: Int): WarpModifier =
+        then(WarpSizeElement(width, height))
+
+    fun weight(weight: Float = 1f): WarpModifier =
+        then(WarpWeightElement(weight))
+
+    fun wrapContentWidth(): WarpModifier = then(WarpWrapContentWidthElement)
+
+    fun wrapContentHeight(): WarpModifier = then(WarpWrapContentHeightElement)
+
+    fun wrapContentSize(): WarpModifier = then(WarpWrapContentSizeElement)
+
+    // endregion
+
+    // region Resolved (for renderers)
+
     fun resolvedPadding(): WarpPadding =
         elements.filterIsInstance<WarpPaddingElement>()
             .fold(WarpPadding.Zero) { acc, pad ->
                 acc + WarpPadding(pad.start, pad.end, pad.top, pad.bottom)
             }
+
+    /**
+     * Last clickable in the chain, if any.
+     *
+     * Renderers must prefer this over node-level `onClick` (e.g. button).
+     */
+    fun resolvedClickable(): ClickAction? =
+        elements.filterIsInstance<WarpClickableElement>().lastOrNull()?.action
+
+    /**
+     * Effective click: modifier [resolvedClickable] wins over [nodeOnClick].
+     */
+    fun resolveClickAction(nodeOnClick: WarpAction?): ClickAction? =
+        resolvedClickable() ?: (nodeOnClick as? ClickAction)
+
+    fun resolvedVisibility(): WarpVisibility? =
+        elements.filterIsInstance<WarpVisibilityElement>().lastOrNull()?.visibility
+
+    fun resolvedBackground(): WarpColor? =
+        elements.filterIsInstance<WarpBackgroundElement>().lastOrNull()?.color
+
+    fun resolvedCornerRadius(): Int? =
+        elements.filterIsInstance<WarpCornerRadiusElement>().lastOrNull()?.radius
+
+    fun resolvedAlpha(): Float? =
+        elements.filterIsInstance<WarpAlphaElement>().lastOrNull()?.alpha
+
+    fun resolvedBorder(): WarpBorderElement? =
+        elements.filterIsInstance<WarpBorderElement>().lastOrNull()
+
+    fun resolvedWeight(): Float? =
+        elements.filterIsInstance<WarpWeightElement>().lastOrNull()?.weight
+
+    // endregion
 }

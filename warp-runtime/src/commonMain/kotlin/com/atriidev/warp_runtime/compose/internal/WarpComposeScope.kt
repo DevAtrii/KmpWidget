@@ -12,6 +12,10 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
 import com.atriidev.warp_runtime.nodes.modifiers.WarpModifier
 import com.atriidev.warp_runtime.nodes.actions.WarpAction
+import com.atriidev.warp_runtime.nodes.style.WarpButtonColors
+import com.atriidev.warp_runtime.nodes.style.WarpHorizontalAlignment
+import com.atriidev.warp_runtime.nodes.style.WarpTextStyle
+import com.atriidev.warp_runtime.nodes.style.WarpVerticalAlignment
 
 /**
  * Holds the root [RootHolder] for the active [composeWarp][com.atriidev.warp_runtime.compose.composeWarp] call.
@@ -85,18 +89,36 @@ internal fun WarpLeaf(holder: WarpNodeHolder) {
 @Composable
 internal fun WarpColumnComposable(
     modifier: WarpModifier,
+    verticalAlignment: WarpVerticalAlignment,
+    horizontalAlignment: WarpHorizontalAlignment,
     content: @Composable () -> Unit,
 ) {
-    WarpContainer(WarpColumnHolder(modifier = modifier), content)
+    WarpContainer(
+        WarpColumnHolder(
+            modifier = modifier,
+            verticalAlignment = verticalAlignment,
+            horizontalAlignment = horizontalAlignment,
+        ),
+        content,
+    )
 }
 
 /** Internal implementation backing public [com.atriidev.warp_runtime.compose.WarpRow]. */
 @Composable
 internal fun WarpRowComposable(
     modifier: WarpModifier,
+    horizontalAlignment: WarpHorizontalAlignment,
+    verticalAlignment: WarpVerticalAlignment,
     content: @Composable () -> Unit,
 ) {
-    WarpContainer(WarpRowHolder(modifier = modifier), content)
+    WarpContainer(
+        WarpRowHolder(
+            modifier = modifier,
+            horizontalAlignment = horizontalAlignment,
+            verticalAlignment = verticalAlignment,
+        ),
+        content,
+    )
 }
 
 /** Internal implementation backing public [com.atriidev.warp_runtime.compose.WarpText]. */
@@ -104,8 +126,17 @@ internal fun WarpRowComposable(
 internal fun WarpTextComposable(
     text: String,
     modifier: WarpModifier,
+    style: WarpTextStyle?,
+    maxLines: Int,
 ) {
-    WarpLeaf(WarpTextHolder(text = text, modifier = modifier))
+    WarpLeaf(
+        WarpTextHolder(
+            text = text,
+            modifier = modifier,
+            style = style,
+            maxLines = maxLines,
+        ),
+    )
 }
 
 /** Internal implementation backing public [com.atriidev.warp_runtime.compose.WarpButton]. */
@@ -114,12 +145,20 @@ internal fun WarpButtonComposable(
     text: String,
     onClick: WarpAction,
     modifier: WarpModifier,
+    enabled: Boolean,
+    style: WarpTextStyle?,
+    colors: WarpButtonColors?,
+    maxLines: Int,
 ) {
     WarpLeaf(
         WarpButtonHolder(
             text = text,
             onClick = onClick,
             modifier = modifier,
+            enabled = enabled,
+            style = style,
+            colors = colors,
+            maxLines = maxLines,
         ),
     )
 }

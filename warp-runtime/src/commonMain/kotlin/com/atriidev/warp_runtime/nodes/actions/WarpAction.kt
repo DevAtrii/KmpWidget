@@ -1,5 +1,6 @@
 package com.atriidev.warp_runtime.nodes.actions
 
+import androidx.compose.runtime.Stable
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -20,6 +21,7 @@ import kotlinx.serialization.Serializable
  *    Kotlin reports every `when (action)` that needs a new branch.
  */
 @Serializable
+@Stable
 sealed interface WarpAction
 
 /**

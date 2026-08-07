@@ -12,4 +12,5 @@ enum class CounterActions(
 ) : WarpActionId {
     Increment("increment"),
     Decrement("decrement"),
+    Reset("reset")
 }

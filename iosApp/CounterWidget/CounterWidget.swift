@@ -64,7 +64,7 @@ struct CounterHomeWidget: Widget {
         }
         .configurationDisplayName("Counter")
         .description("WARP counter widget")
-        .supportedFamilies([.systemSmall])
+        .supportedFamilies([.systemSmall,.systemMedium])
     }
 }
 
