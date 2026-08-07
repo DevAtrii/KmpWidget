@@ -9,7 +9,6 @@ import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.state.getAppWidgetState
 import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.state.PreferencesGlanceStateDefinition
-import com.atriidev.warp_ui.glance.internal.WarpGlanceUpdateScope
 import com.atriidev.warp_widget.api.PlatformContext
 
 private const val TAG = "WarpWidgetStateStore"
@@ -17,6 +16,10 @@ private const val TAG = "WarpWidgetStateStore"
 /**
  * Android: Glance `PreferencesGlanceStateDefinition` via
  * `getAppWidgetState` / `updateAppWidgetState` + `GlanceAppWidget.update`.
+ *
+ * **Shared state:** WARP prefs are mirrored to every active Glance instance of a widget
+ * kind (same model as iOS App Group). Per-instance Glance keys (`__warp_*` layout/theme)
+ * stay local.
  *
  * Register widgets with [WarpWidgetAndroidRegistry] before update/reload.
  * Inside Glance `provideContent`, prefer passing `currentState<Preferences>().toWarpPreferences()`
@@ -29,12 +32,12 @@ actual object WarpWidgetStateStore {
     ): WarpWidgetPreferences {
         val android = context.context
         val widget = requireWidget(widgetId) ?: return WarpWidgetPreferences()
-        val glanceIds = resolveGlanceIds(android, widget)
+        val glanceIds = activeGlanceIds(android, widget)
         if (glanceIds.isEmpty()) {
             Log.d(TAG, "read($widgetId): no Glance ids")
             return WarpWidgetPreferences()
         }
-        // Per-instance state; first id is the app-wide “current” snapshot.
+        // Shared snapshot — any active instance; all should hold the same WARP keys.
         val prefs = getAppWidgetState(
             android,
             PreferencesGlanceStateDefinition,
@@ -50,23 +53,33 @@ actual object WarpWidgetStateStore {
     ) {
         val android = context.context
         val widget = requireWidget(widgetId) ?: return
-        val glanceIds = resolveGlanceIds(android, widget)
+        val glanceIds = activeGlanceIds(android, widget)
         if (glanceIds.isEmpty()) {
             Log.w(TAG, "update($widgetId): no Glance ids — register receiver / add widget")
             return
         }
+        // Transform once from a canonical snapshot, then mirror to every instance.
+        // Per-id transform would diverge (e.g. increment on stale copies).
+        val canonical = getAppWidgetState(
+            android,
+            PreferencesGlanceStateDefinition,
+            glanceIds.first(),
+        ).toWarpPreferences()
+        val mutable = MutableWarpWidgetPreferences(canonical.values)
+        mutable.transform()
+        val next = mutable.toPreferences()
+
         glanceIds.forEach { glanceId ->
             try {
                 updateAppWidgetState(android, glanceId) { prefs ->
                     val beforeKeys = prefs.asMap().keys.map { it.name }.toSet()
-                    val mutable = MutableWarpWidgetPreferences(prefs.toWarpPreferences().values)
-                    mutable.transform()
-                    prefs.applyWarpPreferences(beforeKeys, mutable.toPreferences())
+                    prefs.applyWarpPreferences(beforeKeys, next)
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "update($widgetId) failed for $glanceId", e)
             }
         }
+        Log.d(TAG, "update($widgetId): mirrored to ${glanceIds.size} instance(s)")
     }
 
     actual suspend fun refreshAfterUpdate(
@@ -75,7 +88,7 @@ actual object WarpWidgetStateStore {
     ) {
         val android = context.context
         val widget = requireWidget(widgetId) ?: return
-        val glanceIds = resolveGlanceIds(android, widget)
+        val glanceIds = activeGlanceIds(android, widget)
         if (glanceIds.isEmpty()) {
             Log.w(TAG, "refreshAfterUpdate($widgetId): no Glance ids")
             return
@@ -96,7 +109,7 @@ actual object WarpWidgetStateStore {
     ) {
         val android = context.context
         val widget = requireWidget(widgetId) ?: return
-        val glanceIds = resolveGlanceIds(android, widget)
+        val glanceIds = activeGlanceIds(android, widget)
         if (glanceIds.isEmpty()) {
             Log.w(TAG, "reload($widgetId): no Glance ids")
             return
@@ -127,12 +140,8 @@ actual object WarpWidgetStateStore {
         return widget
     }
 
-    /**
-     * Tap path → single [GlanceId] from [WarpGlanceUpdateScope].
-     * App path → only Glance ids still bound in [AppWidgetManager] (drops stale orphans).
-     */
-    private suspend fun resolveGlanceIds(context: Context, widget: GlanceAppWidget): List<GlanceId> {
-        WarpGlanceUpdateScope.targetGlanceId?.let { return listOf(it) }
+    /** Active launcher instances only (drops orphan Glance ids). */
+    private suspend fun activeGlanceIds(context: Context, widget: GlanceAppWidget): List<GlanceId> {
         val manager = GlanceAppWidgetManager(context)
         val appWidgetManager = AppWidgetManager.getInstance(context)
         return manager.getGlanceIds(widget.javaClass).filter { glanceId ->

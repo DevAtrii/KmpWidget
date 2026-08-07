@@ -20,11 +20,6 @@ internal class WarpRegistryActionCallback : ActionCallback {
             // Cold start: process may never have run WarpRender → registry empty.
             WarpGlanceClickPrepare.prepareIfNeeded(context.applicationContext, glanceId)
         }
-        try {
-            WarpGlanceUpdateScope.targetGlanceId = glanceId
-            WarpClicksRegistry.dispatch(actionId, actionParameters)
-        } finally {
-            WarpGlanceUpdateScope.targetGlanceId = null
-        }
+        WarpClicksRegistry.dispatch(actionId, actionParameters)
     }
 }
