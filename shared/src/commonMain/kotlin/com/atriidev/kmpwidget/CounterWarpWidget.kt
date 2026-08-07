@@ -23,7 +23,11 @@ import com.atriidev.warp_ui.WarpClickHandler
 import com.atriidev.warp_widget.WarpWidget
 import com.atriidev.warp_widget.WarpWidgetSession
 import com.atriidev.warp_widget.api.WidgetEnvironment
+import com.atriidev.warp_widget.ui.WarpAdaptiveContent
+import com.atriidev.warp_widget.ui.WarpAdaptiveSize
 import com.atriidev.warp_widget.ui.WarpTheme
+import com.atriidev.warp_widget.ui.adaptiveSize
+import com.atriidev.warp_widget.ui.adaptiveValue
 import com.atriidev.warp_widget.updateWarpWidgetState
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -106,36 +110,12 @@ object CounterWarpWidget : WarpWidget<CounterState>(CounterState.serializer()) {
         println("WIDGET_ENV $env")
 
         WarpTheme(environment = env) {
-            val colors = WarpTheme.colors
-            WarpBox(
-                modifier = WarpModifier
-                    .fillMaxSize()
-                    .background(colors.widgetBackground)
-                    .cornerRadius(16)
-                    .padding(12),
-                contentAlignment = WarpContentAlignment.TopStart,
-            ) {
-                WarpColumn(
-                    modifier = WarpModifier.fillMaxWidth(),
-                ) {
-                    ModeSwitcher(mode = state.mode)
-
-                    WarpSpacer(modifier = WarpModifier.height(6))
-
-                    WarpDivider(
-                        modifier = WarpModifier.fillMaxWidth(),
-                        thickness = 1,
-                        color = colors.outline,
-                    )
-
-                    WarpSpacer(modifier = WarpModifier.height(8))
-
-                    when (state.mode) {
-                        WidgetMode.Counter -> CounterBody(state)
-                        WidgetMode.Todo -> TodoBody(state)
-                    }
-                }
-            }
+            WarpAdaptiveContent(
+                environment = env,
+                small = { CounterWidgetContent(state, env, compact = true) },
+                medium = { CounterWidgetContent(state, env) },
+                large = { CounterWidgetContent(state, env, spacious = true) },
+            )
         }
     }
 
@@ -144,7 +124,56 @@ object CounterWarpWidget : WarpWidget<CounterState>(CounterState.serializer()) {
 }
 
 @Composable
-private fun ModeSwitcher(mode: WidgetMode) {
+private fun CounterWidgetContent(
+    state: CounterState,
+    env: WidgetEnvironment,
+    compact: Boolean = false,
+    spacious: Boolean = false,
+) {
+    val colors = WarpTheme.colors
+    val outerPadding = when {
+        spacious -> 16
+        compact -> 8
+        else -> 12
+    }
+    val cornerRadius = env.adaptiveValue(small = 12, medium = 16, large = 20)
+    WarpBox(
+        modifier = WarpModifier
+            .fillMaxSize()
+            .background(colors.widgetBackground)
+            .cornerRadius(cornerRadius)
+            .padding(outerPadding),
+        contentAlignment = WarpContentAlignment.TopStart,
+    ) {
+        WarpColumn(
+            modifier = WarpModifier.fillMaxWidth(),
+        ) {
+            ModeSwitcher(mode = state.mode, env = env, compact = compact)
+
+            WarpSpacer(modifier = WarpModifier.height(if (compact) 4 else 6))
+
+            WarpDivider(
+                modifier = WarpModifier.fillMaxWidth(),
+                thickness = 1,
+                color = colors.outline,
+            )
+
+            WarpSpacer(modifier = WarpModifier.height(if (spacious) 12 else 8))
+
+            when (state.mode) {
+                WidgetMode.Counter -> CounterBody(state, env, spacious = spacious)
+                WidgetMode.Todo -> TodoBody(state, env, compact = compact)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ModeSwitcher(
+    mode: WidgetMode,
+    env: WidgetEnvironment,
+    compact: Boolean = false,
+) {
     WarpRow(
         modifier = WarpModifier.fillMaxWidth(),
         verticalAlignment = WarpVerticalAlignment.Center,
@@ -154,15 +183,41 @@ private fun ModeSwitcher(mode: WidgetMode) {
             asset = CounterAssets.NumberCircle,
             selected = mode == WidgetMode.Counter,
             targetMode = WidgetMode.Counter,
+            compact = compact,
         )
-        WarpSpacer(modifier = WarpModifier.width(8))
+        WarpSpacer(modifier = WarpModifier.width(if (compact) 6 else 8))
         ModeChip(
             label = "Todo",
             asset = CounterAssets.Checklist,
             selected = mode == WidgetMode.Todo,
             targetMode = WidgetMode.Todo,
+            compact = compact,
         )
+        WarpSpacer(modifier = WarpModifier.weight())
+        AdaptiveSizeLabel(env = env, compact = compact)
     }
+}
+
+@Composable
+private fun AdaptiveSizeLabel(
+    env: WidgetEnvironment,
+    compact: Boolean = false,
+) {
+    val colors = WarpTheme.colors
+    val label = when (env.adaptiveSize()) {
+        WarpAdaptiveSize.Small -> "small"
+        WarpAdaptiveSize.Medium -> "medium"
+        WarpAdaptiveSize.Large -> "large"
+    }
+    WarpText(
+        text = label,
+        style = WarpTextStyle(
+            color = colors.onSurfaceVariant,
+            fontSize = if (compact) 10f else 11f,
+            fontWeight = WarpFontWeight.Medium,
+        ),
+        maxLines = 1,
+    )
 }
 
 @Composable
@@ -171,22 +226,27 @@ private fun ModeChip(
     asset: WarpAssetId,
     selected: Boolean,
     targetMode: WidgetMode,
+    compact: Boolean = false,
 ) {
     val colors = WarpTheme.colors
     val bg = if (selected) colors.primary else colors.surfaceVariant
     val fg = if (selected) colors.onPrimary else colors.onSurfaceVariant
+    val chipPaddingH = if (compact) 8 else 10
+    val chipPaddingV = if (compact) 4 else 6
+    val iconSize = if (compact) 12 else 14
+    val fontSize = if (compact) 11f else 12f
     WarpRow(
         modifier = WarpModifier
             .background(bg)
             .cornerRadius(20)
-            .padding(horizontal = 10, vertical = 6)
+            .padding(horizontal = chipPaddingH, vertical = chipPaddingV)
             .clickable(CounterActions.SwitchMode(targetMode)),
         verticalAlignment = WarpVerticalAlignment.Center,
     ) {
         WarpImage(
             asset = asset.asSystem(),
             contentDescription = label,
-            modifier = WarpModifier.size(14),
+            modifier = WarpModifier.size(iconSize),
             tint = fg,
         )
         WarpSpacer(modifier = WarpModifier.width(4))
@@ -194,7 +254,7 @@ private fun ModeChip(
             text = label,
             style = WarpTextStyle(
                 color = fg,
-                fontSize = 12f,
+                fontSize = fontSize,
                 fontWeight = WarpFontWeight.Medium,
             ),
             maxLines = 1,
@@ -203,8 +263,15 @@ private fun ModeChip(
 }
 
 @Composable
-private fun CounterBody(state: CounterState) {
+private fun CounterBody(
+    state: CounterState,
+    env: WidgetEnvironment,
+    spacious: Boolean = false,
+) {
     val colors = WarpTheme.colors
+    val buttonSize = env.adaptiveValue(small = 36, medium = 40, large = 48)
+    val countFontSize = env.adaptiveValue(small = 22f, medium = 26f, large = 32f)
+    val cardPadding = if (spacious) 12 else 8
     // Nested column — Glance allows max 10 children per Column/Row.
     WarpColumn(modifier = WarpModifier.fillMaxWidth()) {
         val count = state.count
@@ -215,17 +282,17 @@ private fun CounterBody(state: CounterState) {
                 .fillMaxWidth()
                 .background(colors.surfaceVariant)
                 .cornerRadius(12)
-                .padding(8),
+                .padding(cardPadding),
             verticalAlignment = WarpVerticalAlignment.Center,
         ) {
             WarpButton(
                 text = "−",
                 onClick = CounterActions.Decrement.asClickAction(),
                 modifier = WarpModifier
-                    .size(40)
-                    .cornerRadius(20),
+                    .size(buttonSize)
+                    .cornerRadius(buttonSize / 2),
                 style = WarpTextStyle(
-                    fontSize = 18f,
+                    fontSize = if (spacious) 20f else 18f,
                     fontWeight = WarpFontWeight.Bold,
                 ),
                 colors = WarpButtonColors.of(
@@ -241,7 +308,7 @@ private fun CounterBody(state: CounterState) {
                     .clickable(CounterActions.Reset),
                 style = WarpTextStyle(
                     color = colors.onSurface,
-                    fontSize = 22f,
+                    fontSize = countFontSize,
                     fontWeight = WarpFontWeight.Bold,
                 ),
                 maxLines = 1,
@@ -250,10 +317,10 @@ private fun CounterBody(state: CounterState) {
                 text = "+",
                 onClick = CounterActions.Increment.asClickAction(),
                 modifier = WarpModifier
-                    .size(40)
-                    .cornerRadius(20),
+                    .size(buttonSize)
+                    .cornerRadius(buttonSize / 2),
                 style = WarpTextStyle(
-                    fontSize = 18f,
+                    fontSize = if (spacious) 20f else 18f,
                     fontWeight = WarpFontWeight.Bold,
                 ),
                 colors = WarpButtonColors.of(
@@ -276,11 +343,17 @@ private fun CounterBody(state: CounterState) {
 }
 
 @Composable
-private fun TodoBody(state: CounterState) {
+private fun TodoBody(
+    state: CounterState,
+    env: WidgetEnvironment,
+    compact: Boolean = false,
+) {
     val colors = WarpTheme.colors
     val doneCount = state.todos.count { it.done }
     val total = state.todos.size
     val progress = if (total == 0) 0f else doneCount.toFloat() / total
+    val maxVisible = env.adaptiveValue(small = 2, medium = 3, large = 3)
+    val visibleTodos = state.todos.take(maxVisible)
 
     // Nested column — keeps root under Glance's 10-child Column limit
     // (flat forEach rows + spacers was dropping the 3rd todo).
@@ -297,11 +370,24 @@ private fun TodoBody(state: CounterState) {
 
         WarpSpacer(modifier = WarpModifier.height(6))
 
-        state.todos.forEachIndexed { index, todo ->
+        visibleTodos.forEachIndexed { index, todo ->
             if (index > 0) {
-                WarpSpacer(modifier = WarpModifier.height(4))
+                WarpSpacer(modifier = WarpModifier.height(if (compact) 3 else 4))
             }
-            TodoRow(todo)
+            TodoRow(todo, compact = compact)
+        }
+
+        if (visibleTodos.size < total) {
+            WarpSpacer(modifier = WarpModifier.height(4))
+            WarpText(
+                text = "+${total - visibleTodos.size} more",
+                style = WarpTextStyle(
+                    color = colors.onSurfaceVariant,
+                    fontSize = 11f,
+                    fontWeight = WarpFontWeight.Medium,
+                ),
+                maxLines = 1,
+            )
         }
 
         WarpSpacer(modifier = WarpModifier.height(8))
@@ -317,23 +403,29 @@ private fun TodoBody(state: CounterState) {
 }
 
 @Composable
-private fun TodoRow(todo: TodoItem) {
+private fun TodoRow(
+    todo: TodoItem,
+    compact: Boolean = false,
+) {
     val colors = WarpTheme.colors
     val icon = if (todo.done) CounterAssets.CheckCircle else CounterAssets.Circle
     val titleColor = if (todo.done) colors.onSurfaceVariant else colors.onSurface
+    val iconSize = if (compact) 18 else 20
+    val titleSize = if (compact) 13f else 14f
+    val rowPaddingV = if (compact) 6 else 8
     WarpRow(
         modifier = WarpModifier
             .fillMaxWidth()
             .background(colors.surfaceVariant)
             .cornerRadius(10)
-            .padding(horizontal = 10, vertical = 8)
+            .padding(horizontal = 10, vertical = rowPaddingV)
             .clickable(CounterActions.ToggleTodo(todo.id)),
         verticalAlignment = WarpVerticalAlignment.Center,
     ) {
         WarpImage(
             asset = icon.asSystem(),
             contentDescription = if (todo.done) "Done" else "Todo",
-            modifier = WarpModifier.size(20),
+            modifier = WarpModifier.size(iconSize),
             tint = if (todo.done) colors.primary else colors.onSurfaceVariant,
         )
         WarpSpacer(modifier = WarpModifier.width(8))
@@ -342,7 +434,7 @@ private fun TodoRow(todo: TodoItem) {
             modifier = WarpModifier.weight(),
             style = WarpTextStyle(
                 color = titleColor,
-                fontSize = 14f,
+                fontSize = titleSize,
                 fontWeight = if (todo.done) WarpFontWeight.Normal else WarpFontWeight.Medium,
             ),
             maxLines = 1,

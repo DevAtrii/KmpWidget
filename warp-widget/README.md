@@ -152,6 +152,88 @@ override fun Content(env: WidgetEnvironment, state: CounterState) {
 On **Android**, `env.theme` comes from Glance `Configuration.uiMode` (stored in internal Glance prefs on reload — see below).  
 On **iOS**, compose at view time with live `@Environment(\.colorScheme)` so WidgetKit pre-render passes get the correct scheme.
 
+## Adaptive layout (`WarpAdaptive`)
+
+WidgetKit has `systemSmall` / `systemMedium` / `systemLarge`. [WarpAdaptive.kt](src/commonMain/kotlin/com/atriidev/warp_widget/ui/WarpAdaptive.kt) maps both hosts to [WarpAdaptiveSize]:
+
+| Host | Source |
+|------|--------|
+| iOS | `env.widgetFamily` |
+| Android | `env.size` (dp) — from `AppWidgetManager` options, **not** Glance `LocalSize` |
+
+### Default platform bucketing
+
+```kotlin
+WarpAdaptiveContent(env) {
+    small { CompactLayout(state) }
+    medium { WideLayout(state) }
+    large { TallLayout(state) }
+}
+
+// non-compose branching:
+val columns = env.adaptiveValue(small = 1, medium = 2, large = 3)
+val bucket = env.adaptiveSize()  // iOS: family · Android: adaptiveSizeFrom(w, h)
+```
+
+On **Android**, default buckets use **width** as the primary signal (launcher columns). Tall layouts promote to large via height:
+
+| Bucket | Typical size (dp) | Rule ([WarpAdaptiveThresholds]) |
+|--------|-------------------|-----------------------------------|
+| Small | ~179×99 | `width < 250` |
+| Medium | ~373×99 | else, and not large |
+| Large | ~373×311, ~734×154 | `width ≥ 550` **or** `height ≥ 170` |
+
+Use [adaptiveSizeFrom] for manual classification outside compose:
+
+```kotlin
+val bucket = adaptiveSizeFrom(widthDp = 373f, heightDp = 99f)  // Medium
+```
+
+### Custom calc (Compose)
+
+Pass your own `(widthDp, heightDp) → WarpAdaptiveSize` when defaults do not fit your widget:
+
+```kotlin
+// memoized bucket — recomposes when env.size changes
+val bucket = rememberWarpAdaptiveSize(env) { w, h ->
+    when {
+        w < 200f -> WarpAdaptiveSize.Small
+        w < 450f -> WarpAdaptiveSize.Medium
+        else -> WarpAdaptiveSize.Large
+    }
+}
+
+// three layout branches with custom calc
+WarpAdaptiveContent(
+    environment = env,
+    calc = { w, h -> adaptiveSizeFrom(w, h) },  // or your own lambda
+    small = { CompactLayout(state) },
+    medium = { WideLayout(state) },
+    large = { TallLayout(state) },
+)
+```
+
+| API | Role |
+|-----|------|
+| [WarpAdaptiveCalc] | `(widthDp, heightDp) → WarpAdaptiveSize` type alias |
+| [adaptiveSizeFrom] | Library default width/height buckets |
+| [WarpAdaptiveThresholds] | Tunable default breakpoints (`SMALL_MAX_WIDTH_DP`, …) |
+| [rememberWarpAdaptiveSize] | Run [calc] against `env.size` in compose |
+| [WarpAdaptiveContent] (no calc) | Platform default via [WidgetEnvironment.adaptiveSize] |
+| [WarpAdaptiveContent] (with calc) | Custom bucket + small / medium / large slots |
+| [WarpWidgetSize.adaptiveSize] | Same as [adaptiveSizeFrom] on a [WarpWidgetSize] |
+
+### Android sizing & resize
+
+[GlanceAppWidgetSize.kt](src/androidMain/kotlin/com/atriidev/warp_widget/GlanceAppWidgetSize.kt) resolves **current** dp size for `env.size`:
+
+1. **Layout prefs first** — `__warp_layout_w/h` written on resize (see below) when Glance `LocalAppWidgetOptions` is stale under default `SizeMode.Single`.
+2. **Options bundle** — `OPTION_APPWIDGET_MIN_WIDTH` × `OPTION_APPWIDGET_MIN_HEIGHT` (Android 12+ current size). Do **not** use `MAX_HEIGHT` as current height — that is the resize ceiling and mis-buckets narrow widgets.
+
+[rememberGlanceWidgetSession](src/androidMain/kotlin/com/atriidev/warp_widget/GlanceWidgetEnvironment.kt) feeds this into `WidgetEnvironment.size` so resize updates adaptive UI (e.g. `179×99` small, `373×99` medium — not the ~90dp Glance `LocalSize` minimum).
+
+**Requirements:** subclass [WarpGlanceWidgetReceiver] — `onAppWidgetOptionsChanged` calls [WarpWidgetAndroidReload.scheduleLayoutReload], which persists layout via [GlanceInternalState.touchLayout] and calls `GlanceAppWidget.update()`. After changing sizing logic, remove/re-add the widget or resize once to refresh stale layout prefs.
+
 ## Android (Jetpack Glance)
 
 1. Subclass [WarpGlanceWidgetReceiver](src/androidMain/kotlin/com/atriidev/warp_widget/WarpGlanceWidgetReceiver.kt) + [WarpGlanceWidget](src/androidMain/kotlin/com/atriidev/warp_widget/WarpGlanceWidget.kt) — registry + `PreferencesGlanceStateDefinition` + `WarpRender` are automatic:
@@ -188,10 +270,11 @@ No custom `Application` or ContentProvider is required — [WarpWidgetAndroidIni
 
 | Helper | Role |
 |--------|------|
-| `WarpGlanceWidgetReceiver` | Auto [WarpWidgetAndroidRegistry.register]; handles `UI_MODE_CHANGED` / `CONFIGURATION_CHANGED` |
+| `WarpGlanceWidgetReceiver` | Auto [WarpWidgetAndroidRegistry.register]; `UI_MODE_CHANGED` / resize layout reload |
 | `WarpGlanceWidget` | `PreferencesGlanceStateDefinition` + `WarpWidgetHost` / `WarpRender` |
-| `rememberGlanceWidgetSession(context)` | `LocalSize` + Glance prefs → `WarpWidgetSession` (used inside `WarpGlanceWidget`) |
+| `rememberGlanceWidgetSession(context)` | Options + layout prefs → `WarpWidgetSession` (inside `WarpGlanceWidget`) |
 | `glanceWidgetEnvironment(context, size)` | Map config / density / theme → `WidgetEnvironment` |
+| `Bundle.resolveGlanceWidgetSize` | Current dp from AppWidget options (see [Adaptive layout](#adaptive-layout-warpadaptive)) |
 | `Preferences.toWarpPreferences()` | Glance prefs → WARP bag (filters internal `__warp_*` keys) |
 | `WarpTheme(environment = env)` | Material-style colors from `env.theme` — see [Theming](#theming-warptheme) |
 
@@ -212,6 +295,17 @@ Glance keeps a long-lived composition session whose `Context` can retain a stale
 **Requirements:** manifest intent filter above; open the app once after install so the init provider registers receivers (or interact with the widget once). Reload only runs while the app process is alive (standard Android widget limitation).
 
 **Debug logcat tags:** `WarpWidgetAndroidReload`, `WarpWidgetStateStore`, `WarpWidgetAndroidRegistry`.
+
+### Resize / adaptive reload
+
+Default Glance `SizeMode.Single` ignores `GlanceAppWidget.resize()`. Without an explicit reload, `LocalAppWidgetOptions` and `LocalSize` can stay at the last session dimensions while the user resizes on the home screen.
+
+`warp-widget` handles this in [WarpGlanceWidgetReceiver.onAppWidgetOptionsChanged](src/androidMain/kotlin/com/atriidev/warp_widget/WarpGlanceWidgetReceiver.kt):
+
+1. **`scheduleLayoutReload`** — resolve size from the new options bundle, write `__warp_layout_w/h` + `__warp_layout_epoch` via [GlanceInternalState.touchLayout](src/androidMain/kotlin/com/atriidev/warp_widget/GlanceInternalState.kt), then `GlanceAppWidget.update()`.
+2. **`rememberGlanceWidgetSession`** — prefers layout prefs when present so [WarpAdaptiveContent](#adaptive-layout-warpadaptive) and `env.size` track the resized widget.
+
+Same “internal prefs changed → recompose” pattern as [system light / dark reload](#system-light--dark-reload) above.
 
 ## iOS (WidgetKit)
 
@@ -278,10 +372,12 @@ warp-widget/
   src/commonMain/…/WarpWidgetState*.kt    # prefs, currentState, store expect
   src/commonMain/…/api/                   # WidgetEnvironment, PlatformContext, …
   src/commonMain/…/ui/WarpTheme.kt        # WarpTheme, WarpColors
+  src/commonMain/…/ui/WarpAdaptive.kt     # WarpAdaptiveSize, rememberWarpAdaptiveSize, WarpAdaptiveContent
   src/androidMain/…/WarpGlance*.kt        # GlanceAppWidget / Receiver bases
   src/androidMain/…/Glance*.kt            # Glance env/session helpers, registry
-  src/androidMain/…/GlanceInternalState.kt  # internal uiMode prefs for theme reload
-  src/androidMain/…/WarpWidgetAndroidReload.kt  # UI_MODE_CHANGED → reloadAll
+  src/androidMain/…/GlanceAppWidgetSize.kt  # minW×minH size resolve + layout pref override
+  src/androidMain/…/GlanceInternalState.kt  # internal uiMode + layout prefs for reload
+  src/androidMain/…/WarpWidgetAndroidReload.kt  # UI_MODE_CHANGED + resize → reload
   src/iosMain/…/WarpWidgetKitMapping.kt   # Kit env dict → Shared types
   src/iosMain/…/WarpWidgetHost.ios.kt     # iosSession()
   src/swift/warpBridge/                   # spm4Kmp thin bridge

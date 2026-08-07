@@ -1,7 +1,9 @@
 package com.atriidev.warp_widget
 
+import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.Intent
+import android.os.Bundle
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 
@@ -20,11 +22,8 @@ private const val ACTION_UI_MODE_CHANGED = "android.intent.action.UI_MODE_CHANGE
  * }
  * ```
  *
- * Pair with [WarpGlanceWidget]. Cold-start taps wake this receiver via
- * [WarpWidgetAndroidRegistry] → [ensureRegistered].
- *
- * Manifest intent-filter should include [Intent.ACTION_CONFIGURATION_CHANGED] so
- * light/dark toggles trigger [WarpWidgetAndroidReload] (also installed via init provider).
+ * Resizes: default [androidx.glance.appwidget.SizeMode.Single] ignores Glance [resize];
+ * [WarpGlanceWidgetReceiver.onAppWidgetOptionsChanged] forces layout reload instead.
  */
 abstract class WarpGlanceWidgetReceiver : GlanceAppWidgetReceiver() {
     /** Shared WARP definition (same instance as [WarpGlanceWidget.widget]). */
@@ -50,6 +49,22 @@ abstract class WarpGlanceWidgetReceiver : GlanceAppWidgetReceiver() {
             -> WarpWidgetAndroidReload.scheduleReloadAll(context, "receiver:${intent.action}")
         }
         super.onReceive(context, intent)
+    }
+
+    override fun onAppWidgetOptionsChanged(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetId: Int,
+        newOptions: Bundle,
+    ) {
+        ensureRegistered()
+        super.onAppWidgetOptionsChanged(context, appWidgetManager, appWidgetId, newOptions)
+        WarpWidgetAndroidReload.scheduleLayoutReload(
+            context = context,
+            appWidgetId = appWidgetId,
+            options = newOptions,
+            widgetFactory = { createGlanceWidget() },
+        )
     }
 
     /**

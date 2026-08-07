@@ -53,7 +53,7 @@ data class WidgetEnvironment(
      * Logical size of the widget content area in dp (points ≈ dp).
      *
      * - **WidgetKit:** `context.displaySize` (points)
-     * - **Glance:** `LocalSize.current` (`DpSize`)
+     * - **Glance:** `AppWidgetManager` options (`minWidth` × `maxHeight`), not [androidx.glance.LocalSize]
      */
     val size: WarpWidgetSize?,
     /**

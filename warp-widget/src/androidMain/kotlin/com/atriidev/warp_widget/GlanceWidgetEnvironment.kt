@@ -1,5 +1,6 @@
 package com.atriidev.warp_widget
 
+import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.res.Configuration
 import android.view.View
@@ -8,7 +9,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.unit.DpSize
 import androidx.datastore.preferences.core.Preferences
 import androidx.glance.LocalContext
+import androidx.glance.LocalGlanceId
 import androidx.glance.LocalSize
+import androidx.glance.appwidget.AppWidgetId
 import androidx.glance.appwidget.LocalAppWidgetOptions
 import androidx.glance.currentState
 import com.atriidev.warp_widget.api.PlatformContext
@@ -88,10 +91,36 @@ fun rememberGlanceWidgetSession(
     isPreview: Boolean = false,
 ): WarpWidgetSession {
     val glanceContext = LocalContext.current
-    val size = LocalSize.current
-    val prefs = currentState<Preferences>()
+    val glanceFallbackSize = LocalSize.current
     val optionsBundle = LocalAppWidgetOptions.current
-    val optionsConfig = remember(optionsBundle) {
+    val optionMinWidth = optionsBundle.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 0)
+    val optionMaxHeight = optionsBundle.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 0)
+    val optionMaxWidth = optionsBundle.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH, 0)
+    val optionMinHeight = optionsBundle.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 0)
+    val boundAppWidgetId = (LocalGlanceId.current as? AppWidgetId)?.appWidgetId
+    val prefs = currentState<Preferences>()
+    val prefLayoutW = prefs[GlanceInternalState.layoutWidthKey]
+    val prefLayoutH = prefs[GlanceInternalState.layoutHeightKey]
+    val layoutEpoch = prefs[GlanceInternalState.layoutEpochKey] ?: 0L
+    val widgetSize = remember(
+        optionMinWidth,
+        optionMaxHeight,
+        optionMaxWidth,
+        optionMinHeight,
+        glanceFallbackSize.width.value,
+        glanceFallbackSize.height.value,
+        prefLayoutW,
+        prefLayoutH,
+        layoutEpoch,
+    ) {
+        prefs.resolveGlanceWidgetSize(optionsBundle, glanceFallbackSize)
+    }
+    val optionsConfig = remember(
+        optionMinWidth,
+        optionMaxHeight,
+        optionMaxWidth,
+        optionMinHeight,
+    ) {
         val keys = optionsBundle.keySet().orEmpty()
         if (keys.isEmpty()) {
             null
@@ -119,21 +148,27 @@ fun rememberGlanceWidgetSession(
     val fontScale = config.fontScale
 
     val environment = remember(
-        size,
+        optionMinWidth,
+        optionMaxHeight,
+        optionMaxWidth,
+        optionMinHeight,
+        widgetSize.width.value,
+        widgetSize.height.value,
         nightMode,
         themeEpoch,
+        layoutEpoch,
         localeTag,
         layoutDirection,
         fontScale,
-        appWidgetId,
+        boundAppWidgetId,
         isPreview,
         optionsConfig,
     ) {
         glanceWidgetEnvironment(
             context = glanceContext,
-            size = size,
+            size = widgetSize,
             isPreview = isPreview,
-            appWidgetId = appWidgetId,
+            appWidgetId = boundAppWidgetId ?: appWidgetId,
             configuration = optionsConfig,
             nightModeMask = nightMode,
         )

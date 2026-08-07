@@ -7,7 +7,11 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.res.Configuration
 import android.os.Build
+import android.os.Bundle
 import android.util.Log
+import androidx.compose.ui.unit.DpSize
+import androidx.glance.appwidget.AppWidgetId
+import androidx.glance.appwidget.GlanceAppWidget
 import com.atriidev.warp_widget.api.PlatformContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -94,6 +98,30 @@ internal object WarpWidgetAndroidReload {
         scope.launch {
             WarpWidgetAndroidRegistry.ensureAllWidgetReceiversRegistered(appContext)
             WarpWidgetAndroidRegistry.reloadAll(PlatformContext(appContext))
+        }
+    }
+
+    /**
+     * [SizeMode.Single] skips Glance [androidx.glance.appwidget.GlanceAppWidget.resize].
+     * Touch layout prefs + [GlanceAppWidget.update] so [WidgetEnvironment.size] tracks resize.
+     */
+    fun scheduleLayoutReload(
+        context: Context,
+        appWidgetId: Int,
+        options: Bundle,
+        widgetFactory: () -> GlanceAppWidget,
+    ) {
+        val size = options.resolveGlanceWidgetSize(DpSize.Zero)
+        Log.d(
+            TAG,
+            "scheduleLayoutReload appWidgetId=$appWidgetId " +
+                "size=${size.width.value}x${size.height.value}dp",
+        )
+        scope.launch {
+            val appContext = context.applicationContext
+            val glanceId = AppWidgetId(appWidgetId)
+            GlanceInternalState.touchLayout(appContext, glanceId, options)
+            widgetFactory().update(appContext, glanceId)
         }
     }
 }
