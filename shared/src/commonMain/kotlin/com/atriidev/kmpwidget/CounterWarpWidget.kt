@@ -5,12 +5,14 @@ import com.atriidev.warp_runtime.compose.WarpBox
 import com.atriidev.warp_runtime.compose.WarpButton
 import com.atriidev.warp_runtime.compose.WarpColumn
 import com.atriidev.warp_runtime.compose.WarpDivider
+import com.atriidev.warp_runtime.compose.WarpImage
 import com.atriidev.warp_runtime.compose.WarpProgressIndicator
 import com.atriidev.warp_runtime.compose.WarpRow
 import com.atriidev.warp_runtime.compose.WarpSpacer
 import com.atriidev.warp_runtime.compose.WarpText
 import com.atriidev.warp_runtime.nodes.actions.WarpActionId
 import com.atriidev.warp_runtime.nodes.actions.asClickAction
+import com.atriidev.warp_runtime.nodes.assets.WarpAsset
 import com.atriidev.warp_runtime.nodes.modifiers.WarpColor
 import com.atriidev.warp_runtime.nodes.modifiers.WarpModifier
 import com.atriidev.warp_runtime.nodes.style.WarpButtonColors
@@ -72,18 +74,30 @@ object CounterWarpWidget : WarpWidget<CounterState>(CounterState.serializer()) {
             WarpColumn(
                 modifier = WarpModifier.fillMaxWidth(),
             ) {
-                WarpText(
-                    text = "Count",
+                WarpRow(
                     modifier = WarpModifier
                         .fillMaxWidth()
                         .clickable(CounterActions.Reset.asClickAction()),
-                    style = WarpTextStyle(
-                        color = WarpColor("#B0BEC5"),
-                        fontSize = 14f,
-                        fontWeight = WarpFontWeight.Medium,
-                    ),
-                    maxLines = 1,
-                )
+                    verticalAlignment = WarpVerticalAlignment.Center,
+                ) {
+                    // SF Symbol on iOS; Android maps same id via WarpGlanceWidget.assets().
+                    WarpImage(
+                        asset = WarpAsset.System("number.circle.fill"),
+                        contentDescription = "Count",
+                        modifier = WarpModifier.size(18),
+                        tint = WarpColor("#B0BEC5"),
+                    )
+                    WarpSpacer(modifier = WarpModifier.width(6))
+                    WarpText(
+                        text = "Count",
+                        style = WarpTextStyle(
+                            color = WarpColor("#B0BEC5"),
+                            fontSize = 14f,
+                            fontWeight = WarpFontWeight.Medium,
+                        ),
+                        maxLines = 1,
+                    )
+                }
 
                 WarpSpacer(modifier = WarpModifier.height(6))
 

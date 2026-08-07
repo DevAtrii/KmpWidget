@@ -34,7 +34,7 @@ abstract class WarpGlanceWidgetReceiver : GlanceAppWidgetReceiver() {
     final override val glanceAppWidget: GlanceAppWidget
         get() {
             ensureRegistered()
-            return createGlanceWidget()
+            return createGlanceWidget().also { it.ensureAssetsRegistered() }
         }
 
     override fun onReceive(context: Context, intent: Intent) {

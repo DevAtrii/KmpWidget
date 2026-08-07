@@ -16,14 +16,17 @@ import com.atriidev.warp_runtime.compose.internal.WarpBoxComposable
 import com.atriidev.warp_runtime.compose.internal.WarpButtonComposable
 import com.atriidev.warp_runtime.compose.internal.WarpColumnComposable
 import com.atriidev.warp_runtime.compose.internal.WarpDividerComposable
+import com.atriidev.warp_runtime.compose.internal.WarpImageComposable
 import com.atriidev.warp_runtime.compose.internal.WarpProgressIndicatorComposable
 import com.atriidev.warp_runtime.compose.internal.WarpRowComposable
 import com.atriidev.warp_runtime.compose.internal.WarpSpacerComposable
 import com.atriidev.warp_runtime.compose.internal.WarpTextComposable
+import com.atriidev.warp_runtime.nodes.assets.WarpAsset
 import com.atriidev.warp_runtime.nodes.modifiers.WarpColor
 import com.atriidev.warp_runtime.nodes.modifiers.WarpModifier
 import com.atriidev.warp_runtime.nodes.style.WarpButtonColors
 import com.atriidev.warp_runtime.nodes.style.WarpContentAlignment
+import com.atriidev.warp_runtime.nodes.style.WarpContentScale
 import com.atriidev.warp_runtime.nodes.style.WarpHorizontalAlignment
 import com.atriidev.warp_runtime.nodes.style.WarpProgressIndicatorStyle
 import com.atriidev.warp_runtime.nodes.style.WarpTextStyle
@@ -236,5 +239,29 @@ fun WarpProgressIndicator(
         progress = progress,
         color = color,
         backgroundColor = backgroundColor,
+    )
+}
+
+/**
+ * Image — Glance `Image`-shaped API.
+ *
+ * [asset] is a logical ref. Use [WarpAsset.System] for SF Symbols on iOS.
+ *
+ * Maps to [com.atriidev.warp_runtime.nodes.WarpImage].
+ */
+@Composable
+fun WarpImage(
+    asset: WarpAsset,
+    contentDescription: String? = null,
+    modifier: WarpModifier = WarpModifier(),
+    contentScale: WarpContentScale = WarpContentScale.Fit,
+    tint: WarpColor? = null,
+) {
+    WarpImageComposable(
+        asset = asset,
+        contentDescription = contentDescription,
+        modifier = modifier,
+        contentScale = contentScale,
+        tint = tint,
     )
 }

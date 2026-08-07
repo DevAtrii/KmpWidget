@@ -11,15 +11,18 @@ import com.atriidev.warp_runtime.nodes.WarpButton
 import com.atriidev.warp_runtime.nodes.actions.WarpAction
 import com.atriidev.warp_runtime.nodes.WarpColumn
 import com.atriidev.warp_runtime.nodes.WarpDivider
+import com.atriidev.warp_runtime.nodes.WarpImage
 import com.atriidev.warp_runtime.nodes.WarpNode
 import com.atriidev.warp_runtime.nodes.WarpProgressIndicator
 import com.atriidev.warp_runtime.nodes.WarpRow
 import com.atriidev.warp_runtime.nodes.WarpSpacer
 import com.atriidev.warp_runtime.nodes.WarpText
+import com.atriidev.warp_runtime.nodes.assets.WarpAsset
 import com.atriidev.warp_runtime.nodes.modifiers.WarpColor
 import com.atriidev.warp_runtime.nodes.modifiers.WarpModifier
 import com.atriidev.warp_runtime.nodes.style.WarpButtonColors
 import com.atriidev.warp_runtime.nodes.style.WarpContentAlignment
+import com.atriidev.warp_runtime.nodes.style.WarpContentScale
 import com.atriidev.warp_runtime.nodes.style.WarpHorizontalAlignment
 import com.atriidev.warp_runtime.nodes.style.WarpProgressIndicatorStyle
 import com.atriidev.warp_runtime.nodes.style.WarpTextStyle
@@ -170,6 +173,22 @@ internal class WarpProgressIndicatorHolder(
         progress = progress,
         color = color,
         backgroundColor = backgroundColor,
+    )
+}
+
+internal class WarpImageHolder(
+    var asset: WarpAsset,
+    var contentDescription: String? = null,
+    var modifier: WarpModifier = WarpModifier(),
+    var contentScale: WarpContentScale = WarpContentScale.Fit,
+    var tint: WarpColor? = null,
+) : WarpNodeHolder {
+    override fun toWarpNode(): WarpNode = WarpImage(
+        asset = asset,
+        contentDescription = contentDescription,
+        modifier = modifier,
+        contentScale = contentScale,
+        tint = tint,
     )
 }
 

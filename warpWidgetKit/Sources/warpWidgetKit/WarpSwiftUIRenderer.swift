@@ -1,5 +1,6 @@
 import SwiftUI
 import AppIntents
+import UIKit
 
 // MARK: - AppIntent host hook
 
@@ -148,6 +149,93 @@ private struct WarpNodeView: View {
                     .progressViewStyle(.circular)
                     .tint(node.progressColor)
             }
+
+        case .image:
+            WarpImageView(
+                asset: node.imageAsset,
+                contentScale: node.imageContentScale,
+                tint: node.imageTint
+            )
+        }
+    }
+}
+
+/// Resolves [WarpAsset] — SF Symbols via `Image(systemName:)`, catalog ids, local URIs.
+private struct WarpImageView: View {
+    let asset: WarpParsedAsset?
+    let contentScale: WarpParsedContentScale
+    let tint: Color?
+
+    var body: some View {
+        Group {
+            if let asset {
+                resolved(asset)
+            } else {
+                Color.clear
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func resolved(_ asset: WarpParsedAsset) -> some View {
+        switch asset {
+        case .system(let name):
+            // SF Symbol — native WidgetKit path; tint via template rendering.
+            Image(systemName: name)
+                .resizable()
+                .symbolRenderingMode(.monochrome)
+                .modifier(WarpImageScaleModifier(contentScale: contentScale))
+                .foregroundStyle(tint ?? Color.primary)
+        case .id(let id):
+            let image = Image(id).resizable()
+            if let tint {
+                image
+                    .renderingMode(.template)
+                    .modifier(WarpImageScaleModifier(contentScale: contentScale))
+                    .foregroundStyle(tint)
+            } else {
+                image.modifier(WarpImageScaleModifier(contentScale: contentScale))
+            }
+        case .uri(let uriString):
+            if let image = loadUriImage(uriString) {
+                let view = image.resizable()
+                if let tint {
+                    view
+                        .renderingMode(.template)
+                        .modifier(WarpImageScaleModifier(contentScale: contentScale))
+                        .foregroundStyle(tint)
+                } else {
+                    view.modifier(WarpImageScaleModifier(contentScale: contentScale))
+                }
+            } else {
+                Color.clear
+            }
+        }
+    }
+
+    private func loadUriImage(_ uriString: String) -> Image? {
+        guard let url = URL(string: uriString), url.isFileURL else { return nil }
+        // Local / App Group files only — remote http(s) not supported.
+        guard let data = try? Data(contentsOf: url),
+              let uiImage = UIImage(data: data)
+        else {
+            return nil
+        }
+        return Image(uiImage: uiImage)
+    }
+}
+
+private struct WarpImageScaleModifier: ViewModifier {
+    let contentScale: WarpParsedContentScale
+
+    func body(content: Content) -> some View {
+        switch contentScale {
+        case .fit:
+            content.scaledToFit()
+        case .crop:
+            content.scaledToFill().clipped()
+        case .fillBounds:
+            content.frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 }
@@ -339,6 +427,19 @@ enum WarpNodeKind {
     case spacer
     case divider
     case progressIndicator
+    case image
+}
+
+enum WarpParsedAsset {
+    case id(String)
+    case system(String)
+    case uri(String)
+}
+
+enum WarpParsedContentScale {
+    case fit
+    case crop
+    case fillBounds
 }
 
 enum WarpParsedProgressStyle {
@@ -446,6 +547,9 @@ struct WarpParsedNode {
     let progressStyle: WarpParsedProgressStyle
     let progress: Float?
     let progressColor: Color?
+    let imageAsset: WarpParsedAsset?
+    let imageTint: Color?
+    let imageContentScale: WarpParsedContentScale
     let children: [WarpParsedNode]
 
     /// Modifier clickable first, then node onClick.
@@ -476,6 +580,9 @@ struct WarpParsedNode {
         progressStyle: WarpParsedProgressStyle = .circular,
         progress: Float? = nil,
         progressColor: Color? = nil,
+        imageAsset: WarpParsedAsset? = nil,
+        imageTint: Color? = nil,
+        imageContentScale: WarpParsedContentScale = .fit,
         children: [WarpParsedNode] = []
     ) -> WarpParsedNode {
         WarpParsedNode(
@@ -496,6 +603,9 @@ struct WarpParsedNode {
             progressStyle: progressStyle,
             progress: progress,
             progressColor: progressColor,
+            imageAsset: imageAsset,
+            imageTint: imageTint,
+            imageContentScale: imageContentScale,
             children: children
         )
     }
@@ -543,6 +653,9 @@ enum WarpNodeParser {
                 progressStyle: .circular,
                 progress: nil,
                 progressColor: nil,
+                imageAsset: nil,
+                imageTint: nil,
+                imageContentScale: .fit,
                 children: children
             )
         case "row":
@@ -564,6 +677,9 @@ enum WarpNodeParser {
                 progressStyle: .circular,
                 progress: nil,
                 progressColor: nil,
+                imageAsset: nil,
+                imageTint: nil,
+                imageContentScale: .fit,
                 children: children
             )
         case "box":
@@ -650,8 +766,43 @@ enum WarpNodeParser {
                 progress: progress,
                 progressColor: parseColorValue(object["color"])
             )
+        case "image":
+            return WarpParsedNode.leafDefaults(
+                kind: .image,
+                modifierActionId: modActionId,
+                modifierParametersJson: modParams,
+                style: style,
+                imageAsset: parseAsset(object["asset"] as? [String: Any]),
+                imageTint: parseColorValue(object["tint"]),
+                imageContentScale: parseContentScale(object["contentScale"] as? String)
+            )
         default:
             return nil
+        }
+    }
+
+    private static func parseAsset(_ object: [String: Any]?) -> WarpParsedAsset? {
+        guard let object, let type = object["type"] as? String else { return nil }
+        switch type {
+        case "system":
+            guard let name = object["name"] as? String else { return nil }
+            return .system(name)
+        case "id":
+            guard let id = object["id"] as? String else { return nil }
+            return .id(id)
+        case "uri":
+            guard let uri = object["uri"] as? String else { return nil }
+            return .uri(uri)
+        default:
+            return nil
+        }
+    }
+
+    private static func parseContentScale(_ raw: String?) -> WarpParsedContentScale {
+        switch raw {
+        case "crop": return .crop
+        case "fillBounds": return .fillBounds
+        default: return .fit
         }
     }
 

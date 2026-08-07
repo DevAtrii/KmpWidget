@@ -4,7 +4,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.glance.Button
+import androidx.glance.ColorFilter
 import androidx.glance.GlanceModifier
+import androidx.glance.Image
+import androidx.glance.LocalContext
 import androidx.glance.action.Action
 import androidx.glance.appwidget.CircularProgressIndicator
 import androidx.glance.appwidget.LinearProgressIndicator
@@ -25,6 +28,7 @@ import com.atriidev.warp_runtime.nodes.WarpBox
 import com.atriidev.warp_runtime.nodes.WarpButton
 import com.atriidev.warp_runtime.nodes.WarpColumn
 import com.atriidev.warp_runtime.nodes.WarpDivider
+import com.atriidev.warp_runtime.nodes.WarpImage
 import com.atriidev.warp_runtime.nodes.WarpNode
 import com.atriidev.warp_runtime.nodes.WarpProgressIndicator
 import com.atriidev.warp_runtime.nodes.WarpRow
@@ -33,6 +37,7 @@ import com.atriidev.warp_runtime.nodes.WarpText
 import com.atriidev.warp_runtime.nodes.actions.ClickAction
 import com.atriidev.warp_runtime.nodes.style.WarpProgressIndicatorStyle
 import com.atriidev.warp_runtime.nodes.style.WarpTextAlign
+import com.atriidev.warp_ui.glance.WarpAndroidAssets
 
 @PublishedApi
 @Composable
@@ -75,6 +80,7 @@ internal fun RenderWarpNode(
         is WarpSpacer -> Spacer(modifier = node.modifier.toGlanceModifier(clickAction))
         is WarpDivider -> RenderDivider(node, clickAction)
         is WarpProgressIndicator -> RenderProgressIndicator(node, clickAction)
+        is WarpImage -> RenderImage(node, clickAction)
     }
 }
 
@@ -178,6 +184,28 @@ private fun RenderProgressIndicator(
 }
 
 @Composable
+private fun RenderImage(
+    node: WarpImage,
+    clickAction: (ClickAction) -> Action,
+    extraModifier: GlanceModifier = GlanceModifier,
+) {
+    val modifier = node.modifier.toGlanceModifier(clickAction).then(extraModifier)
+    val provider = WarpAndroidAssets.resolve(node.asset, LocalContext.current)
+    if (provider == null) {
+        Spacer(modifier = modifier)
+        return
+    }
+    val tintFilter = node.tint?.let { ColorFilter.tint(ColorProvider(it.toComposeColor())) }
+    Image(
+        provider = provider,
+        contentDescription = node.contentDescription,
+        modifier = modifier,
+        contentScale = node.contentScale.toGlance(),
+        colorFilter = tintFilter,
+    )
+}
+
+@Composable
 private fun RowScope.RenderScopedChild(
     child: WarpNode,
     clickAction: (ClickAction) -> Action,
@@ -247,6 +275,7 @@ private fun WarpNode.warpModifier() = when (this) {
     is WarpSpacer -> modifier
     is WarpDivider -> modifier
     is WarpProgressIndicator -> modifier
+    is WarpImage -> modifier
 }
 
 @Composable
@@ -290,5 +319,6 @@ private fun RenderNodeWithExtra(
         is WarpSpacer -> Spacer(modifier = node.modifier.toGlanceModifier(clickAction).then(extra))
         is WarpDivider -> RenderDivider(node, clickAction, extra)
         is WarpProgressIndicator -> RenderProgressIndicator(node, clickAction, extra)
+        is WarpImage -> RenderImage(node, clickAction, extra)
     }
 }

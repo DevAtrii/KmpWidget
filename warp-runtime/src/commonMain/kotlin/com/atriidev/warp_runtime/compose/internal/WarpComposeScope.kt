@@ -10,11 +10,13 @@ package com.atriidev.warp_runtime.compose.internal
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
+import com.atriidev.warp_runtime.nodes.assets.WarpAsset
 import com.atriidev.warp_runtime.nodes.modifiers.WarpColor
 import com.atriidev.warp_runtime.nodes.modifiers.WarpModifier
 import com.atriidev.warp_runtime.nodes.actions.WarpAction
 import com.atriidev.warp_runtime.nodes.style.WarpButtonColors
 import com.atriidev.warp_runtime.nodes.style.WarpContentAlignment
+import com.atriidev.warp_runtime.nodes.style.WarpContentScale
 import com.atriidev.warp_runtime.nodes.style.WarpHorizontalAlignment
 import com.atriidev.warp_runtime.nodes.style.WarpProgressIndicatorStyle
 import com.atriidev.warp_runtime.nodes.style.WarpTextStyle
@@ -216,6 +218,25 @@ internal fun WarpProgressIndicatorComposable(
             progress = progress,
             color = color,
             backgroundColor = backgroundColor,
+        ),
+    )
+}
+
+@Composable
+internal fun WarpImageComposable(
+    asset: WarpAsset,
+    contentDescription: String?,
+    modifier: WarpModifier,
+    contentScale: WarpContentScale,
+    tint: WarpColor?,
+) {
+    WarpLeaf(
+        WarpImageHolder(
+            asset = asset,
+            contentDescription = contentDescription,
+            modifier = modifier,
+            contentScale = contentScale,
+            tint = tint,
         ),
     )
 }
