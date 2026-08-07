@@ -24,7 +24,7 @@ Describe widget UI in `commonMain` with composable primitives — same counter o
 @Composable
 fun CounterWidgetUi(state: CounterState) {
     WarpColumn(
-        modifier = WarpModifier().padding(WarpPadding(16, 16, 16, 16)),
+        modifier = WarpModifier.padding(16),
     ) {
         WarpText("Counter")
         WarpRow {

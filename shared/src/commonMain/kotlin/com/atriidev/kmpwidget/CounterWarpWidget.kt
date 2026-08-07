@@ -8,9 +8,7 @@ import com.atriidev.warp_runtime.compose.WarpRow
 import com.atriidev.warp_runtime.compose.WarpText
 import com.atriidev.warp_runtime.example.counter.CounterActions
 import com.atriidev.warp_runtime.nodes.actions.asClickAction
-import com.atriidev.warp_runtime.nodes.modifier.WarpModifier
-import com.atriidev.warp_runtime.nodes.modifier.WarpPadding
-import com.atriidev.warp_runtime.nodes.modifier.padding
+import com.atriidev.warp_runtime.nodes.modifiers.WarpModifier
 import com.atriidev.warp_ui.WarpClickHandler
 import com.atriidev.warp_widget.WarpStateKey
 import com.atriidev.warp_widget.WarpWidget
@@ -50,8 +48,8 @@ object CounterWarpWidget : WarpWidget {
         println("WIDGET_ENV $env")
         val count = currentState(CounterKeys.Count) ?: 0
         WarpColumn(
-            modifier = WarpModifier()
-                .padding(WarpPadding(16, 16, 16, 16)),
+            modifier = WarpModifier
+                .padding(16),
         ) {
             WarpText("Count")
             WarpRow {

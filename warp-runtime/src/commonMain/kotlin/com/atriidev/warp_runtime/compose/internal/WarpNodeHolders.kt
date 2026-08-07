@@ -12,7 +12,7 @@ import com.atriidev.warp_runtime.nodes.WarpColumn
 import com.atriidev.warp_runtime.nodes.WarpNode
 import com.atriidev.warp_runtime.nodes.WarpRow
 import com.atriidev.warp_runtime.nodes.WarpText
-import com.atriidev.warp_runtime.nodes.modifier.WarpModifier
+import com.atriidev.warp_runtime.nodes.modifiers.WarpModifier
 
 /**
  * Something that can be converted to a serializable [WarpNode] after composition ends.

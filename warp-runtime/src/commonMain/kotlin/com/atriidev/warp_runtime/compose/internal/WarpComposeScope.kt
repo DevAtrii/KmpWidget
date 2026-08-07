@@ -10,7 +10,7 @@ package com.atriidev.warp_runtime.compose.internal
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
-import com.atriidev.warp_runtime.nodes.modifier.WarpModifier
+import com.atriidev.warp_runtime.nodes.modifiers.WarpModifier
 import com.atriidev.warp_runtime.nodes.actions.WarpAction
 
 /**

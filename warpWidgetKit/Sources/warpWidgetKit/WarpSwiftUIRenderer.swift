@@ -309,7 +309,25 @@ enum WarpNodeParser {
     }
 
     private static func parsePadding(_ modifier: [String: Any]?) -> EdgeInsets {
-        guard let padding = modifier?["padding"] as? [String: Any] else {
+        guard let modifier else { return EdgeInsets() }
+
+        // Sequential chain: modifier.elements[] with type "padding"
+        if let elements = modifier["elements"] as? [[String: Any]] {
+            var top: CGFloat = 0
+            var leading: CGFloat = 0
+            var bottom: CGFloat = 0
+            var trailing: CGFloat = 0
+            for element in elements where element["type"] as? String == "padding" {
+                top += CGFloat(element["top"] as? Int ?? 0)
+                leading += CGFloat(element["start"] as? Int ?? 0)
+                bottom += CGFloat(element["bottom"] as? Int ?? 0)
+                trailing += CGFloat(element["end"] as? Int ?? 0)
+            }
+            return EdgeInsets(top: top, leading: leading, bottom: bottom, trailing: trailing)
+        }
+
+        // Legacy flat shape: modifier.padding { start, end, top, bottom }
+        guard let padding = modifier["padding"] as? [String: Any] else {
             return EdgeInsets()
         }
         return EdgeInsets(

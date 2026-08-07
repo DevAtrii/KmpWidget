@@ -1,6 +1,6 @@
 package com.atriidev.warp_runtime.nodes
 
-import com.atriidev.warp_runtime.nodes.modifier.WarpModifier
+import com.atriidev.warp_runtime.nodes.modifiers.WarpModifier
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 

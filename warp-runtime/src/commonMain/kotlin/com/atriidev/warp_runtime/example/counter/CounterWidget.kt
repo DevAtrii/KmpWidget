@@ -7,9 +7,7 @@ import com.atriidev.warp_runtime.compose.WarpRow
 import com.atriidev.warp_runtime.compose.WarpText
 import com.atriidev.warp_runtime.compose.composeWarpToJson
 import com.atriidev.warp_runtime.nodes.actions.asClickAction
-import com.atriidev.warp_runtime.nodes.modifier.WarpModifier
-import com.atriidev.warp_runtime.nodes.modifier.WarpPadding
-import com.atriidev.warp_runtime.nodes.modifier.padding
+import com.atriidev.warp_runtime.nodes.modifiers.WarpModifier
 import kotlinx.serialization.Serializable
 
 /**
@@ -31,7 +29,7 @@ object CounterWidget {
     /** Counter UI driven by [State]. Layout: column with title and a row of [-] [count] [+]. */
     val ui: @Composable (State) -> Unit = { state ->
         WarpColumn(
-            modifier = WarpModifier().padding(WarpPadding(16, 16, 16, 16)),
+            modifier = WarpModifier.padding(16),
         ) {
             WarpText("Counter")
             WarpRow {

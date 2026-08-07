@@ -37,7 +37,7 @@ Think of it like writing HTML as a data structure instead of drawing pixels imme
 import com.atriidev.warp_runtime.compose.*
 import com.atriidev.warp_runtime.example.counter.*
 import com.atriidev.warp_runtime.nodes.actions.*
-import com.atriidev.warp_runtime.nodes.modifier.*
+import com.atriidev.warp_runtime.nodes.modifiers.*
 
 val json = composeWarpToJson {
     WarpColumn {
@@ -274,7 +274,15 @@ JSON: { onClick: {                      ↓
 | `WarpText("Hello")` | `{ "type": "text", "text": "Hello" }` |
 | `WarpButton(text, onClick)` | `{ "type": "button", "text": "...", "onClick": { "type": "click", "actionId": "..." } }` |
 
-All nodes can optionally take a `WarpModifier` (padding is supported today).
+All nodes can optionally take a `WarpModifier` (padding is supported today). Modifiers chain like Compose:
+
+```kotlin
+WarpColumn(
+    modifier = WarpModifier
+        .padding(16)
+        .padding(horizontal = 8, vertical = 4),
+) { … }
+```
 
 ---
 
@@ -286,12 +294,15 @@ For the sample counter widget with `CounterState(count = 42)`:
 {
     "type": "column",
     "modifier": {
-        "padding": {
-            "start": 16,
-            "end": 16,
-            "top": 16,
-            "bottom": 16
-        }
+        "elements": [
+            {
+                "type": "padding",
+                "start": 16,
+                "end": 16,
+                "top": 16,
+                "bottom": 16
+            }
+        ]
     },
     "children": [
         {
@@ -520,8 +531,10 @@ warp-runtime/
 │   ├── WarpText.kt
 │   ├── WarpButton.kt       # onClick: WarpAction
 │   ├── modifier/
-│   │   ├── WarpModifier.kt
-│   │   └── WarpModifierExt.kt
+│   │   ├── WarpModifier.kt         # Sequential modifier chain
+│   │   ├── WarpModifierElement.kt  # Sealed element base
+│   │   ├── WarpPadding.kt          # Folded padding values
+│   │   └── WarpPaddingElement.kt   # Padding link in chain
 │   └── actions/
 │       ├── WarpAction.kt       # Sealed action interface
 │       └── ClickAction.kt      # actionClick(), WarpActionId, typed decoding

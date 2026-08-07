@@ -16,7 +16,7 @@ import com.atriidev.warp_runtime.compose.internal.WarpButtonComposable
 import com.atriidev.warp_runtime.compose.internal.WarpColumnComposable
 import com.atriidev.warp_runtime.compose.internal.WarpRowComposable
 import com.atriidev.warp_runtime.compose.internal.WarpTextComposable
-import com.atriidev.warp_runtime.nodes.modifier.WarpModifier
+import com.atriidev.warp_runtime.nodes.modifiers.WarpModifier
 
 /**
  * Arranges child nodes vertically (top to bottom).
