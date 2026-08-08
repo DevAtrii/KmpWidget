@@ -130,6 +130,42 @@ internal fun WarpRowComposable(
     )
 }
 
+/** Internal implementation backing public [com.atriidev.warp_runtime.compose.WarpLazyColumn]. */
+@Composable
+internal fun WarpLazyColumnComposable(
+    modifier: WarpModifier,
+    verticalAlignment: WarpVerticalAlignment,
+    horizontalAlignment: WarpHorizontalAlignment,
+    content: @Composable () -> Unit,
+) {
+    WarpContainer(
+        WarpLazyColumnHolder(
+            modifier = modifier,
+            verticalAlignment = verticalAlignment,
+            horizontalAlignment = horizontalAlignment,
+        ),
+        content,
+    )
+}
+
+/** Internal implementation backing public [com.atriidev.warp_runtime.compose.WarpLazyRow]. */
+@Composable
+internal fun WarpLazyRowComposable(
+    modifier: WarpModifier,
+    horizontalAlignment: WarpHorizontalAlignment,
+    verticalAlignment: WarpVerticalAlignment,
+    content: @Composable () -> Unit,
+) {
+    WarpContainer(
+        WarpLazyRowHolder(
+            modifier = modifier,
+            horizontalAlignment = horizontalAlignment,
+            verticalAlignment = verticalAlignment,
+        ),
+        content,
+    )
+}
+
 /** Internal implementation backing public [com.atriidev.warp_runtime.compose.WarpText]. */
 @Composable
 internal fun WarpTextComposable(

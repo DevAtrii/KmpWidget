@@ -117,8 +117,22 @@ private struct WarpNodeView: View {
                 }
             }
 
+        case .lazyColumn:
+            LazyVStack(alignment: node.horizontalAlignment.stackAlignment, spacing: 0) {
+                ForEach(Array(node.children.enumerated()), id: \.offset) { _, child in
+                    WarpNodeView(node: child, useIntents: useIntents, widgetId: widgetId, warpWidgetId: warpWidgetId)
+                }
+            }
+
         case .row:
             HStack(alignment: node.verticalAlignment.stackAlignment, spacing: 0) {
+                ForEach(Array(node.children.enumerated()), id: \.offset) { _, child in
+                    WarpNodeView(node: child, useIntents: useIntents, widgetId: widgetId, warpWidgetId: warpWidgetId)
+                }
+            }
+
+        case .lazyRow:
+            LazyHStack(alignment: node.verticalAlignment.stackAlignment, spacing: 0) {
                 ForEach(Array(node.children.enumerated()), id: \.offset) { _, child in
                     WarpNodeView(node: child, useIntents: useIntents, widgetId: widgetId, warpWidgetId: warpWidgetId)
                 }
@@ -464,7 +478,9 @@ private struct WarpIntentPlainButton<Label: View>: View {
 
 enum WarpNodeKind {
     case column
+    case lazyColumn
     case row
+    case lazyRow
     case box
     case text
     case button
@@ -612,7 +628,7 @@ struct WarpParsedNode {
         switch kind {
         case .box:
             return contentAlignment
-        case .column, .row:
+        case .column, .lazyColumn, .row, .lazyRow:
             return horizontalAlignment.frameAlignment
         default:
             if let align = textArgs.textAlign?.frameAlignment {
@@ -626,7 +642,7 @@ struct WarpParsedNode {
         switch kind {
         case .box:
             return contentAlignment
-        case .column, .row:
+        case .column, .lazyColumn, .row, .lazyRow:
             return verticalAlignment.frameAlignment
         default:
             return verticalAlignment.frameAlignment
@@ -637,7 +653,7 @@ struct WarpParsedNode {
         switch kind {
         case .box:
             return contentAlignment
-        case .column, .row:
+        case .column, .lazyColumn, .row, .lazyRow:
             return Alignment(
                 horizontal: horizontalAlignment.stackAlignment,
                 vertical: verticalAlignment.stackAlignment
@@ -756,9 +772,57 @@ enum WarpNodeParser {
                 imageContentScale: .fit,
                 children: children
             )
+        case "lazy_column", "lazyColumn":
+            return WarpParsedNode(
+                kind: .lazyColumn,
+                text: nil,
+                nodeActionId: nil,
+                nodeParametersJson: "{}",
+                modifierActionId: modActionId,
+                modifierParametersJson: modParams,
+                style: style,
+                enabled: true,
+                textArgs: WarpParsedTextArgs(),
+                horizontalAlignment: horizontalAlignment,
+                verticalAlignment: verticalAlignment,
+                contentAlignment: .topLeading,
+                dividerThickness: 1,
+                dividerColor: nil,
+                progressStyle: .circular,
+                progress: nil,
+                progressColor: nil,
+                imageAsset: nil,
+                imageTint: nil,
+                imageContentScale: .fit,
+                children: children
+            )
         case "row":
             return WarpParsedNode(
                 kind: .row,
+                text: nil,
+                nodeActionId: nil,
+                nodeParametersJson: "{}",
+                modifierActionId: modActionId,
+                modifierParametersJson: modParams,
+                style: style,
+                enabled: true,
+                textArgs: WarpParsedTextArgs(),
+                horizontalAlignment: horizontalAlignment,
+                verticalAlignment: verticalAlignment,
+                contentAlignment: .topLeading,
+                dividerThickness: 1,
+                dividerColor: nil,
+                progressStyle: .circular,
+                progress: nil,
+                progressColor: nil,
+                imageAsset: nil,
+                imageTint: nil,
+                imageContentScale: .fit,
+                children: children
+            )
+        case "lazy_row", "lazyRow":
+            return WarpParsedNode(
+                kind: .lazyRow,
                 text: nil,
                 nodeActionId: nil,
                 nodeParametersJson: "{}",

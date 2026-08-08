@@ -93,6 +93,40 @@ internal class WarpRowHolder(
 }
 
 /**
+ * Mutable holder for a [WarpLazyColumn] while composables run.
+ */
+internal class WarpLazyColumnHolder(
+    var modifier: WarpModifier = WarpModifier(),
+    var verticalAlignment: WarpVerticalAlignment = WarpVerticalAlignment.Top,
+    var horizontalAlignment: WarpHorizontalAlignment = WarpHorizontalAlignment.Start,
+    override val children: MutableList<Any> = mutableListOf(),
+) : WarpContainerNodeHolder {
+    override fun toWarpNode(): WarpNode = com.atriidev.warp_runtime.nodes.WarpLazyColumn(
+        modifier = modifier,
+        verticalAlignment = verticalAlignment,
+        horizontalAlignment = horizontalAlignment,
+        children = children.map { (it as WarpNodeHolder).toWarpNode() },
+    )
+}
+
+/**
+ * Mutable holder for a [WarpLazyRow] while composables run.
+ */
+internal class WarpLazyRowHolder(
+    var modifier: WarpModifier = WarpModifier(),
+    var horizontalAlignment: WarpHorizontalAlignment = WarpHorizontalAlignment.Start,
+    var verticalAlignment: WarpVerticalAlignment = WarpVerticalAlignment.Top,
+    override val children: MutableList<Any> = mutableListOf(),
+) : WarpContainerNodeHolder {
+    override fun toWarpNode(): WarpNode = com.atriidev.warp_runtime.nodes.WarpLazyRow(
+        modifier = modifier,
+        horizontalAlignment = horizontalAlignment,
+        verticalAlignment = verticalAlignment,
+        children = children.map { (it as WarpNodeHolder).toWarpNode() },
+    )
+}
+
+/**
  * Mutable holder for a [WarpText] leaf node.
  */
 internal class WarpTextHolder(

@@ -2,11 +2,13 @@ package com.atriidev.kmpwidget
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
+import com.atriidev.warp_runtime.WarpExperimentalApi
 import com.atriidev.warp_runtime.compose.WarpBox
 import com.atriidev.warp_runtime.compose.WarpButton
 import com.atriidev.warp_runtime.compose.WarpColumn
 import com.atriidev.warp_runtime.compose.WarpDivider
 import com.atriidev.warp_runtime.compose.WarpImage
+import com.atriidev.warp_runtime.compose.WarpLazyRow
 import com.atriidev.warp_runtime.compose.WarpProgressIndicator
 import com.atriidev.warp_runtime.compose.WarpRow
 import com.atriidev.warp_runtime.compose.WarpSpacer
@@ -15,6 +17,7 @@ import com.atriidev.warp_runtime.log.WarpLogger
 import com.atriidev.warp_runtime.log.WarpLoggerLevel
 import com.atriidev.warp_runtime.nodes.actions.asClickAction
 import com.atriidev.warp_runtime.nodes.assets.WarpAssetId
+import com.atriidev.warp_runtime.nodes.modifiers.WarpColor
 import com.atriidev.warp_runtime.nodes.modifiers.WarpModifier
 import com.atriidev.warp_runtime.nodes.style.WarpButtonColors
 import com.atriidev.warp_runtime.nodes.style.WarpContentAlignment
@@ -79,18 +82,51 @@ data class TodoItem(
     val done: Boolean = false,
 )
 
+/** Dummy mood item for testing WarpLazyRow. */
+data class MoodItem(val emoji: String, val label: String)
+
+val SampleMoods: List<MoodItem> = listOf(
+    MoodItem("🚀", "Productive"),
+    MoodItem("🎯", "Focused"),
+    MoodItem("😊", "Happy"),
+    MoodItem("🔥", "Energetic"),
+    MoodItem("☕", "Relaxed"),
+    MoodItem("😴", "Tired"),
+    MoodItem("💡", "Creative"),
+)
+
 /** Sample list used as [CounterState] default. */
-val SampleTodos: List<TodoItem> = listOf(
+private val SampleTodos: List<TodoItem> = listOf(
     TodoItem(id = "1", title = "Ship WarpImage"),
     TodoItem(id = "2", title = "Add todo mode", done = true),
     TodoItem(id = "3", title = "Polish SF Symbols"),
     TodoItem(id = "4", title = "LazyColumn on large widget"),
     TodoItem(id = "5", title = "Wire WidgetKit reload"),
-//    TodoItem(id = "6", title = "Add adaptive sizing", done = true),
-//    TodoItem(id = "7", title = "Test Android resize"),
-//    TodoItem(id = "8", title = "Document WarpButton API"),
-//    TodoItem(id = "9", title = "Ship iOS medium layout"),
-//    TodoItem(id = "10", title = "Release v1.0"),
+    TodoItem(id = "6", title = "Add adaptive sizing", done = true),
+    TodoItem(id = "7", title = "Test Android resize"),
+    TodoItem(id = "8", title = "Document WarpButton API"),
+    TodoItem(id = "9", title = "Ship iOS medium layout"),
+    TodoItem(id = "10", title = "Release v1.0"),
+    TodoItem(id = "11", title = "Implement WarpRow"),
+    TodoItem(id = "12", title = "Implement WarpColumn", done = true),
+    TodoItem(id = "13", title = "Support dark theme"),
+    TodoItem(id = "14", title = "Support light theme", done = true),
+    TodoItem(id = "15", title = "Cache widget state"),
+    TodoItem(id = "16", title = "Optimize JSON parser"),
+    TodoItem(id = "17", title = "Support click actions"),
+    TodoItem(id = "18", title = "Add loading placeholder"),
+    TodoItem(id = "19", title = "Improve text wrapping"),
+    TodoItem(id = "20", title = "Implement WarpSpacer", done = true),
+    TodoItem(id = "21", title = "Support corner radius"),
+    TodoItem(id = "22", title = "Add padding modifier"),
+    TodoItem(id = "23", title = "Support background color"),
+    TodoItem(id = "24", title = "Implement WarpDivider"),
+    TodoItem(id = "25", title = "Support remote images"),
+    TodoItem(id = "26", title = "Optimize renderer"),
+    TodoItem(id = "27", title = "Write unit tests"),
+    TodoItem(id = "28", title = "Write snapshot tests"),
+    TodoItem(id = "29", title = "Add sample gallery"),
+    TodoItem(id = "30", title = "Publish documentation"),
 )
 
 /** Serializable state for [CounterWarpWidget] — persisted as JSON under prefs key = widget id. */
@@ -101,7 +137,6 @@ data class CounterState(
     val count: Int = 0,
     val todos: List<TodoItem> = SampleTodos,
 )
-
 
 
 /** Type-safe asset keys — share with [CounterGlanceAppWidget.assets]. */
@@ -155,6 +190,7 @@ private fun CounterWidgetContent(
 ) {
     val colors = WarpTheme.colors
     val isMedium = env.isMediumAdaptive()
+    val isLarge = spacious || env.adaptiveSize() == WarpAdaptiveSize.Large
     val todoCompact = compact || (state.mode == WidgetMode.Todo && isMedium)
     val outerPadding = when {
         spacious -> 16
@@ -179,6 +215,11 @@ private fun CounterWidgetContent(
                 compact = compact,
             )
 
+            if (isLarge) {
+                WarpSpacer(modifier = WarpModifier.height(6))
+                MoodsSection()
+            }
+
             WarpSpacer(modifier = WarpModifier.height(if (compact) 4 else 6))
 
             WarpDivider(
@@ -190,7 +231,7 @@ private fun CounterWidgetContent(
             WarpSpacer(
                 modifier = WarpModifier.height(
                     when {
-                        spacious -> 12
+                        spacious -> 10
                         state.mode == WidgetMode.Todo && isMedium -> 4
                         compact -> 4
                         else -> 8
@@ -200,9 +241,60 @@ private fun CounterWidgetContent(
 
             when (state.mode) {
                 WidgetMode.Counter -> CounterBody(state, env, spacious = spacious)
-                WidgetMode.Todo -> TodoBody(state, env, compact = todoCompact)
+                WidgetMode.Todo -> TodoBody(state, env, compact = todoCompact, isLarge = isLarge)
             }
         }
+    }
+}
+
+@OptIn(WarpExperimentalApi::class)
+@Composable
+private fun MoodsSection() {
+    val colors = WarpTheme.colors
+    WarpColumn(modifier = WarpModifier.fillMaxWidth()) {
+        WarpText(
+            text = "Mood",
+            style = WarpTextStyle(
+                color = colors.onSurfaceVariant,
+                fontSize = 11.sp,
+                fontWeight = WarpFontWeight.Medium,
+            ),
+            maxLines = 1,
+        )
+        WarpSpacer(modifier = WarpModifier.height(4))
+        WarpLazyRow(
+            modifier = WarpModifier
+                .fillMaxWidth()
+        ) {
+            SampleMoods.forEachIndexed { index, mood ->
+                if (index > 0) {
+                    WarpSpacer(modifier = WarpModifier.width(6))
+                }
+                MoodChip(mood)
+            }
+        }
+    }
+}
+
+@Composable
+private fun MoodChip(mood: MoodItem) {
+    val colors = WarpTheme.colors
+    WarpRow(
+        modifier = WarpModifier
+            .background(colors.surfaceVariant)
+            .cornerRadius(12.dp)
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        verticalAlignment = WarpVerticalAlignment.Center,
+    ) {
+        WarpText(
+            text = "${mood.emoji} ${mood.label}",
+            style = WarpTextStyle(
+                color = colors.onSurface,
+                fontSize = 11.sp,
+                fontWeight = WarpFontWeight.Medium,
+            ),
+            maxLines = 1,
+        )
     }
 }
 
@@ -333,10 +425,10 @@ private fun CounterBody(
                     fontSize = if (spacious) 20.sp else 18.sp,
                     fontWeight = WarpFontWeight.Bold,
                 ),
-                colors = WarpButtonColors.of(
-                    backgroundColor = "#E74C3C",
-                    contentColor = "#FFFFFF",
-                ),
+                colors = WarpButtonColors (
+                    backgroundColor = WarpColor.Red600,
+                    contentColor= WarpColor.White
+                )
             )
             WarpText(
                 text = count.toString(),
@@ -385,17 +477,15 @@ private fun TodoBody(
     state: CounterState,
     env: WidgetEnvironment,
     compact: Boolean = false,
+    isLarge: Boolean = false,
 ) {
     val colors = WarpTheme.colors
     val doneCount = state.todos.count { it.done }
     val total = state.todos.size
     val progress = if (total == 0) 0f else doneCount.toFloat() / total
-    // Large shows all sample todos (pre-lazy A/B); small/medium stay capped.
     val maxVisible = env.adaptiveValue(small = 2, medium = 2, large = 10)
-    val visibleTodos = state.todos.take(maxVisible)
+    val visibleTodos = if (isLarge) state.todos else state.todos.take(maxVisible)
 
-    // Nested column — keeps root under Glance's 10-child Column limit
-    // (flat forEach rows + spacers was dropping the 3rd todo).
     WarpColumn(modifier = WarpModifier.fillMaxWidth()) {
         if (visibleTodos.isNotEmpty())
             WarpText(
@@ -411,17 +501,29 @@ private fun TodoBody(
         if (visibleTodos.isEmpty()) {
             EmptyTodoBody()
         } else {
-
             WarpSpacer(modifier = WarpModifier.height(if (compact) 4 else 6))
 
-            visibleTodos.forEachIndexed { index, todo ->
-                if (index > 0) {
-                    WarpSpacer(modifier = WarpModifier.height(if (compact) 3 else 4))
+            if (isLarge) {
+                WarpColumn(modifier = WarpModifier.fillMaxWidth()) {
+                    visibleTodos.forEachIndexed { index, todo ->
+                        if (index > 0) {
+                            WarpSpacer(modifier = WarpModifier.height(4))
+                        }
+                        TodoRow(todo, compact = false)
+                    }
                 }
-                TodoRow(todo, compact = compact)
+            } else {
+                WarpColumn(modifier = WarpModifier.fillMaxWidth()) {
+                    visibleTodos.forEachIndexed { index, todo ->
+                        if (index > 0) {
+                            WarpSpacer(modifier = WarpModifier.height(if (compact) 3 else 4))
+                        }
+                        TodoRow(todo, compact = compact)
+                    }
+                }
             }
 
-            if (visibleTodos.size < total) {
+            if (!isLarge && visibleTodos.size < total) {
                 WarpSpacer(modifier = WarpModifier.height(4.dp))
                 WarpText(
                     text = "+${total - visibleTodos.size} more",

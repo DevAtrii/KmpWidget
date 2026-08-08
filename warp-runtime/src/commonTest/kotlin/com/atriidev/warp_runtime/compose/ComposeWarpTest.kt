@@ -1,5 +1,6 @@
 package com.atriidev.warp_runtime.compose
 
+import com.atriidev.warp_runtime.WarpExperimentalApi
 import com.atriidev.warp_runtime.nodes.WarpText as WarpTextNode
 import com.atriidev.warp_runtime.nodes.WarpColumn as WarpColumnNode
 import com.atriidev.warp_runtime.nodes.WarpButton as WarpButtonNode
@@ -113,5 +114,35 @@ class ComposeWarpTest {
         }
         assertTrue(json.contains("\"children\""))
         assertTrue(json.contains("\"test_action\""))
+    }
+
+    /** Verifies [WarpLazyColumn] and [WarpLazyRow] build and serialize correctly. */
+    @OptIn(WarpExperimentalApi::class)
+    @Test
+    fun composeWarp_lazyColumnAndLazyRow_buildsAndSerializesTree() {
+        val tree = composeWarp {
+            WarpLazyColumn {
+                WarpLazyRow {
+                    WarpText(text = "Item 1")
+                    WarpText(text = "Item 2")
+                }
+            }
+        }
+
+        val lazyColumn = assertIs<com.atriidev.warp_runtime.nodes.WarpLazyColumn>(tree)
+        assertEquals(1, lazyColumn.children.size)
+        val lazyRow = assertIs<com.atriidev.warp_runtime.nodes.WarpLazyRow>(lazyColumn.children[0])
+        assertEquals(2, lazyRow.children.size)
+
+        val json = composeWarpToJson {
+            WarpLazyColumn {
+                WarpLazyRow {
+                    WarpText(text = "LazyItem")
+                }
+            }
+        }
+        assertTrue(json.contains("\"lazy_column\""))
+        assertTrue(json.contains("\"lazy_row\""))
+        assertTrue(json.contains("LazyItem"))
     }
 }

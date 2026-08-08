@@ -8,6 +8,7 @@
 package com.atriidev.warp_runtime.compose
 
 import androidx.compose.runtime.Composable
+import com.atriidev.warp_runtime.WarpExperimentalApi
 import com.atriidev.warp_runtime.nodes.actions.ClickAction
 import com.atriidev.warp_runtime.nodes.actions.WarpAction
 import com.atriidev.warp_runtime.nodes.actions.WarpActionId
@@ -18,6 +19,8 @@ import com.atriidev.warp_runtime.compose.internal.WarpButtonContainerComposable
 import com.atriidev.warp_runtime.compose.internal.WarpColumnComposable
 import com.atriidev.warp_runtime.compose.internal.WarpDividerComposable
 import com.atriidev.warp_runtime.compose.internal.WarpImageComposable
+import com.atriidev.warp_runtime.compose.internal.WarpLazyColumnComposable
+import com.atriidev.warp_runtime.compose.internal.WarpLazyRowComposable
 import com.atriidev.warp_runtime.compose.internal.WarpProgressIndicatorComposable
 import com.atriidev.warp_runtime.compose.internal.WarpRowComposable
 import com.atriidev.warp_runtime.compose.internal.WarpSpacerComposable
@@ -61,6 +64,36 @@ fun WarpColumn(
 }
 
 /**
+ * Vertical scrollable/lazy layout container.
+ *
+ * **Platform Behavior:**
+ * - **iOS (WidgetKit):** Renders as a `LazyVStack` (just like [WarpColumn]).
+ * - **Android (Glance App Widgets):** Renders as a scrollable Glance `LazyColumn`.
+ *
+ * Maps to [com.atriidev.warp_runtime.nodes.WarpLazyColumn] in the output tree.
+ *
+ * @param modifier Layout styling.
+ * @param verticalAlignment Pack children when shorter than the column.
+ * @param horizontalAlignment Align children across the width.
+ * @param content Nested composables placed inside this lazy column.
+ */
+@WarpExperimentalApi
+@Composable
+fun WarpLazyColumn(
+    modifier: WarpModifier = WarpModifier(),
+    verticalAlignment: WarpVerticalAlignment = WarpVerticalAlignment.Top,
+    horizontalAlignment: WarpHorizontalAlignment = WarpHorizontalAlignment.Start,
+    content: @Composable () -> Unit,
+) {
+    WarpLazyColumnComposable(
+        modifier = modifier,
+        verticalAlignment = verticalAlignment,
+        horizontalAlignment = horizontalAlignment,
+        content = content,
+    )
+}
+
+/**
  * Arranges child nodes horizontally — Glance `Row`-shaped API.
  *
  * Maps to [com.atriidev.warp_runtime.nodes.WarpRow] in the output tree.
@@ -78,6 +111,36 @@ fun WarpRow(
     content: @Composable () -> Unit,
 ) {
     WarpRowComposable(
+        modifier = modifier,
+        horizontalAlignment = horizontalAlignment,
+        verticalAlignment = verticalAlignment,
+        content = content,
+    )
+}
+
+/**
+ * Horizontal scrollable/lazy layout container.
+ *
+ * **Platform Behavior:**
+ * - **iOS (WidgetKit):** Renders as a `LazyHStack` (just like [WarpRow]).
+ * - **Android (Glance App Widgets):** Renders as a horizontal container (just like [WarpRow]).
+ *
+ * Maps to [com.atriidev.warp_runtime.nodes.WarpLazyRow] in the output tree.
+ *
+ * @param modifier Layout styling.
+ * @param horizontalAlignment Pack children when narrower than the row.
+ * @param verticalAlignment Align children across the height.
+ * @param content Nested composables placed inside this lazy row.
+ */
+@WarpExperimentalApi
+@Composable
+fun WarpLazyRow(
+    modifier: WarpModifier = WarpModifier(),
+    horizontalAlignment: WarpHorizontalAlignment = WarpHorizontalAlignment.Start,
+    verticalAlignment: WarpVerticalAlignment = WarpVerticalAlignment.Top,
+    content: @Composable () -> Unit,
+) {
+    WarpLazyRowComposable(
         modifier = modifier,
         horizontalAlignment = horizontalAlignment,
         verticalAlignment = verticalAlignment,

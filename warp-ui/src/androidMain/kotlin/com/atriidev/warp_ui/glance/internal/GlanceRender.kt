@@ -26,11 +26,15 @@ import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
 import androidx.glance.text.Text
 import androidx.glance.unit.ColorProvider
+import androidx.glance.appwidget.lazy.LazyColumn
+import androidx.glance.appwidget.lazy.items
 import com.atriidev.warp_runtime.nodes.WarpBox
 import com.atriidev.warp_runtime.nodes.WarpButton
 import com.atriidev.warp_runtime.nodes.WarpColumn
 import com.atriidev.warp_runtime.nodes.WarpDivider
 import com.atriidev.warp_runtime.nodes.WarpImage
+import com.atriidev.warp_runtime.nodes.WarpLazyColumn
+import com.atriidev.warp_runtime.nodes.WarpLazyRow
 import com.atriidev.warp_runtime.nodes.WarpNode
 import com.atriidev.warp_runtime.nodes.WarpProgressIndicator
 import com.atriidev.warp_runtime.nodes.WarpRow
@@ -52,7 +56,9 @@ internal fun RenderWarpNode(
 ) {
     when (node) {
         is WarpColumn -> RenderColumn(node, clickAction)
+        is WarpLazyColumn -> RenderLazyColumn(node, clickAction)
         is WarpRow -> RenderRow(node, clickAction)
+        is WarpLazyRow -> RenderLazyRow(node, clickAction)
 
         is WarpBox -> Box(
             modifier = node.modifier.toGlanceModifier(clickAction),
@@ -137,6 +143,44 @@ private fun RenderRow(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun RenderLazyColumn(
+    node: WarpLazyColumn,
+    clickAction: (ClickAction) -> Action,
+    extraModifier: GlanceModifier = GlanceModifier,
+) {
+    val modifier = node.modifier.toGlanceModifier(clickAction).then(extraModifier)
+    val hAlign = node.horizontalAlignment.toGlance()
+    LazyColumn(
+        modifier = modifier,
+        horizontalAlignment = hAlign,
+    ) {
+        items(node.children) { child ->
+            RenderWarpNode(child, clickAction)
+        }
+    }
+}
+
+@Composable
+private fun RenderLazyRow(
+    node: WarpLazyRow,
+    clickAction: (ClickAction) -> Action,
+    extraModifier: GlanceModifier = GlanceModifier,
+) {
+    val modifier = node.modifier.toGlanceModifier(clickAction).then(extraModifier)
+    val hAlign = node.horizontalAlignment.toGlance()
+    val vAlign = node.verticalAlignment.toGlance()
+    Row(
+        modifier = modifier,
+        horizontalAlignment = hAlign,
+        verticalAlignment = vAlign,
+    ) {
+        node.children.forEach { child ->
+            RenderScopedChild(child, clickAction)
         }
     }
 }
@@ -346,7 +390,9 @@ private fun WarpTextAlign.toBoxAlignment(): Alignment = when (this) {
 
 private fun WarpNode.warpModifier() = when (this) {
     is WarpColumn -> modifier
+    is WarpLazyColumn -> modifier
     is WarpRow -> modifier
+    is WarpLazyRow -> modifier
     is WarpBox -> modifier
     is WarpText -> modifier
     is WarpButton -> modifier
@@ -364,7 +410,9 @@ private fun RenderNodeWithExtra(
 ) {
     when (node) {
         is WarpColumn -> RenderColumn(node, clickAction, extra)
+        is WarpLazyColumn -> RenderLazyColumn(node, clickAction, extra)
         is WarpRow -> RenderRow(node, clickAction, extra)
+        is WarpLazyRow -> RenderLazyRow(node, clickAction, extra)
 
         is WarpBox -> Box(
             modifier = node.modifier.toGlanceModifier(clickAction).then(extra),

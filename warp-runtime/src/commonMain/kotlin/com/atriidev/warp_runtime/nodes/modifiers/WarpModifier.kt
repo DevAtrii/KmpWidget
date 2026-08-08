@@ -62,8 +62,6 @@ data class WarpModifier(
 
         fun background(color: WarpColor): WarpModifier = Default.background(color)
 
-        fun background(hex: String): WarpModifier = Default.background(hex)
-
         fun cornerRadius(radius: Dp): WarpModifier = Default.cornerRadius(radius)
         fun cornerRadius(radius: Number): WarpModifier = Default.cornerRadius(radius.toFloat().dp)
 
@@ -166,8 +164,6 @@ data class WarpModifier(
     fun background(color: WarpColor): WarpModifier =
         then(WarpBackgroundElement(color))
 
-    fun background(hex: String): WarpModifier =
-        background(WarpColor(hex))
 
     fun cornerRadius(radius: Dp): WarpModifier =
         then(WarpCornerRadiusElement(radius))
