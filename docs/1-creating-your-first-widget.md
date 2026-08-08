@@ -214,12 +214,157 @@ Button(
 
 ---
 
-## Step 5: iOS Host Integration (SwiftUI & WidgetKit)
+## Step 5: iOS Host Integration (SwiftUI, AppIntents & WidgetKit)
 
-On iOS (`iosApp/CounterWidget`), WidgetKit host target links `Shared` and `warpWidgetKit`.
+On iOS (`iosApp/CounterWidget`), your WidgetKit extension target links the `Shared` KMP framework and `warpWidgetKit`.
 
-### 5.1 Render via SwiftUI Root View (`CounterWidget.swift`)
+### 5.1 App Group Entitlements (`CounterWidget.entitlements`)
+
+Both the main iOS app and the WidgetKit extension must share the same **App Group ID** so Kotlin's `UserDefaults` storage syncs between app and widget.
+
+```xml
+<!-- CounterWidget.entitlements -->
+<dict>
+    <key>com.apple.security.application-groups</key>
+    <array>
+        <string>group.com.atriidev.kmpwidget</string>
+    </array>
+</dict>
+```
+
+---
+
+### 5.2 Widget Bundle & Extension Entry Point (`CounterWidgetBundle.swift`)
+
+The `@main` `WidgetBundle` registers your click intent handler with `warpWidgetKit` and prepares `WarpWidgetHost`:
+
 ```swift
+// CounterWidgetBundle.swift
+import Shared
+import SwiftUI
+import WidgetKit
+import warpWidgetKit
+
+@main
+struct CounterWidgetBundle: WidgetBundle {
+    init() {
+        if #available(iOS 17.0, *) {
+            // Register Swift AppIntent handler for CounterWarpWidget.id
+            WarpClickIntentRegistry.install(
+                CounterWidgetClickIntent.self,
+                for: CounterWarpWidget.shared.id
+            )
+        }
+        
+        // Prepare initial host session
+        let session = WarpWidgetHost.shared.iosSession(
+            widget: CounterWarpWidget.shared,
+            kitFields: WarpWidgetKitEnv.placeholder().asKitFields(
+                appGroupId: CounterWarpWidget.shared.iosGroupId
+            )
+        )
+        WarpWidgetHost.shared.prepare(widget: CounterWarpWidget.shared, session: session)
+    }
+
+    var body: some Widget {
+        CounterHomeWidget()
+    }
+}
+```
+
+---
+
+### 5.3 Interactive Tap Actions (`CounterWidgetClickIntent.swift`)
+
+For iOS 17+ interactive buttons and list rows, implement `WarpClickAppIntent`:
+
+```swift
+// CounterWidgetClickIntent.swift
+import AppIntents
+import Shared
+import warpWidgetKit
+
+@available(iOS 17.0, *)
+struct CounterWidgetClickIntent: WarpClickAppIntent {
+    static var title: LocalizedStringResource = "Counter Widget Click"
+    static var openAppWhenRun: Bool = false
+
+    @Parameter(title: "Action ID")
+    var actionId: String
+
+    @Parameter(title: "Parameters JSON")
+    var parametersJson: String
+
+    init() {
+        actionId = ""
+        parametersJson = "{}"
+    }
+
+    init(actionId: String, parametersJson: String) {
+        self.actionId = actionId
+        self.parametersJson = parametersJson
+    }
+
+    func perform() async throws -> some IntentResult {
+        let session = WarpWidgetHost.shared.iosSession(
+            widget: CounterWarpWidget.shared,
+            kitFields: WarpWidgetKitEnv.placeholder().asKitFields(
+                appGroupId: CounterWarpWidget.shared.iosGroupId
+            )
+        )
+        
+        // Dispatch tap event to Kotlin CounterWarpClickHandler
+        WarpWidgetHost.shared.dispatchClick(
+            widget: CounterWarpWidget.shared,
+            session: session,
+            actionId: actionId,
+            parametersJson: parametersJson
+        )
+        
+        // Refresh WidgetKit UI
+        WarpWidgetBridge.shared.reloadTimelinesOfKind(CounterWarpWidget.shared.id)
+        return .result()
+    }
+}
+```
+
+---
+
+### 5.4 WidgetKit Provider & Definition (`CounterWidget.swift`)
+
+Define `CounterHomeWidget` using WidgetKit's `StaticConfiguration`:
+
+```swift
+// CounterWidget.swift
+struct CounterHomeWidget: Widget {
+    let kind: String = "CounterWidget" // Matches CounterWarpWidget.id
+
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: kind, provider: CounterWidgetProvider()) { entry in
+            if #available(iOS 17.0, *) {
+                CounterWidgetEntryView(entry: entry)
+                    .containerBackground(.fill.tertiary, for: .widget)
+            } else {
+                CounterWidgetEntryView(entry: entry)
+                    .padding()
+            }
+        }
+        .contentMarginsDisabled()
+        .configurationDisplayName("Counter")
+        .description("WARP counter widget")
+        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
+    }
+}
+```
+
+---
+
+### 5.5 Rendering JSON via `WarpSwiftUIRootView` (`CounterWidgetView.swift`)
+
+`CounterWidgetEntryView` uses SwiftUI's `@Environment` variables to dynamically pass `colorScheme`, `widgetFamily`, `widgetRenderingMode`, and `displaySize` into Kotlin's JSON renderer:
+
+```swift
+// CounterWidget.swift
 struct CounterWidgetEntryView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.widgetFamily) private var widgetFamily
@@ -240,16 +385,27 @@ struct CounterWidgetEntryView: View {
         )
     }
 }
-```
 
-### 5.2 Composing JSON (`CounterWidgetView.swift`)
-```swift
-private func composeWidgetJson(kitEnv: WarpWidgetKitEnv) -> String {
+// CounterWidgetView.swift
+func composeWidgetJson(
+    colorScheme: ColorScheme,
+    widgetFamily: WidgetFamily,
+    widgetRenderingMode: WidgetRenderingMode? = nil,
+    displaySize: CGSize? = nil,
+    isPreview: Bool = false
+) -> String {
+    let kitEnv = WarpWidgetKitEnv.from(
+        colorScheme: colorScheme,
+        family: WarpWidgetKitEnv.Family(widgetFamily: widgetFamily),
+        width: displaySize?.width,
+        height: displaySize?.height,
+        isPreview: isPreview,
+        widgetRenderingMode: widgetRenderingMode
+    )
+    
     let session = WarpWidgetHost.shared.iosSession(
         widget: CounterWarpWidget.shared,
-        kitFields: kitEnv.asKitFields(
-            appGroupId: CounterWarpWidget.shared.iosGroupId
-        )
+        kitFields: kitEnv.asKitFields(appGroupId: CounterWarpWidget.shared.iosGroupId)
     )
     WarpWidgetHost.shared.prepare(widget: CounterWarpWidget.shared, session: session)
     return WarpWidgetHost.shared.composeJson(widget: CounterWarpWidget.shared, session: session)
@@ -257,6 +413,7 @@ private func composeWidgetJson(kitEnv: WarpWidgetKitEnv) -> String {
 ```
 
 ---
+
 
 ## Step 6: Android Host Integration (Glance AppWidget)
 
