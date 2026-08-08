@@ -24,8 +24,8 @@ import com.atriidev.warp_ui.WarpClickHandler
 import com.atriidev.warp_widget.WarpWidget
 import com.atriidev.warp_widget.WarpWidgetSession
 import com.atriidev.warp_widget.WarpWidgetStateScope
-import com.atriidev.warp_widget.api.WarpLayoutDirection
 import com.atriidev.warp_widget.api.WidgetEnvironment
+import com.atriidev.warp_widget.api.isAndroid
 import com.atriidev.warp_widget.ui.WarpAdaptiveContent
 import com.atriidev.warp_widget.ui.WarpAdaptiveSize
 import com.atriidev.warp_widget.ui.WarpTheme
@@ -134,7 +134,10 @@ object CounterWarpWidget : WarpWidget<CounterState>(CounterState.serializer()) {
     @Composable
     override fun Content(env: WidgetEnvironment, state: CounterState) {
         val state = state.withMergedSampleTodos()
-        WarpTheme(environment = env) {
+        WarpTheme(
+            environment = env,
+            darkTheme = false.takeIf { env.platform.isAndroid }
+        ) {
             WarpAdaptiveContent(
                 environment = env,
                 small = { CounterWidgetContent(state, env, compact = true) },
