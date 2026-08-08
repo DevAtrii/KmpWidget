@@ -6,7 +6,7 @@ import PackageDescription
 /// **Local (this repo):** Xcode → local package `../warpWidgetKit`
 /// **Remote (future):** replace with something like:
 /// ```swift
-/// .package(url: "https://github.com/DevAtrii/warpWidgetKit.git", from: "1.0.0")
+/// .package(url: "https://github.com/DevAtrii/Warp.git", from: "1.0.0")
 /// ```
 let package = Package(
     name: "warpWidgetKit",
