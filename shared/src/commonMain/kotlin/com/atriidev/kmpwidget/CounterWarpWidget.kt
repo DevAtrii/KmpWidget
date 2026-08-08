@@ -55,7 +55,7 @@ sealed class CounterActions {
 
     /** Toggle done state for [todoId]. */
     @Serializable
-    data class ToggleTodo(val todoId: String) : CounterActions()
+    data class ToggleTodo(val todo: TodoItem) : CounterActions()
 }
 
 @Serializable
@@ -463,7 +463,7 @@ private fun TodoRow(
             .background(colors.surfaceVariant)
             .cornerRadius(10)
             .padding(horizontal = 10, vertical = rowPaddingV)
-            .clickable(CounterActions.ToggleTodo(todo.id)),
+            .clickable(CounterActions.ToggleTodo(todo)),
         verticalAlignment = WarpVerticalAlignment.Center,
     ) {
         WarpImage(
@@ -501,9 +501,14 @@ class CounterWarpClickHandler(
                 CounterActions.Decrement -> state.copy(count = state.count - 1)
                 CounterActions.Reset -> state.copy(count = 0)
                 is CounterActions.SwitchMode -> state.copy(mode = action.mode)
+//                is CounterActions.ToggleTodo -> state.copy(
+//                    todos = state.todos.map { todo ->
+//                        if (todo.id == action.todoId) todo.copy(done = !todo.done) else todo
+//                    },
+//                )
                 is CounterActions.ToggleTodo -> state.copy(
                     todos = state.todos.map { todo ->
-                        if (todo.id == action.todoId) todo.copy(done = !todo.done) else todo
+                        if (todo.id == action.todo.id) todo.copy(done = !todo.done) else todo
                     },
                 )
             }

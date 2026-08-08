@@ -96,7 +96,19 @@ class SerializableWarpActionFamily<A : Any>(
         val json = buildJsonObject {
             put("type", JsonPrimitive(serialName))
             parameters.forEach { (key, value) ->
-                put(key, JsonPrimitive(value))
+                val trimmed = value.trim()
+                val element = if ((trimmed.startsWith("{") && trimmed.endsWith("}")) ||
+                    (trimmed.startsWith("[") && trimmed.endsWith("]"))
+                ) {
+                    try {
+                        warpActionJson.parseToJsonElement(trimmed)
+                    } catch (_: Exception) {
+                        JsonPrimitive(value)
+                    }
+                } else {
+                    JsonPrimitive(value)
+                }
+                put(key, element)
             }
         }
         return try {

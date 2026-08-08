@@ -39,10 +39,8 @@ object TodoAssets {
 
 @Serializable
 sealed interface TodoActions {
-
     @Serializable
-    data class Toggle(val todoItem: TodoItem) : TodoActions
-
+    data class Toggle(val todoId: Int) : TodoActions
 }
 
 val sampleTodoWidgetState = TodoWidgetState(
@@ -133,20 +131,18 @@ private class TodoClickHandler(
     private val session: WarpWidgetSession,
 ) : WarpClickHandler<TodoActions>(serializer = TodoActions.serializer()) {
     override suspend fun onClick(action: TodoActions) {
-        println("click_handling... $action")
         when (action) {
-            is TodoActions.Toggle -> updateWarpWidgetState(session, TodoWarpWidget) {
-                it.copy(
-                    todos = it.todos.map { todo ->
-                        if (todo == action.todoItem)
-                            todo.copy(done = true)
+            is TodoActions.Toggle -> updateWarpWidgetState(session, TodoWarpWidget) { state ->
+                state.copy(
+                    todos = state.todos.map { todo ->
+                        if (todo.id == action.todoId)
+                            todo.copy(done = !todo.done)
                         else todo
                     }
                 )
             }
         }
     }
-
 }
 
 
@@ -293,7 +289,7 @@ private fun TodoRow(
             .background(colors.surfaceVariant)
             .cornerRadius(10)
             .padding(horizontal = 10, vertical = rowPaddingV)
-            .clickable(TodoActions.Toggle(todo)),
+            .clickable(TodoActions.Toggle(todo.id)),
         verticalAlignment = WarpVerticalAlignment.Center,
     ) {
         WarpImage(
