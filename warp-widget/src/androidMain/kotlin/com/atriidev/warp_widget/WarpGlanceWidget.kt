@@ -30,8 +30,9 @@ import com.atriidev.warp_ui.glance.WarpDrawableAsset
  * Use the same [com.atriidev.warp_runtime.nodes.assets.WarpAssetId] constants as in common `Content`.
  */
 abstract class WarpGlanceWidget : GlanceAppWidget() {
+
     /** Shared WARP definition composed into this Glance surface. */
-    abstract val widget: WarpWidgetHostApi
+    protected abstract fun createWarpWidget(): WarpWidgetHostApi
 
     /**
      * Optional bundled drawables for this widget.
@@ -54,7 +55,7 @@ abstract class WarpGlanceWidget : GlanceAppWidget() {
         id: GlanceId,
     ) {
         ensureAssetsRegistered()
-        val warp = widget
+        val warp = createWarpWidget()
         provideContent {
             val session = rememberGlanceWidgetSession(context, widget = warp)
             val node = remember(session.preferences, session.environment) {

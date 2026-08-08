@@ -5,8 +5,8 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.glance.appwidget.GlanceAppWidget
-import com.atriidev.warp_runtime.log.WarpLogger
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
+import com.atriidev.warp_runtime.log.WarpLogger
 
 private const val ACTION_UI_MODE_CHANGED = "android.intent.action.UI_MODE_CHANGED"
 
@@ -26,13 +26,13 @@ private const val ACTION_UI_MODE_CHANGED = "android.intent.action.UI_MODE_CHANGE
  * Resizes: default [androidx.glance.appwidget.SizeMode.Single] ignores Glance [resize];
  * [WarpGlanceWidgetReceiver.onAppWidgetOptionsChanged] forces layout reload instead.
  */
-abstract class WarpGlanceWidgetReceiver(
-    /** Shared WARP definition (same instance as [WarpGlanceWidget.widget]). */
-    val widget: WarpWidgetHostApi
-) : GlanceAppWidgetReceiver() {
+abstract class WarpGlanceWidgetReceiver : GlanceAppWidgetReceiver() {
 
     /** Fresh Glance host instance (do not cache a single instance across updates). */
     protected abstract fun createGlanceWidget(): WarpGlanceWidget
+
+    /** Shared WARP definition (same instance as [WarpGlanceWidget.createWarpWidget]). */
+    protected abstract fun createWarpWidget(): WarpWidgetHostApi
 
     @Volatile
     private var registered = false
@@ -49,7 +49,7 @@ abstract class WarpGlanceWidgetReceiver(
         when (intent.action) {
             Intent.ACTION_CONFIGURATION_CHANGED,
             ACTION_UI_MODE_CHANGED,
-            -> WarpWidgetAndroidReload.scheduleReloadAll(context, "receiver:${intent.action}")
+                -> WarpWidgetAndroidReload.scheduleReloadAll(context, "receiver:${intent.action}")
         }
         super.onReceive(context, intent)
     }
@@ -61,7 +61,10 @@ abstract class WarpGlanceWidgetReceiver(
         newOptions: Bundle,
     ) {
         ensureRegistered()
-        WarpLogger.d("WarpGlanceWidgetReceiver", "onAppWidgetOptionsChanged: reloading layout for appWidgetId = $appWidgetId")
+        WarpLogger.d(
+            "WarpGlanceWidgetReceiver",
+            "onAppWidgetOptionsChanged: reloading layout for appWidgetId = $appWidgetId"
+        )
         super.onAppWidgetOptionsChanged(context, appWidgetManager, appWidgetId, newOptions)
         WarpWidgetAndroidReload.scheduleLayoutReload(
             context = context,
@@ -81,7 +84,7 @@ abstract class WarpGlanceWidgetReceiver(
         if (registered) return
         synchronized(this) {
             if (registered) return
-            val warp = widget
+            val warp = createWarpWidget()
             WarpWidgetAndroidRegistry.register(warp.id, warp) { createGlanceWidget() }
             registered = true
         }
