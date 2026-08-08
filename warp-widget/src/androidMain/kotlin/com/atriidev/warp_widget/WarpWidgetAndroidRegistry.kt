@@ -2,7 +2,7 @@ package com.atriidev.warp_widget
 
 import android.appwidget.AppWidgetManager
 import android.content.Context
-import android.util.Log
+import com.atriidev.warp_runtime.log.WarpLogger
 import androidx.glance.GlanceId
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetManager
@@ -70,7 +70,7 @@ object WarpWidgetAndroidRegistry {
         val previous = entries[widgetId]
         entries[widgetId] = Entry(widget = previous?.widget, factory = factory)
         if (previous?.widget == null) {
-            Log.w(
+            WarpLogger.w(
                 TAG,
                 "register($widgetId) without WarpWidget — cold-start clicks will no-op. " +
                     "Use register(widgetId, widget) { … }",
@@ -111,14 +111,14 @@ object WarpWidgetAndroidRegistry {
         ensureAllWidgetReceiversRegistered(android)
 
         if (entries.isEmpty()) {
-            Log.w(TAG, "reloadAll: no widgets registered after receiver wake")
+            WarpLogger.w(TAG, "reloadAll: no widgets registered after receiver wake")
             return
         }
 
         for (widgetId in entries.keys.toList()) {
             WarpWidgetStateStore.reload(context, widgetId)
         }
-        Log.d(TAG, "reloadAll: ${entries.size} widget(s)")
+        WarpLogger.d(TAG, "reloadAll: ${entries.size} widget(s)")
     }
 
     /**
@@ -141,7 +141,7 @@ object WarpWidgetAndroidRegistry {
             val instance = clazz.getDeclaredConstructor().newInstance()
             (instance as? WarpGlanceWidgetReceiver)?.ensureRegistered()
         } catch (e: Exception) {
-            Log.w(TAG, "ensureAllWidgetReceiversRegistered: $className", e)
+            WarpLogger.w(TAG, "ensureAllWidgetReceiversRegistered: $className", e)
         }
     }
 
@@ -155,7 +155,7 @@ object WarpWidgetAndroidRegistry {
         val entry = findEntryForGlanceId(context, glanceId)
         val widget = entry?.widget
         if (entry == null || widget == null) {
-            Log.e(
+            WarpLogger.e(
                 TAG,
                 "Cold-start click: no WarpWidget registered for glanceId=$glanceId. " +
                     "Call WarpWidgetAndroidRegistry.register(id, widget) { GlanceAppWidget() } " +
@@ -182,7 +182,7 @@ object WarpWidgetAndroidRegistry {
         )
         // Bind handlers to *this* GlanceId's session (registry is process-global).
         WarpClicksRegistry.register(widget.clickHandlers(session))
-        Log.d(TAG, "prepare: kind=${widget.id} warpWidgetId=$warpWidgetId appWidgetId=$appWidgetId")
+        WarpLogger.d(TAG, "prepare: kind=${widget.id} warpWidgetId=$warpWidgetId appWidgetId=$appWidgetId")
     }
 
     /**
@@ -194,13 +194,13 @@ object WarpWidgetAndroidRegistry {
             val appWidgetId = GlanceAppWidgetManager(context).getAppWidgetId(glanceId)
             val info = AppWidgetManager.getInstance(context).getAppWidgetInfo(appWidgetId)
             if (info == null) {
-                Log.w(TAG, "wakeGlanceReceiver: no AppWidgetInfo for id=$appWidgetId")
+                WarpLogger.w(TAG, "wakeGlanceReceiver: no AppWidgetInfo for id=$appWidgetId")
                 return
             }
             wakeReceiverClass(context, info.provider.className)
-            Log.d(TAG, "Woke Glance receiver ${info.provider.className}")
+            WarpLogger.d(TAG, "Woke Glance receiver ${info.provider.className}")
         } catch (e: Exception) {
-            Log.w(TAG, "wakeGlanceReceiver failed", e)
+            WarpLogger.w(TAG, "wakeGlanceReceiver failed", e)
         }
     }
 

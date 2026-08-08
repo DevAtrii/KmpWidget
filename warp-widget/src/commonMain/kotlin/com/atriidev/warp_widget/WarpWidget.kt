@@ -12,6 +12,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import com.atriidev.warp_runtime.log.WarpLogger
 
 /**
  * One render / click pass from a platform host.
@@ -174,6 +175,7 @@ object WarpWidgetHost {
      * Run [WarpWidgetHostApi.ComposeContent] under [ProvideWarpWidgetPreferences] → [WarpNode].
      */
     fun compose(widget: WarpWidgetHostApi, session: WarpWidgetSession): WarpNode {
+        WarpLogger.d("WarpWidgetHost", "compose: starting render pass for widget ${widget.id}")
         val prefs = preferences(widget, session)
         return composeWarp {
             ProvideWarpWidgetPreferences(prefs) {
@@ -197,6 +199,7 @@ object WarpWidgetHost {
     ): List<WarpClickHandler<*>> = widget.clickHandlers(session)
 
     fun prepare(widget: WarpWidgetHostApi, session: WarpWidgetSession) {
+        WarpLogger.d("WarpWidgetHost", "prepare: registering handlers for widget ${widget.id}")
         lastWidget = widget
         lastSession = session
         platformRegisterClickHandlers(handlers(widget, session))
@@ -221,9 +224,10 @@ object WarpWidgetHost {
         } else {
             session.copy(widgetId = resolvedId)
         }
-        println(
+        WarpLogger.d(
+            "WarpWidgetHost",
             "WARP_CLICK: dispatch kind=${widget.id} actionId=$actionId " +
-                "widgetId=$resolvedId params=$parametersJson",
+                "widgetId=$resolvedId params=$parametersJson"
         )
         WarpWidgetClickScope.withWidgetId(resolvedId) {
             prepare(widget, resolved)

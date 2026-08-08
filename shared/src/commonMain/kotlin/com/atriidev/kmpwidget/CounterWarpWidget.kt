@@ -11,6 +11,8 @@ import com.atriidev.warp_runtime.compose.WarpProgressIndicator
 import com.atriidev.warp_runtime.compose.WarpRow
 import com.atriidev.warp_runtime.compose.WarpSpacer
 import com.atriidev.warp_runtime.compose.WarpText
+import com.atriidev.warp_runtime.log.WarpLogger
+import com.atriidev.warp_runtime.log.WarpLoggerLevel
 import com.atriidev.warp_runtime.nodes.actions.asClickAction
 import com.atriidev.warp_runtime.nodes.assets.WarpAssetId
 import com.atriidev.warp_runtime.nodes.modifiers.WarpModifier
@@ -134,6 +136,7 @@ object CounterWarpWidget : WarpWidget<CounterState>(CounterState.serializer()) {
     @Composable
     override fun Content(env: WidgetEnvironment, state: CounterState) {
         val state = state.withMergedSampleTodos()
+        WarpLogger.level = WarpLoggerLevel.Debug
         WarpTheme(
             environment = env,
             darkTheme = false.takeIf { env.platform.isAndroid }
@@ -501,11 +504,6 @@ class CounterWarpClickHandler(
                 CounterActions.Decrement -> state.copy(count = state.count - 1)
                 CounterActions.Reset -> state.copy(count = 0)
                 is CounterActions.SwitchMode -> state.copy(mode = action.mode)
-//                is CounterActions.ToggleTodo -> state.copy(
-//                    todos = state.todos.map { todo ->
-//                        if (todo.id == action.todoId) todo.copy(done = !todo.done) else todo
-//                    },
-//                )
                 is CounterActions.ToggleTodo -> state.copy(
                     todos = state.todos.map { todo ->
                         if (todo.id == action.todo.id) todo.copy(done = !todo.done) else todo

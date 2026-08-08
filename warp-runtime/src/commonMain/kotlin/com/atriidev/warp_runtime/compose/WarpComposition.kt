@@ -4,6 +4,7 @@
 package com.atriidev.warp_runtime.compose
 
 import androidx.compose.runtime.Composable
+import com.atriidev.warp_runtime.log.WarpLogger
 import com.atriidev.warp_runtime.nodes.WarpNode
 
 /**
@@ -36,6 +37,7 @@ class WarpComposition<S>(
      * @param newState Updated widget state.
      */
     fun updateState(newState: S): WarpNode {
+        WarpLogger.d("WarpComposition", "updateState: recomposing with new state")
         state = newState
         lastNode = composeWarp(state, content)
         return lastNode

@@ -2,6 +2,7 @@
 
 package com.atriidev.warp_runtime.nodes.actions
 
+import com.atriidev.warp_runtime.log.WarpLogger
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SealedClassSerializer
 import kotlinx.serialization.json.Json
@@ -92,7 +93,10 @@ class SerializableWarpActionFamily<A : Any>(
     override val actionIds: Set<String> = wireIdToSerialName.keys
 
     override fun decode(actionId: String, parameters: WarpActionParameters): A? {
-        val serialName = wireIdToSerialName[actionId] ?: return null
+        val serialName = wireIdToSerialName[actionId] ?: run {
+            WarpLogger.w("WarpActionFamily", "Unknown actionId=$actionId (registered: ${wireIdToSerialName.keys})")
+            return null
+        }
         val json = buildJsonObject {
             put("type", JsonPrimitive(serialName))
             parameters.forEach { (key, value) ->
@@ -112,8 +116,11 @@ class SerializableWarpActionFamily<A : Any>(
             }
         }
         return try {
-            warpActionJson.decodeFromJsonElement(sealedSerializer, json)
-        } catch (_: Exception) {
+            val decoded = warpActionJson.decodeFromJsonElement(sealedSerializer, json)
+            WarpLogger.d("WarpActionFamily", "Successfully decoded action $decoded (actionId=$actionId)")
+            decoded
+        } catch (e: Exception) {
+            WarpLogger.e("WarpActionFamily", "Failed to decode action $actionId with json=$json", e)
             null
         }
     }

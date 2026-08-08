@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.glance.appwidget.GlanceAppWidget
+import com.atriidev.warp_runtime.log.WarpLogger
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 
 private const val ACTION_UI_MODE_CHANGED = "android.intent.action.UI_MODE_CHANGED"
@@ -44,6 +45,7 @@ abstract class WarpGlanceWidgetReceiver(
 
     override fun onReceive(context: Context, intent: Intent) {
         ensureRegistered()
+        WarpLogger.d("WarpGlanceWidgetReceiver", "onReceive: intent action = ${intent.action}")
         when (intent.action) {
             Intent.ACTION_CONFIGURATION_CHANGED,
             ACTION_UI_MODE_CHANGED,
@@ -59,6 +61,7 @@ abstract class WarpGlanceWidgetReceiver(
         newOptions: Bundle,
     ) {
         ensureRegistered()
+        WarpLogger.d("WarpGlanceWidgetReceiver", "onAppWidgetOptionsChanged: reloading layout for appWidgetId = $appWidgetId")
         super.onAppWidgetOptionsChanged(context, appWidgetManager, appWidgetId, newOptions)
         WarpWidgetAndroidReload.scheduleLayoutReload(
             context = context,

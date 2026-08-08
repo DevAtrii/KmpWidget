@@ -2,6 +2,7 @@ package com.atriidev.warp_ui
 
 import android.content.Context
 import androidx.glance.GlanceId
+import com.atriidev.warp_runtime.log.WarpLogger
 import com.atriidev.warp_ui.glance.internal.WarpGlanceClickPrepare
 
 /**
@@ -12,5 +13,6 @@ import com.atriidev.warp_ui.glance.internal.WarpGlanceClickPrepare
  * [GlanceId] before dispatch runs.
  */
 fun setWarpGlanceClickPrepareHandler(handler: suspend (Context, GlanceId) -> Unit) {
+    WarpLogger.d("WarpGlanceClickPrepare", "setWarpGlanceClickPrepareHandler: installed click prepare handler")
     WarpGlanceClickPrepare.setPrepareHandler(handler)
 }

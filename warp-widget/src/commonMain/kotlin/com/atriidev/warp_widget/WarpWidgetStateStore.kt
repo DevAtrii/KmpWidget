@@ -1,5 +1,6 @@
 package com.atriidev.warp_widget
 
+import com.atriidev.warp_runtime.log.WarpLogger
 import com.atriidev.warp_widget.api.PlatformContext
 
 /**
@@ -114,6 +115,7 @@ suspend fun updateWarpWidgetPreferences(
     id: WarpWidgetId,
     transform: MutableWarpWidgetPreferences.() -> Unit,
 ) {
+    WarpLogger.d("WarpWidgetStateStore", "updateWarpWidgetPreferences: flushing updates for widget ${widget.id} (id=$id)")
     WarpWidgetStateStore.update(context, widget, id, transform)
     WarpWidgetStateStore.refreshAfterUpdate(context, widget, id)
 }
@@ -123,6 +125,7 @@ suspend fun updateWarpWidgetPreferences(
     widgetId: String,
     transform: MutableWarpWidgetPreferences.() -> Unit,
 ) {
+    WarpLogger.d("WarpWidgetStateStore", "updateWarpWidgetPreferences: flushing updates for widgetId $widgetId")
     WarpWidgetStateStore.update(context, widgetId, transform)
     WarpWidgetStateStore.refreshAfterUpdate(context, widgetId)
 }

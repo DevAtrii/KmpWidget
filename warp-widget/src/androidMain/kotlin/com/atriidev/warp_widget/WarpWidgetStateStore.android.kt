@@ -2,7 +2,7 @@ package com.atriidev.warp_widget
 
 import android.appwidget.AppWidgetManager
 import android.content.Context
-import android.util.Log
+import com.atriidev.warp_runtime.log.WarpLogger
 import androidx.glance.GlanceId
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetManager
@@ -82,17 +82,17 @@ actual object WarpWidgetStateStore {
         val glanceWidget = requireWidget(widget.id) ?: return
         val glanceIds = targetGlanceIds(android, glanceWidget, widget, id)
         if (glanceIds.isEmpty()) {
-            Log.w(TAG, "refreshAfterUpdate(${widget.id}): no Glance ids")
+            WarpLogger.w(TAG, "refreshAfterUpdate(${widget.id}): no Glance ids")
             return
         }
         glanceIds.forEach { glanceId ->
             try {
                 glanceWidget.update(android, glanceId)
             } catch (e: Exception) {
-                Log.e(TAG, "refreshAfterUpdate(${widget.id}) failed for $glanceId", e)
+                WarpLogger.e(TAG, "refreshAfterUpdate(${widget.id}) failed for $glanceId", e)
             }
         }
-        Log.d(TAG, "refreshAfterUpdate(${widget.id}): ${glanceIds.size} instance(s)")
+        WarpLogger.d(TAG, "refreshAfterUpdate(${widget.id}): ${glanceIds.size} instance(s)")
     }
 
     actual suspend fun refreshAfterUpdate(
@@ -140,7 +140,7 @@ actual object WarpWidgetStateStore {
     private suspend fun readShared(context: Context, widget: GlanceAppWidget): WarpWidgetPreferences {
         val glanceIds = activeGlanceIds(context, widget)
         if (glanceIds.isEmpty()) {
-            Log.d(TAG, "read(shared): no Glance ids")
+            WarpLogger.d(TAG, "read(shared): no Glance ids")
             return WarpWidgetPreferences()
         }
         return readGlanceId(context, glanceIds.first())
@@ -163,7 +163,7 @@ actual object WarpWidgetStateStore {
     ) {
         val glanceIds = activeGlanceIds(context, widget)
         if (glanceIds.isEmpty()) {
-            Log.w(TAG, "update($widgetId): no Glance ids — register receiver / add widget")
+            WarpLogger.w(TAG, "update($widgetId): no Glance ids — register receiver / add widget")
             return
         }
         val canonical = readGlanceId(context, glanceIds.first())
@@ -177,10 +177,10 @@ actual object WarpWidgetStateStore {
                     prefs.applyWarpPreferences(beforeKeys, next)
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "update($widgetId) failed for $glanceId", e)
+                WarpLogger.e(TAG, "update($widgetId) failed for $glanceId", e)
             }
         }
-        Log.d(TAG, "update($widgetId): mirrored to ${glanceIds.size} instance(s)")
+        WarpLogger.d(TAG, "update($widgetId): mirrored to ${glanceIds.size} instance(s)")
     }
 
     private suspend fun updateSingle(
@@ -197,9 +197,9 @@ actual object WarpWidgetStateStore {
                 val next = mutable.toPreferences()
                 prefs.applyWarpPreferences(beforeKeys, next)
             }
-            Log.d(TAG, "update($widgetId): single instance $glanceId")
+            WarpLogger.d(TAG, "update($widgetId): single instance $glanceId")
         } catch (e: Exception) {
-            Log.e(TAG, "update($widgetId) failed for $glanceId", e)
+            WarpLogger.e(TAG, "update($widgetId) failed for $glanceId", e)
         }
     }
 
@@ -211,7 +211,7 @@ actual object WarpWidgetStateStore {
         touchTheme: Boolean,
     ) {
         if (glanceIds.isEmpty()) {
-            Log.w(TAG, "reload($widgetId): no Glance ids")
+            WarpLogger.w(TAG, "reload($widgetId): no Glance ids")
             return
         }
         glanceIds.forEach { glanceId ->
@@ -221,10 +221,10 @@ actual object WarpWidgetStateStore {
                 }
                 widget.update(context, glanceId)
             } catch (e: Exception) {
-                Log.e(TAG, "reload($widgetId) failed for $glanceId", e)
+                WarpLogger.e(TAG, "reload($widgetId) failed for $glanceId", e)
             }
         }
-        Log.d(TAG, "reload($widgetId): ${glanceIds.size} instance(s)")
+        WarpLogger.d(TAG, "reload($widgetId): ${glanceIds.size} instance(s)")
     }
 
     private suspend fun targetGlanceIds(
@@ -256,7 +256,7 @@ actual object WarpWidgetStateStore {
     private fun requireWidget(widgetId: String): GlanceAppWidget? {
         val widget = WarpWidgetAndroidRegistry.create(widgetId)
         if (widget == null) {
-            Log.e(
+            WarpLogger.e(
                 TAG,
                 "No GlanceAppWidget registered for id='$widgetId'. " +
                     "Call WarpWidgetAndroidRegistry.register(\"$widgetId\") { YourGlanceWidget() }",

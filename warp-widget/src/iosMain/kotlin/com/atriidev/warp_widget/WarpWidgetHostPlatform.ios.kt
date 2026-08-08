@@ -5,6 +5,7 @@ import com.atriidev.warp_ui.WarpClicksRegistry
 import com.atriidev.warp_ui.registerWarpClicks
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.coroutines.runBlocking
+import com.atriidev.warp_runtime.log.WarpLogger
 import kotlinx.serialization.json.Json
 import warpWidgetKit.WarpClickBridge
 
@@ -34,14 +35,14 @@ internal actual fun platformDispatchClick(actionId: String, parametersJson: Stri
         try {
             val ok = WarpClicksRegistry.dispatch(actionId, params)
             if (!ok) {
-                println(
+                WarpLogger.w(
+                    "WarpWidgetHostPlatform",
                     "WARP_CLICK iOS: no handler for actionId='$actionId' " +
-                        "params=$params (registry empty?)",
+                        "params=$params (registry empty?)"
                 )
             }
         } catch (t: Throwable) {
-            println("WARP_CLICK iOS: handler threw actionId='$actionId': $t")
-            t.printStackTrace()
+            WarpLogger.e("WarpWidgetHostPlatform", "WARP_CLICK iOS: handler threw actionId='$actionId': $t", t)
         }
     }
 }
@@ -51,7 +52,7 @@ private fun decodeClickParametersSafe(raw: String): Map<String, String> {
     return runCatching {
         Json { ignoreUnknownKeys = true }.decodeFromString<Map<String, String>>(raw)
     }.getOrElse {
-        println("WARP_CLICK iOS: bad parametersJson='$raw' (${it.message})")
+        WarpLogger.w("WarpWidgetHostPlatform", "WARP_CLICK iOS: bad parametersJson='$raw' (${it.message})")
         emptyMap()
     }
 }

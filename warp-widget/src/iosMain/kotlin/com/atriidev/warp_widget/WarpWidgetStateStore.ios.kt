@@ -4,6 +4,7 @@ import com.atriidev.warp_widget.api.PlatformContext
 import kotlinx.cinterop.ExperimentalForeignApi
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSUserDefaults
+import com.atriidev.warp_runtime.log.WarpLogger
 import warpWidgetKit.WarpWidgetBridge
 
 /**
@@ -22,6 +23,7 @@ actual object WarpWidgetStateStore {
     ): WarpWidgetPreferences {
         val defaults = userDefaults(context)
         val prefix = storagePrefix(widget, id)
+        WarpLogger.d("WarpWidgetStateStore", "read: iOS defaults prefix = $prefix")
         return readWithPrefix(defaults, prefix)
     }
 
@@ -30,7 +32,9 @@ actual object WarpWidgetStateStore {
         widgetId: String,
     ): WarpWidgetPreferences {
         val defaults = userDefaults(context)
-        return readWithPrefix(defaults, keyPrefix(widgetId, WarpWidgetStateScope.Shared, null))
+        val prefix = keyPrefix(widgetId, WarpWidgetStateScope.Shared, null)
+        WarpLogger.d("WarpWidgetStateStore", "read: iOS defaults prefix = $prefix")
+        return readWithPrefix(defaults, prefix)
     }
 
     actual suspend fun update(
@@ -172,9 +176,10 @@ actual object WarpWidgetStateStore {
         val container = NSFileManager.defaultManager
             .containerURLForSecurityApplicationGroupIdentifier(suite)
         if (container == null) {
-            println(
-                "WarpWidgetStateStore: App Group '$suite' unavailable — " +
-                    "enable App Groups on app + extension (Signing & Capabilities).",
+            WarpLogger.w(
+                "WarpWidgetStateStore",
+                "App Group '$suite' unavailable — " +
+                    "enable App Groups on app + extension (Signing & Capabilities)."
             )
         }
         return NSUserDefaults(suiteName = suite)

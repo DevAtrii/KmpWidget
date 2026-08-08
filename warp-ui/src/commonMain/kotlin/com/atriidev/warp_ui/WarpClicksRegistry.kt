@@ -7,13 +7,17 @@ package com.atriidev.warp_ui
  * - **Android:** Glance `ActionCallback`
  * - **iOS:** `dispatchWarpClick` / `WarpClickBridge` → Kotlin
  */
+import com.atriidev.warp_runtime.log.WarpLogger
+
 object WarpClicksRegistry {
+    private const val TAG = "WarpClicksRegistry"
     private val handlers = mutableMapOf<String, suspend (Map<String, String>) -> Unit>()
 
     /** Replaces all handlers (clears previous widget’s actions). */
     fun register(handlers: List<WarpClickHandler<*>>) {
         this.handlers.clear()
         handlers.forEach(::registerOne)
+        WarpLogger.d(TAG, "Registered ${this.handlers.size} click action handler(s): ${this.handlers.keys}")
     }
 
     /** True when [actionId] was registered (warm process / after [WarpRender]). */
@@ -28,12 +32,13 @@ object WarpClicksRegistry {
     suspend fun dispatch(actionId: String, parameters: Map<String, String>): Boolean {
         val handler = handlers[actionId]
         if (handler == null) {
-            println(
-                "WARP_CLICK: no handler for id=$actionId " +
-                    "(registry empty or cold start without prepare). keys=${handlers.keys}",
+            WarpLogger.w(
+                TAG,
+                "No handler for actionId=$actionId (registered keys: ${handlers.keys})",
             )
             return false
         }
+        WarpLogger.i(TAG, "Dispatching click actionId=$actionId params=$parameters")
         handler.invoke(parameters)
         return true
     }

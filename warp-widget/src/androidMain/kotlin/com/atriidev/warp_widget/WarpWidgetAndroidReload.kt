@@ -8,8 +8,8 @@ import android.content.IntentFilter
 import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import androidx.compose.ui.unit.DpSize
+import com.atriidev.warp_runtime.log.WarpLogger
 import androidx.glance.appwidget.AppWidgetId
 import androidx.glance.appwidget.GlanceAppWidget
 import com.atriidev.warp_widget.api.PlatformContext
@@ -79,7 +79,7 @@ internal object WarpWidgetAndroidReload {
             WarpWidgetAndroidRegistry.ensureAllWidgetReceiversRegistered(app)
 
             installed = true
-            Log.d(TAG, "Installed uiMode reload listeners")
+            WarpLogger.d(TAG, "Installed uiMode reload listeners")
         }
     }
 
@@ -94,7 +94,7 @@ internal object WarpWidgetAndroidReload {
 
     fun scheduleReloadAll(context: Context, reason: String = "manual") {
         val appContext = context.applicationContext
-        Log.d(TAG, "scheduleReloadAll ($reason)")
+        WarpLogger.d(TAG, "scheduleReloadAll ($reason)")
         scope.launch {
             WarpWidgetAndroidRegistry.ensureAllWidgetReceiversRegistered(appContext)
             WarpWidgetAndroidRegistry.reloadAll(PlatformContext(appContext))
@@ -112,7 +112,7 @@ internal object WarpWidgetAndroidReload {
         widgetFactory: () -> GlanceAppWidget,
     ) {
         val size = options.resolveGlanceWidgetSize(DpSize.Zero)
-        Log.d(
+        WarpLogger.d(
             TAG,
             "scheduleLayoutReload appWidgetId=$appWidgetId " +
                 "size=${size.width.value}x${size.height.value}dp",

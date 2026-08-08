@@ -62,6 +62,7 @@ kotlin {
                 // Add KMP dependencies here
                 api(libs.compose.runtime)
                 implementation(libs.kotlinx.serialization.json)
+                api(libs.logging)
             }
         }
         androidMain {
