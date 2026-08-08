@@ -1,4 +1,9 @@
 [versions]
+# Maven publish (starter libraries → Central / .maven-libs)
+lib-version-major = "0"
+lib-version-minor = "1"
+lib-version-patch = "0"
+
 agp = "9.0.1"
 android-compileSdk = "36"
 android-minSdk = "24"
@@ -18,10 +23,6 @@ kotlinStdlib = "2.4.10"
 runner = "1.7.0"
 core = "1.7.0"
 kotlinx-serialization-json = "1.11.0"
-# Maven publish (starter libraries → Central / .maven-libs)
-lib-version-major = "1"
-lib-version-minor = "0"
-lib-version-patch = "0"
 vanniktech-maven-publish = "0.36.0"
 
 [libraries]
