@@ -3,6 +3,8 @@ package com.atriidev.warp_widget
 import com.atriidev.warp_runtime.log.WarpLogger
 import com.atriidev.warp_widget.api.PlatformContext
 
+import kotlinx.coroutines.runBlocking
+
 /**
  * Platform persistence for widget prefs + timeline / Glance reload.
  *
@@ -80,7 +82,7 @@ suspend fun <S : Any> updateWarpWidgetState(
     transform: (S) -> S,
 ) {
     WarpWidgetStateStore.update(context, widget, id) {
-        val current = widget.decodeState(toPreferences())
+        val current = runBlocking { widget.decodeState(toPreferences()) }
         setRaw(widget.id, widget.encodeState(transform(current)))
     }
     WarpWidgetStateStore.refreshAfterUpdate(context, widget, id)

@@ -58,7 +58,7 @@ interface WarpWidgetHostApi {
  * object CounterWarpWidget : WarpWidget<CounterState>(CounterState.serializer()) {
  *     override val id = "CounterWidget"
  *     override val iosGroupId = APP_GROUP_ID
- *     override val defaultState = CounterState()
+ *     override suspend fun defaultState() = CounterState()
  *
  *     @Composable
  *     override fun Content(env: WidgetEnvironment, state: CounterState) {
@@ -87,8 +87,12 @@ abstract class WarpWidget<S : Any>(
      */
     abstract override val iosGroupId: String
 
-    /** Used when prefs are empty or decode fails. */
-    abstract val defaultState: S
+    /**
+     * Used when prefs are empty or decode fails.
+     *
+     * This will be used for the first render of the widget.
+     */
+    abstract suspend fun defaultState(): S
 
     /**
      * Shared vs per-instance state.
@@ -112,10 +116,10 @@ abstract class WarpWidget<S : Any>(
     override fun clickHandlers(session: WarpWidgetSession): List<WarpClickHandler<*>> = emptyList()
 
     /** Decode [S] from prefs (key = [id]); falls back to [defaultState]. */
-    fun decodeState(preferences: WarpWidgetPreferences): S {
-        val json = preferences.values[id] ?: return defaultState
+    suspend fun decodeState(preferences: WarpWidgetPreferences): S {
+        val json = preferences.values[id] ?: return defaultState()
         return runCatching { stateJson.decodeFromString(stateSerializer, json) }
-            .getOrDefault(defaultState)
+            .getOrElse { defaultState() }
     }
 
     /** Encode [state] for prefs storage. */
@@ -127,7 +131,8 @@ abstract class WarpWidget<S : Any>(
      */
     @Composable
     final override fun ComposeContent(env: WidgetEnvironment, preferences: WarpWidgetPreferences) {
-        Content(env, decodeState(preferences))
+        val state = runBlocking { decodeState(preferences) }
+        Content(env, state)
     }
 
     companion object {

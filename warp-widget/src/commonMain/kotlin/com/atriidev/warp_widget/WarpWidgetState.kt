@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 
 /**
@@ -134,8 +135,10 @@ fun <T> currentState(key: WarpStateKey<T>): T? = currentPreferences()[key]
  */
 @Composable
 @ReadOnlyComposable
-fun <S : Any> currentWidgetState(widget: WarpWidget<S>): S =
-    widget.decodeState(currentPreferences())
+fun <S : Any> currentWidgetState(widget: WarpWidget<S>): S {
+    val prefs = currentPreferences()
+    return runBlocking { widget.decodeState(prefs) }
+}
 
 @Composable
 internal fun ProvideWarpWidgetPreferences(

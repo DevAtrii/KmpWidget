@@ -82,7 +82,7 @@ data class CounterState(val count: Int = 0)
 object CounterWarpWidget : WarpWidget<CounterState>(CounterState.serializer()) {
     override val id = "CounterWidget"
     override val iosGroupId = "group.com.example.app"
-    override val defaultState = CounterState()
+    override suspend fun defaultState() = CounterState()
 
     @Composable
     override fun Content(env: WidgetEnvironment, state: CounterState) {

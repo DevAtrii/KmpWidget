@@ -2,7 +2,7 @@
 # Maven publish (starter libraries → Central / .maven-libs)
 lib-version-major = "0"
 lib-version-minor = "1"
-lib-version-patch = "3"
+lib-version-patch = "4"
 
 agp = "9.3.1"
 android-compileSdk = "37"

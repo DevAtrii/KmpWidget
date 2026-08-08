@@ -8,7 +8,7 @@ import com.atriidev.warp_widget.updateWarpWidgetState
 /** First installed instance, or [CounterWarpWidget.defaultState] when none on screen. */
 suspend fun readCounterWidgetState(context: PlatformContext): CounterState {
     val ids = listWarpWidgetIds(context, CounterWarpWidget)
-    if (ids.isEmpty()) return CounterWarpWidget.defaultState
+    if (ids.isEmpty()) return CounterWarpWidget.defaultState()
     return readWarpWidgetState(context, CounterWarpWidget, ids.first())
 }
 

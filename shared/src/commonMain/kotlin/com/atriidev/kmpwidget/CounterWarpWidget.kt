@@ -122,7 +122,7 @@ object CounterWarpWidget : WarpWidget<CounterState>(CounterState.serializer()) {
 
     override val stateScope: WarpWidgetStateScope = WarpWidgetStateScope.Shared
 
-    override val defaultState: CounterState = CounterState()
+    override suspend fun defaultState(): CounterState = CounterState()
 
     @Composable
     override fun Content(env: WidgetEnvironment, state: CounterState) {

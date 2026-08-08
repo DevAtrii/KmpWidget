@@ -131,7 +131,7 @@ object CounterWarpWidget : WarpWidget<CounterState>(CounterState.serializer()) {
     override val id: String = "CounterWidget"
     override val iosGroupId: String = APP_GROUP_ID
     override val stateScope: WarpWidgetStateScope = WarpWidgetStateScope.Instance
-    override val defaultState: CounterState = CounterState()
+    override suspend fun defaultState(): CounterState = CounterState()
 
     @Composable
     override fun Content(env: WidgetEnvironment, state: CounterState) {
@@ -180,7 +180,7 @@ Your main application (`App.kt`) can read or update widget state directly:
 ```kotlin
 suspend fun readCounterWidgetState(context: PlatformContext): CounterState {
     val ids = listWarpWidgetIds(context, CounterWarpWidget)
-    if (ids.isEmpty()) return CounterWarpWidget.defaultState
+    if (ids.isEmpty()) return CounterWarpWidget.defaultState()
     return readWarpWidgetState(context, CounterWarpWidget, ids.first())
 }
 

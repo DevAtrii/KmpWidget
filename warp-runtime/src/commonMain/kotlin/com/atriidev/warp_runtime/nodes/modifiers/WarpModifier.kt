@@ -59,7 +59,7 @@ data class WarpModifier(
         fun border(width: Int, hex: String): WarpModifier =
             Default.border(width, hex)
 
-        fun clickable(action: ClickAction): WarpModifier = Default.clickable(action)
+        fun clickable(action: Any): WarpModifier = Default.clickable(action)
 
         fun clickable(actionId: WarpActionId): WarpModifier =
             Default.clickable(actionId.asClickAction())
@@ -142,12 +142,8 @@ data class WarpModifier(
     fun border(width: Int, hex: String): WarpModifier =
         border(width, WarpColor(hex))
 
-    @Deprecated(
-        message = "Use clickable(action: Any) instead.",
-        level = DeprecationLevel.WARNING,
-    )
-    private fun clickable(action: ClickAction): WarpModifier =
-        then(WarpClickableElement(action))
+    fun clickable(action: Any): WarpModifier =
+        then(WarpClickableElement(action.asClickAction()))
 
     @Deprecated(
         message = "Use clickable(action: Any) instead.",
