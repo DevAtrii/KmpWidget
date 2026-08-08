@@ -26,10 +26,21 @@ dependencyResolutionManagement {
             }
         }
         mavenCentral()
+        val mavenLibsDir = rootDir.resolve(".maven-libs")
+        if (mavenLibsDir.exists()) {
+            maven(mavenLibsDir.toURI()) {
+                name = "mavenLibsLocal"
+                content {
+                    includeGroup("io.github.devatrii")
+                }
+            }
+        }
     }
 }
 
+includeBuild("build-logic")
 include(":androidApp")
+
 include(":shared")
 
 include(":warp-runtime")

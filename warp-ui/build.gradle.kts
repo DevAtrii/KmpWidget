@@ -8,7 +8,9 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.composeCompiler)
     id("io.github.frankois944.spmForKmp") version "1.9.4"
+    id("com.warp.plugins.publish")
 }
+
 
 /** Local SPM package (repo root). Swap for remotePackageVersion when published. */
 val warpWidgetKitPackageDir: File =
@@ -21,8 +23,9 @@ kotlin {
         minSdk = libs.versions.android.minSdk.get().toInt()
 
         compilerOptions {
-            jvmTarget = JvmTarget.JVM_11
+            jvmTarget = JvmTarget.JVM_17
         }
+
     }
 
     val xcfName = "warp-uiKit"

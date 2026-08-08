@@ -10,6 +10,7 @@ plugins {
     alias(libs.plugins.composeCompiler) apply false
     alias(libs.plugins.kotlinMultiplatform) apply false
     alias(libs.plugins.androidLint) apply false
+    alias(libs.plugins.vanniktech.maven.publish) apply false
 }
 
 subprojects {
@@ -20,4 +21,28 @@ subprojects {
             }
         }
     }
+}
+
+private val publishableWarpModules =
+    listOf(
+        ":warp-runtime",
+        ":warp-ui",
+        ":warp-widget",
+    )
+
+tasks.register("publishWarpLibrariesToLocalRepository") {
+    group = "publishing"
+    description =
+        "Publishes all Warp libraries (:warp-runtime, :warp-ui, :warp-widget) to .maven-libs."
+    dependsOn(
+        publishableWarpModules.map { "$it:publishAllPublicationsToWarpLocalRepository" },
+    )
+}
+
+tasks.register("publishWarpLibrariesToMavenCentral") {
+    group = "publishing"
+    description = "Publishes all Warp libraries (:warp-runtime, :warp-ui, :warp-widget) to Maven Central."
+    dependsOn(
+        publishableWarpModules.map { "$it:publishAllPublicationsToMavenCentralRepository" },
+    )
 }
