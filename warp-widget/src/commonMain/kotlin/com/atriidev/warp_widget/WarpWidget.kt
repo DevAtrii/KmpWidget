@@ -1,6 +1,7 @@
 package com.atriidev.warp_widget
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
 import com.atriidev.warp_runtime.compose.composeWarp
 import com.atriidev.warp_runtime.compose.toJson
 import com.atriidev.warp_runtime.nodes.WarpNode
@@ -68,6 +69,7 @@ interface WarpWidgetHostApi {
  * updateWarpWidgetState(session, CounterWarpWidget) { it.copy(count = it.count + 1) }
  * ```
  */
+@Stable
 abstract class WarpWidget<S : Any>(
     private val stateSerializer: KSerializer<S>,
 ) : WarpWidgetHostApi {

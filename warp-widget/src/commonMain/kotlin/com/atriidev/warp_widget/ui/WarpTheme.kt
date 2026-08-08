@@ -9,6 +9,11 @@ import com.atriidev.warp_runtime.nodes.modifiers.WarpColor
 import com.atriidev.warp_widget.api.WarpWidgetTheme
 import com.atriidev.warp_widget.api.WidgetEnvironment
 import com.atriidev.warp_widget.api.WidgetPlatform
+import com.atriidev.warp_widget.ui.WarpColors.Companion.Material3Dark
+import com.atriidev.warp_widget.ui.WarpColors.Companion.Material3Light
+import com.atriidev.warp_widget.ui.WarpColors.Companion.defaultDark
+import com.atriidev.warp_widget.ui.WarpColors.Companion.defaultLight
+import com.atriidev.warp_widget.ui.WarpColors.Companion.light
 
 /**
  * Material-style color roles for WARP widget UI.
@@ -368,15 +373,16 @@ data class WarpColors(
     }
 }
 
-/**
- * Access to the current [WarpColors] inside a [WarpTheme] subtree.
- *
- * ```
- * WarpTheme.colors.primary
- * WarpTheme.colors.widgetBackground
- * ```
- */
+
 object WarpTheme {
+    /**
+     * Access to the current [WarpColors] inside a [WarpTheme] subtree.
+     *
+     * ```
+     * WarpTheme.colors.primary
+     * WarpTheme.colors.widgetBackground
+     * ```
+     */
     val colors: WarpColors
         @Composable
         @ReadOnlyComposable
@@ -429,10 +435,11 @@ fun WarpTheme(
     environment: WidgetEnvironment,
     lightColors: WarpColors = WarpColors.defaultLight(environment.platform),
     darkColors: WarpColors = WarpColors.defaultDark(environment.platform),
+    darkTheme: Boolean? = null,
     content: @Composable () -> Unit,
 ) {
     WarpTheme(
-        darkTheme = environment.theme != WarpWidgetTheme.LIGHT,
+        darkTheme = darkTheme ?: (environment.theme != WarpWidgetTheme.LIGHT),
         lightColors = lightColors,
         darkColors = darkColors,
         content = content,

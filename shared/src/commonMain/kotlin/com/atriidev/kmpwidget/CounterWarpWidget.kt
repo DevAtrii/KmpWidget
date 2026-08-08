@@ -1,6 +1,7 @@
 package com.atriidev.kmpwidget
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
 import com.atriidev.warp_runtime.compose.WarpBox
 import com.atriidev.warp_runtime.compose.WarpButton
 import com.atriidev.warp_runtime.compose.WarpColumn
@@ -23,6 +24,7 @@ import com.atriidev.warp_ui.WarpClickHandler
 import com.atriidev.warp_widget.WarpWidget
 import com.atriidev.warp_widget.WarpWidgetSession
 import com.atriidev.warp_widget.WarpWidgetStateScope
+import com.atriidev.warp_widget.api.WarpLayoutDirection
 import com.atriidev.warp_widget.api.WidgetEnvironment
 import com.atriidev.warp_widget.ui.WarpAdaptiveContent
 import com.atriidev.warp_widget.ui.WarpAdaptiveSize
@@ -88,6 +90,7 @@ val SampleTodos: List<TodoItem> = listOf(
 
 /** Serializable state for [CounterWarpWidget] — persisted as JSON under prefs key = widget id. */
 @Serializable
+@Stable
 data class CounterState(
     val mode: WidgetMode = WidgetMode.Counter,
     val count: Int = 0,
