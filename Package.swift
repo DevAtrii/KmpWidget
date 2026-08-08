@@ -9,20 +9,20 @@ import PackageDescription
 /// .package(url: "https://github.com/DevAtrii/Warp.git", from: "1.0.0")
 /// ```
 let package = Package(
-    name: "warpWidgetKit",
+    name: "Warp",
     platforms: [
-        .iOS("17.0"),
+        .iOS(.v17)
     ],
     products: [
         .library(
             name: "warpWidgetKit",
-            targets: ["warpWidgetKit"],
-        ),
+            targets: ["warpWidgetKit"]
+        )
     ],
     targets: [
         .target(
             name: "warpWidgetKit",
-            path: "Sources/warpWidgetKit",
-        ),
+            path: "warpWidgetKit/Sources/warpWidgetKit"
+        )
     ]
 )
