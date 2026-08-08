@@ -10,10 +10,10 @@ import kotlinx.serialization.KSerializer
  * Pass the generated serializer — e.g. `CounterActions.serializer()` — wire codec is automatic.
  *
  * ### iOS
- * Swift `AppIntent` → `dispatchWarpClick` → registry → [onClick].
+ * Swift `AppIntent` → `dispatchWarpClick` → registry → [onAction].
  *
  * ### Android
- * Glance `ActionCallback` → registry → [onClick].
+ * Glance `ActionCallback` → registry → [onAction].
  */
 abstract class WarpClickHandler<A : Any>(
     serializer: KSerializer<A>,
@@ -21,7 +21,7 @@ abstract class WarpClickHandler<A : Any>(
     private val family: WarpActionFamily<A> = warpActionFamily(serializer)
 
     /** Handle a typed action after the platform forwarded and decoded the wire payload. */
-    abstract suspend fun onClick(action: A)
+    abstract suspend fun onAction(action: A)
 
     internal fun registerEntries(
         register: (wireId: String, handler: suspend (Map<String, String>) -> Unit) -> Unit,
@@ -29,7 +29,7 @@ abstract class WarpClickHandler<A : Any>(
         family.actionIds.forEach { wireId ->
             register(wireId) { parameters ->
                 val action = family.decode(wireId, parameters) ?: return@register
-                onClick(action)
+                onAction(action)
             }
         }
     }

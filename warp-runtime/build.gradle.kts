@@ -60,7 +60,7 @@ kotlin {
             dependencies {
                 implementation(libs.kotlin.stdlib)
                 // Add KMP dependencies here
-                implementation(libs.compose.runtime)
+                api(libs.compose.runtime)
                 implementation(libs.kotlinx.serialization.json)
             }
         }

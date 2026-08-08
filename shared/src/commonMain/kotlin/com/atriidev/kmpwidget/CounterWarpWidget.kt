@@ -493,7 +493,7 @@ class CounterWarpClickHandler(
     private val session: WarpWidgetSession,
 ) : WarpClickHandler<CounterActions>(CounterActions.serializer()) {
 
-    override suspend fun onClick(action: CounterActions) {
+    override suspend fun onAction(action: CounterActions) {
         updateWarpWidgetState(session, CounterWarpWidget) { raw ->
             val state = raw.withMergedSampleTodos()
             when (action) {

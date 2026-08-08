@@ -25,9 +25,10 @@ private const val ACTION_UI_MODE_CHANGED = "android.intent.action.UI_MODE_CHANGE
  * Resizes: default [androidx.glance.appwidget.SizeMode.Single] ignores Glance [resize];
  * [WarpGlanceWidgetReceiver.onAppWidgetOptionsChanged] forces layout reload instead.
  */
-abstract class WarpGlanceWidgetReceiver : GlanceAppWidgetReceiver() {
+abstract class WarpGlanceWidgetReceiver(
     /** Shared WARP definition (same instance as [WarpGlanceWidget.widget]). */
-    abstract val widget: WarpWidgetHostApi
+    val widget: WarpWidgetHostApi
+) : GlanceAppWidgetReceiver() {
 
     /** Fresh Glance host instance (do not cache a single instance across updates). */
     protected abstract fun createGlanceWidget(): WarpGlanceWidget

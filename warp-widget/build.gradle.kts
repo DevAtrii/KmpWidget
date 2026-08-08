@@ -47,7 +47,7 @@ kotlin {
         commonMain {
             dependencies {
                 implementation(libs.kotlin.stdlib)
-                implementation(libs.compose.runtime)
+                api(libs.compose.runtime)
                 implementation(libs.kotlinx.serialization.json)
                 api(project(":warp-runtime"))
                 api(project(":warp-ui"))
@@ -56,7 +56,7 @@ kotlin {
         androidMain {
             dependencies {
                 implementation(libs.compose.ui)
-                implementation(libs.androidx.glance.appwidget)
+                api(libs.androidx.glance.appwidget)
             }
         }
 

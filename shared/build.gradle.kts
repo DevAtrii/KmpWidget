@@ -49,7 +49,7 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.compose.uiTooling)
-            implementation(libs.androidx.glance.appwidget)
+            api(libs.androidx.glance.appwidget)
             api(project(":warp-widget"))
         }
         commonMain.dependencies {

@@ -5,12 +5,9 @@ import com.atriidev.warp_ui.glance.WarpDrawableAsset
 import com.atriidev.warp_widget.WarpGlanceWidget
 import com.atriidev.warp_widget.WarpGlanceWidgetReceiver
 
-class CounterWidgetReceiver : WarpGlanceWidgetReceiver() {
-    init {
-        ensureRegistered()
-    }
-
-    override val widget get() = CounterWarpWidget
+class CounterWidgetReceiver : WarpGlanceWidgetReceiver(
+    widget = CounterWarpWidget
+) {
     override fun createGlanceWidget() = CounterGlanceAppWidget()
 }
 
