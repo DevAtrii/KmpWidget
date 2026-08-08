@@ -12,13 +12,12 @@ import com.atriidev.warp_runtime.compose.WarpSpacer
 import com.atriidev.warp_runtime.compose.WarpText
 import com.atriidev.warp_runtime.log.WarpLogger
 import com.atriidev.warp_runtime.log.WarpLoggerLevel
-import com.atriidev.warp_runtime.nodes.actions.WarpAction
-import com.atriidev.warp_runtime.nodes.actions.asClickAction
 import com.atriidev.warp_runtime.nodes.assets.WarpAsset
 import com.atriidev.warp_runtime.nodes.assets.WarpAssetId
 import com.atriidev.warp_runtime.nodes.modifiers.WarpModifier
 import com.atriidev.warp_runtime.nodes.style.WarpContentAlignment
 import com.atriidev.warp_runtime.nodes.style.WarpFontWeight
+import com.atriidev.warp_runtime.nodes.style.WarpHorizontalAlignment
 import com.atriidev.warp_runtime.nodes.style.WarpProgressIndicatorStyle
 import com.atriidev.warp_runtime.nodes.style.WarpTextStyle
 import com.atriidev.warp_runtime.nodes.style.WarpVerticalAlignment
@@ -157,11 +156,11 @@ private class TodoClickHandler(
                 )
             }
 
-           is TodoActions.AddSample -> updateWarpWidgetState(session, TodoWarpWidget) { state ->
+            is TodoActions.AddSample -> updateWarpWidgetState(session, TodoWarpWidget) { state ->
                 sampleTodoWidgetState
             }
 
-           is  TodoActions.Clear -> updateWarpWidgetState(session, TodoWarpWidget) { state ->
+            is TodoActions.Clear -> updateWarpWidgetState(session, TodoWarpWidget) { state ->
                 state.copy(
                     todos = emptyList()
                 )
@@ -218,14 +217,14 @@ private fun TodoWidgetContent(
                 // reset & sample
                 IconButton(
                     asset = TodoAssets.Trash.asSystem(),
-                    action = TodoActions.Clear ,
+                    action = TodoActions.Clear,
                     compact = compact
                 )
                 WarpSpacer(modifier = WarpModifier.width(if (compact) 4 else 6))
 
                 IconButton(
                     asset = TodoAssets.Plus.asSystem(),
-                    action = TodoActions.AddSample ,
+                    action = TodoActions.AddSample,
                     compact = compact
                 )
 
@@ -307,47 +306,97 @@ private fun TodoBody(
     // Nested column — keeps root under Glance's 10-child Column limit
     // (flat forEach rows + spacers was dropping the 3rd todo).
     WarpColumn(modifier = WarpModifier.fillMaxWidth()) {
-        WarpText(
-            text = "$doneCount / $total done",
-            style = WarpTextStyle(
-                color = colors.onSurfaceVariant,
-                fontSize = 12f,
-                fontWeight = WarpFontWeight.Medium,
-            ),
-            maxLines = 1,
-        )
-
-        WarpSpacer(modifier = WarpModifier.height(if (compact) 4 else 6))
-
-        visibleTodos.forEachIndexed { index, todo ->
-            if (index > 0) {
-                WarpSpacer(modifier = WarpModifier.height(if (compact) 3 else 4))
-            }
-            TodoRow(todo, compact = compact)
-        }
-
-        if (visibleTodos.size < total) {
-            WarpSpacer(modifier = WarpModifier.height(4))
+        if (visibleTodos.isNotEmpty())
             WarpText(
-                text = "+${total - visibleTodos.size} more",
+                text = "$doneCount / $total done",
                 style = WarpTextStyle(
                     color = colors.onSurfaceVariant,
-                    fontSize = 11f,
+                    fontSize = 12f,
                     fontWeight = WarpFontWeight.Medium,
                 ),
                 maxLines = 1,
             )
+
+        WarpSpacer(modifier = WarpModifier.height(if (compact) 4 else 6))
+
+        if (visibleTodos.isEmpty()) {
+            EmptyTodoBody()
+        } else {
+
+            visibleTodos.forEachIndexed { index, todo ->
+                if (index > 0) {
+                    WarpSpacer(modifier = WarpModifier.height(if (compact) 3 else 4))
+                }
+                TodoRow(todo, compact = compact)
+            }
+
+            if (visibleTodos.size < total) {
+                WarpSpacer(modifier = WarpModifier.height(4))
+                WarpText(
+                    text = "+${total - visibleTodos.size} more",
+                    style = WarpTextStyle(
+                        color = colors.onSurfaceVariant,
+                        fontSize = 11f,
+                        fontWeight = WarpFontWeight.Medium,
+                    ),
+                    maxLines = 1,
+                )
+            }
+
+            WarpSpacer(modifier = WarpModifier.height(if (compact) 4 else 8))
+
+            WarpProgressIndicator(
+                modifier = WarpModifier.fillMaxWidth(),
+                style = WarpProgressIndicatorStyle.Linear,
+                progress = progress,
+                color = colors.primary,
+                backgroundColor = colors.surfaceVariant,
+            )
         }
+    }
+}
 
-        WarpSpacer(modifier = WarpModifier.height(if (compact) 4 else 8))
+@Composable
+private fun EmptyTodoBody() {
+    val colors = WarpTheme.colors
 
-        WarpProgressIndicator(
+    WarpBox(
+        modifier = WarpModifier.fillMaxSize(),
+        contentAlignment = WarpContentAlignment.Center,
+    ) {
+        WarpColumn(
             modifier = WarpModifier.fillMaxWidth(),
-            style = WarpProgressIndicatorStyle.Linear,
-            progress = progress,
-            color = colors.primary,
-            backgroundColor = colors.surfaceVariant,
-        )
+            horizontalAlignment = WarpHorizontalAlignment.Center,
+        ) {
+            WarpImage(
+                asset = TodoAssets.Circle.asSystem(),
+                contentDescription = "No todos",
+                modifier = WarpModifier.size(36),
+                tint = colors.primary,
+            )
+
+            WarpSpacer(modifier = WarpModifier.height(12))
+
+            WarpText(
+                text = "No todos",
+                style = WarpTextStyle(
+                    fontSize = 16f,
+                    fontWeight = WarpFontWeight.Semibold,
+                    color = colors.onSurface,
+                ),
+            )
+
+            WarpSpacer(modifier = WarpModifier.height(4))
+
+            WarpText(
+                text = "Tap + to add a sample task",
+                style = WarpTextStyle(
+                    fontSize = 12f,
+                    color = colors.onSurfaceVariant,
+                ),
+                maxLines = 2,
+            )
+        }
     }
 }
 
