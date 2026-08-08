@@ -10,6 +10,7 @@ import androidx.glance.GlanceModifier
 import androidx.glance.Image
 import androidx.glance.LocalContext
 import androidx.glance.action.Action
+import androidx.glance.action.clickable
 import androidx.glance.appwidget.CircularProgressIndicator
 import androidx.glance.appwidget.LinearProgressIndicator
 import androidx.glance.appwidget.ProgressIndicatorDefaults
@@ -172,17 +173,37 @@ private fun RenderButton(
 ) {
     val action = node.modifier.resolveClickAction(node.onClick)
         ?: return
-    Button(
-        text = node.text,
-        onClick = clickAction(action),
-        modifier = node.modifier
+    if (node.children.isNotEmpty()) {
+        val baseModifier = node.modifier
             .toGlanceModifier(clickAction, applyClickable = false)
-            .then(extraModifier),
-        enabled = node.enabled,
-        style = node.style?.toGlanceTextStyle(),
-        colors = node.colors.toGlanceButtonColors(),
-        maxLines = node.maxLines,
-    )
+            .then(extraModifier)
+        val buttonModifier = if (node.enabled) {
+            baseModifier.clickable(clickAction(action))
+        } else {
+            baseModifier
+        }
+
+        Box(
+            modifier = buttonModifier,
+            contentAlignment = Alignment.Center,
+        ) {
+            node.children.forEach { child ->
+                RenderWarpNode(child, clickAction)
+            }
+        }
+    } else {
+        Button(
+            text = node.text ?: "",
+            onClick = clickAction(action),
+            modifier = node.modifier
+                .toGlanceModifier(clickAction, applyClickable = false)
+                .then(extraModifier),
+            enabled = node.enabled,
+            style = node.style?.toGlanceTextStyle(),
+            colors = node.colors.toGlanceButtonColors(),
+            maxLines = node.maxLines,
+        )
+    }
 }
 
 @Composable

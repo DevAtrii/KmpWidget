@@ -14,6 +14,7 @@ import com.atriidev.warp_runtime.nodes.actions.WarpActionId
 import com.atriidev.warp_runtime.nodes.actions.actionClick
 import com.atriidev.warp_runtime.compose.internal.WarpBoxComposable
 import com.atriidev.warp_runtime.compose.internal.WarpButtonComposable
+import com.atriidev.warp_runtime.compose.internal.WarpButtonContainerComposable
 import com.atriidev.warp_runtime.compose.internal.WarpColumnComposable
 import com.atriidev.warp_runtime.compose.internal.WarpDividerComposable
 import com.atriidev.warp_runtime.compose.internal.WarpImageComposable
@@ -110,7 +111,7 @@ fun WarpText(
 }
 
 /**
- * Displays a clickable button — Glance `Button`-shaped API.
+ * Displays a clickable button — text label or custom child composables.
  *
  * Maps to [com.atriidev.warp_runtime.nodes.WarpButton] in the output tree.
  *
@@ -146,8 +147,23 @@ fun WarpButton(
     )
 }
 
+@Composable
+fun WarpButton(
+    onClick: WarpAction,
+    modifier: WarpModifier = WarpModifier(),
+    enabled: Boolean = true,
+    content: @Composable () -> Unit,
+) {
+    WarpButtonContainerComposable(
+        onClick = onClick,
+        modifier = modifier,
+        enabled = enabled,
+        content = content,
+    )
+}
+
 /**
- * Convenience overload for a typed widget [actionId].
+ * Convenience overloads for a typed widget [actionId].
  */
 @Composable
 fun WarpButton(
@@ -167,6 +183,21 @@ fun WarpButton(
         style = style,
         colors = colors,
         maxLines = maxLines,
+    )
+}
+
+@Composable
+fun WarpButton(
+    actionId: WarpActionId,
+    modifier: WarpModifier = WarpModifier(),
+    enabled: Boolean = true,
+    content: @Composable () -> Unit,
+) {
+    WarpButton(
+        onClick = actionClick(actionId),
+        modifier = modifier,
+        enabled = enabled,
+        content = content,
     )
 }
 

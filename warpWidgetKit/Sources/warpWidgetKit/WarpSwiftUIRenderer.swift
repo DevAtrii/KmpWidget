@@ -136,8 +136,16 @@ private struct WarpNodeView: View {
                 .modifier(WarpTextArgsModifier(args: node.textArgs))
 
         case .button:
-            Text(node.text ?? "")
-                .modifier(WarpTextArgsModifier(args: node.textArgs))
+            if !node.children.isEmpty {
+                ZStack {
+                    ForEach(Array(node.children.enumerated()), id: \.offset) { _, child in
+                        WarpNodeView(node: child, useIntents: useIntents, widgetId: widgetId, warpWidgetId: warpWidgetId)
+                    }
+                }
+            } else {
+                Text(node.text ?? "")
+                    .modifier(WarpTextArgsModifier(args: node.textArgs))
+            }
 
         case .spacer:
             Color.clear
@@ -813,14 +821,15 @@ enum WarpNodeParser {
             }
             return WarpParsedNode.leafDefaults(
                 kind: .button,
-                text: object["text"] as? String ?? "",
+                text: object["text"] as? String,
                 nodeActionId: actionId,
                 nodeParametersJson: parametersJson,
                 modifierActionId: modActionId,
                 modifierParametersJson: modParams,
                 style: buttonStyle,
                 enabled: object["enabled"] as? Bool ?? true,
-                textArgs: textArgs
+                textArgs: textArgs,
+                children: children
             )
         case "spacer":
             return WarpParsedNode.leafDefaults(

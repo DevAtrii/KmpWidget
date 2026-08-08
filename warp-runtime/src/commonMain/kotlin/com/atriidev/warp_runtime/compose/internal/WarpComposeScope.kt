@@ -9,7 +9,8 @@ package com.atriidev.warp_runtime.compose.internal
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.runtime.NonRestartableComposable
+import androidx.compose.runtime.compositionLocalOf
 import com.atriidev.warp_runtime.nodes.assets.WarpAsset
 import com.atriidev.warp_runtime.nodes.modifiers.WarpColor
 import com.atriidev.warp_runtime.nodes.modifiers.WarpModifier
@@ -38,7 +39,7 @@ internal object WarpCompositionRoot {
  *
  * `null` outside of an active WARP composition. Top-level composables fall back to [WarpCompositionRoot.holder].
  */
-internal val LocalWarpContainer = staticCompositionLocalOf<WarpContainerHolder?> { null }
+internal val LocalWarpContainer = compositionLocalOf<WarpContainerHolder?> { null }
 
 /**
  * Clears and re-builds the holder tree on every recomposition pass.
@@ -71,6 +72,7 @@ internal fun currentContainer(): WarpContainerHolder =
  * @param content Nested composables that become children of [holder].
  */
 @Composable
+@NonRestartableComposable
 internal fun WarpContainer(
     holder: WarpContainerNodeHolder,
     content: @Composable () -> Unit,
@@ -87,6 +89,7 @@ internal fun WarpContainer(
  * @param holder Internal holder for a node with no children.
  */
 @Composable
+@NonRestartableComposable
 internal fun WarpLeaf(holder: WarpNodeHolder) {
     currentContainer().children.add(holder)
 }
@@ -148,7 +151,7 @@ internal fun WarpTextComposable(
 /** Internal implementation backing public [com.atriidev.warp_runtime.compose.WarpButton]. */
 @Composable
 internal fun WarpButtonComposable(
-    text: String,
+    text: String?,
     onClick: WarpAction,
     modifier: WarpModifier,
     enabled: Boolean,
@@ -166,6 +169,27 @@ internal fun WarpButtonComposable(
             colors = colors,
             maxLines = maxLines,
         ),
+    )
+}
+
+@Composable
+internal fun WarpButtonContainerComposable(
+    onClick: WarpAction,
+    modifier: WarpModifier,
+    enabled: Boolean,
+    content: @Composable () -> Unit,
+) {
+    WarpContainer(
+        WarpButtonHolder(
+            text = null,
+            onClick = onClick,
+            modifier = modifier,
+            enabled = enabled,
+            style = null,
+            colors = null,
+            maxLines = -1,
+        ),
+        content,
     )
 }
 

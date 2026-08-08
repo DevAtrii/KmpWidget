@@ -110,17 +110,18 @@ internal class WarpTextHolder(
 }
 
 /**
- * Mutable holder for a [WarpButton] leaf node.
+ * Mutable holder for a [WarpButton] node.
  */
 internal class WarpButtonHolder(
-    var text: String,
+    var text: String? = null,
     var onClick: WarpAction,
     var modifier: WarpModifier = WarpModifier(),
     var enabled: Boolean = true,
     var style: WarpTextStyle? = null,
     var colors: WarpButtonColors? = null,
     var maxLines: Int = Int.MAX_VALUE,
-) : WarpNodeHolder {
+    override val children: MutableList<Any> = mutableListOf(),
+) : WarpContainerNodeHolder {
     override fun toWarpNode(): WarpNode = WarpButton(
         text = text,
         onClick = onClick,
@@ -129,6 +130,7 @@ internal class WarpButtonHolder(
         style = style,
         colors = colors,
         maxLines = maxLines,
+        children = children.map { (it as WarpNodeHolder).toWarpNode() },
     )
 }
 
