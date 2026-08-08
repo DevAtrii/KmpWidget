@@ -91,7 +91,9 @@ private struct WarpNodeView: View {
         content
             .modifier(WarpStyleModifier(
                 style: node.style,
-                // Glance: weight expands slot; textAlign (if any) aligns content inside — else Start.
+                horizontalFrameAlignment: node.resolvedHorizontalAlignment,
+                verticalFrameAlignment: node.resolvedVerticalAlignment,
+                contentFrameAlignment: node.resolvedContentAlignment,
                 weightContentAlignment: node.textArgs.textAlign?.frameAlignment ?? .leading
             ))
             .opacity(node.enabled ? 1 : 0.4)
@@ -287,6 +289,9 @@ private extension TextAlignment {
 
 private struct WarpStyleModifier: ViewModifier {
     let style: WarpParsedStyle
+    var horizontalFrameAlignment: Alignment = .leading
+    var verticalFrameAlignment: Alignment = .top
+    var contentFrameAlignment: Alignment = .center
     /// Alignment inside a weighted slot (Glance Text textAlign / default Start).
     var weightContentAlignment: Alignment = .leading
 
@@ -304,11 +309,15 @@ private struct WarpStyleModifier: ViewModifier {
             }
         }
 
-        if style.fillMaxWidth || style.fillMaxSize {
-            view = AnyView(view.frame(maxWidth: .infinity, alignment: .leading))
-        }
-        if style.fillMaxHeight || style.fillMaxSize {
-            view = AnyView(view.frame(maxHeight: .infinity, alignment: .top))
+        if style.fillMaxSize {
+            view = AnyView(view.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: contentFrameAlignment))
+        } else {
+            if style.fillMaxWidth {
+                view = AnyView(view.frame(maxWidth: .infinity, alignment: horizontalFrameAlignment))
+            }
+            if style.fillMaxHeight {
+                view = AnyView(view.frame(maxHeight: .infinity, alignment: verticalFrameAlignment))
+            }
         }
         if style.wrapContentWidth {
             view = AnyView(view.fixedSize(horizontal: true, vertical: false))
@@ -589,6 +598,48 @@ struct WarpParsedNode {
             return modifierParametersJson
         }
         return nodeParametersJson
+    }
+
+    var resolvedHorizontalAlignment: Alignment {
+        switch kind {
+        case .box:
+            return contentAlignment
+        case .column, .row:
+            return horizontalAlignment.frameAlignment
+        default:
+            if let align = textArgs.textAlign?.frameAlignment {
+                return align
+            }
+            return horizontalAlignment.frameAlignment
+        }
+    }
+
+    var resolvedVerticalAlignment: Alignment {
+        switch kind {
+        case .box:
+            return contentAlignment
+        case .column, .row:
+            return verticalAlignment.frameAlignment
+        default:
+            return verticalAlignment.frameAlignment
+        }
+    }
+
+    var resolvedContentAlignment: Alignment {
+        switch kind {
+        case .box:
+            return contentAlignment
+        case .column, .row:
+            return Alignment(
+                horizontal: horizontalAlignment.stackAlignment,
+                vertical: verticalAlignment.stackAlignment
+            )
+        default:
+            if let align = textArgs.textAlign?.frameAlignment {
+                return align
+            }
+            return contentAlignment
+        }
     }
 
     static func leafDefaults(

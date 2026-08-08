@@ -89,7 +89,7 @@ val sampleTodoWidgetState = TodoWidgetState(
 @Serializable
 @Stable
 data class TodoWidgetState(
-    val todos: List<TodoItem>,
+    val todos: List<TodoItem> = emptyList(),
 )
 
 @Serializable
@@ -110,7 +110,8 @@ object TodoWarpWidget :
         get() = APPLE_GROUP_ID
 
     override val defaultState: TodoWidgetState
-        get() = sampleTodoWidgetState
+        get() = TodoWidgetState()
+//        get() = sampleTodoWidgetState
 
     override val stateScope: WarpWidgetStateScope
         get() = WarpWidgetStateScope.Shared

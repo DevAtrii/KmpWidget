@@ -19,6 +19,7 @@ import com.atriidev.warp_runtime.nodes.modifiers.WarpModifier
 import com.atriidev.warp_runtime.nodes.style.WarpButtonColors
 import com.atriidev.warp_runtime.nodes.style.WarpContentAlignment
 import com.atriidev.warp_runtime.nodes.style.WarpFontWeight
+import com.atriidev.warp_runtime.nodes.style.WarpHorizontalAlignment
 import com.atriidev.warp_runtime.nodes.style.WarpProgressIndicatorStyle
 import com.atriidev.warp_runtime.nodes.style.WarpTextStyle
 import com.atriidev.warp_runtime.nodes.style.WarpVerticalAlignment
@@ -99,16 +100,7 @@ data class CounterState(
     val todos: List<TodoItem> = SampleTodos,
 )
 
-/** Merges newly added [SampleTodos] into persisted state (keeps [TodoItem.done] by id). */
-internal fun CounterState.withMergedSampleTodos(): CounterState {
-    if (todos.size >= SampleTodos.size) return this
-    val byId = todos.associateBy { it.id }
-    return copy(
-        todos = SampleTodos.map { sample ->
-            byId[sample.id]?.let { existing -> sample.copy(done = existing.done) } ?: sample
-        },
-    )
-}
+
 
 /** Type-safe asset keys — share with [CounterGlanceAppWidget.assets]. */
 object CounterAssets {
@@ -121,7 +113,6 @@ object CounterAssets {
 /**
  * Counter + todo [WarpWidget] — one definition for Glance + WidgetKit.
  *
- * State is **per home-screen instance** ([WarpWidgetStateScope.Instance]).
  * Tap mode chips to switch. In todo mode, tap a row to mark done / undone.
  */
 object CounterWarpWidget : WarpWidget<CounterState>(CounterState.serializer()) {
@@ -129,13 +120,12 @@ object CounterWarpWidget : WarpWidget<CounterState>(CounterState.serializer()) {
 
     override val iosGroupId: String = APP_GROUP_ID
 
-    override val stateScope: WarpWidgetStateScope = WarpWidgetStateScope.Instance
+    override val stateScope: WarpWidgetStateScope = WarpWidgetStateScope.Shared
 
     override val defaultState: CounterState = CounterState()
 
     @Composable
     override fun Content(env: WidgetEnvironment, state: CounterState) {
-        val state = state.withMergedSampleTodos()
         WarpLogger.level = WarpLoggerLevel.Debug
         WarpTheme(
             environment = env,
@@ -405,47 +395,98 @@ private fun TodoBody(
     // Nested column — keeps root under Glance's 10-child Column limit
     // (flat forEach rows + spacers was dropping the 3rd todo).
     WarpColumn(modifier = WarpModifier.fillMaxWidth()) {
-        WarpText(
-            text = "$doneCount / $total done",
-            style = WarpTextStyle(
-                color = colors.onSurfaceVariant,
-                fontSize = 12f,
-                fontWeight = WarpFontWeight.Medium,
-            ),
-            maxLines = 1,
-        )
-
-        WarpSpacer(modifier = WarpModifier.height(if (compact) 4 else 6))
-
-        visibleTodos.forEachIndexed { index, todo ->
-            if (index > 0) {
-                WarpSpacer(modifier = WarpModifier.height(if (compact) 3 else 4))
-            }
-            TodoRow(todo, compact = compact)
-        }
-
-        if (visibleTodos.size < total) {
-            WarpSpacer(modifier = WarpModifier.height(4))
+        if (visibleTodos.isNotEmpty())
             WarpText(
-                text = "+${total - visibleTodos.size} more",
+                text = "$doneCount / $total done",
                 style = WarpTextStyle(
                     color = colors.onSurfaceVariant,
-                    fontSize = 11f,
+                    fontSize = 12f,
                     fontWeight = WarpFontWeight.Medium,
                 ),
                 maxLines = 1,
             )
+
+        if (visibleTodos.isEmpty()) {
+            EmptyTodoBody()
+        } else {
+
+            WarpSpacer(modifier = WarpModifier.height(if (compact) 4 else 6))
+
+            visibleTodos.forEachIndexed { index, todo ->
+                if (index > 0) {
+                    WarpSpacer(modifier = WarpModifier.height(if (compact) 3 else 4))
+                }
+                TodoRow(todo, compact = compact)
+            }
+
+            if (visibleTodos.size < total) {
+                WarpSpacer(modifier = WarpModifier.height(4))
+                WarpText(
+                    text = "+${total - visibleTodos.size} more",
+                    style = WarpTextStyle(
+                        color = colors.onSurfaceVariant,
+                        fontSize = 11f,
+                        fontWeight = WarpFontWeight.Medium,
+                    ),
+                    maxLines = 1,
+                )
+            }
+
+            WarpSpacer(modifier = WarpModifier.height(if (compact) 4 else 8))
+
+            WarpProgressIndicator(
+                modifier = WarpModifier.fillMaxWidth(),
+                style = WarpProgressIndicatorStyle.Linear,
+                progress = progress,
+                color = colors.primary,
+                backgroundColor = colors.surfaceVariant,
+            )
         }
+    }
+}
 
-        WarpSpacer(modifier = WarpModifier.height(if (compact) 4 else 8))
 
-        WarpProgressIndicator(
+@Composable
+private fun EmptyTodoBody() {
+    val colors = WarpTheme.colors
+
+    WarpBox(
+        modifier = WarpModifier.fillMaxSize(),
+        contentAlignment = WarpContentAlignment.Center,
+    ) {
+        WarpColumn(
             modifier = WarpModifier.fillMaxWidth(),
-            style = WarpProgressIndicatorStyle.Linear,
-            progress = progress,
-            color = colors.primary,
-            backgroundColor = colors.surfaceVariant,
-        )
+            horizontalAlignment = WarpHorizontalAlignment.Center,
+        ) {
+            WarpImage(
+                asset = CounterAssets.Circle.asSystem(),
+                contentDescription = "No todos",
+                modifier = WarpModifier.size(36),
+                tint = colors.primary,
+            )
+
+            WarpSpacer(modifier = WarpModifier.height(12))
+
+            WarpText(
+                text = "No todos",
+                style = WarpTextStyle(
+                    fontSize = 16f,
+                    fontWeight = WarpFontWeight.Semibold,
+                    color = colors.onSurface,
+                ),
+            )
+
+            WarpSpacer(modifier = WarpModifier.height(4))
+
+            WarpText(
+                text = "Tap + to add a sample task",
+                style = WarpTextStyle(
+                    fontSize = 12f,
+                    color = colors.onSurfaceVariant,
+                ),
+                maxLines = 2,
+            )
+        }
     }
 }
 
@@ -497,8 +538,7 @@ class CounterWarpClickHandler(
 ) : WarpClickHandler<CounterActions>(CounterActions.serializer()) {
 
     override suspend fun onAction(action: CounterActions) {
-        updateWarpWidgetState(session, CounterWarpWidget) { raw ->
-            val state = raw.withMergedSampleTodos()
+        updateWarpWidgetState(session, CounterWarpWidget) { state ->
             when (action) {
                 CounterActions.Increment -> state.copy(count = state.count + 1)
                 CounterActions.Decrement -> state.copy(count = state.count - 1)
