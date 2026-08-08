@@ -15,34 +15,37 @@ kotlin {
         iosTarget.binaries.framework {
             baseName = "SharedLogic"
             isStatic = true
+            export(libs.warp.runtime)
+            export(libs.warp.ui)
+            export(libs.warp.widget)
         }
     }
-    
+
     android {
-       namespace = "com.atriidev.todowidget.sharedLogic"
-       compileSdk = libs.versions.android.compileSdk.get().toInt()
-       minSdk = libs.versions.android.minSdk.get().toInt()
-    
-       compilerOptions {
-           jvmTarget = JvmTarget.JVM_17
-       }
-       androidResources {
-           enable = true
-       }
-       withHostTest {
-           isIncludeAndroidResources = true
-       }
+        namespace = "com.atriidev.todowidget.sharedLogic"
+        compileSdk = libs.versions.android.compileSdk.get().toInt()
+        minSdk = libs.versions.android.minSdk.get().toInt()
+
+        compilerOptions {
+            jvmTarget = JvmTarget.JVM_17
+        }
+        androidResources {
+            enable = true
+        }
+        withHostTest {
+            isIncludeAndroidResources = true
+        }
     }
-    
+
     sourceSets {
         androidMain.dependencies {
             implementation(libs.androidx.glance.appwidget)
         }
         commonMain.dependencies {
             // put your Multiplatform dependencies here
-            api("io.github.devatrii:warp-runtime:0.1.1")
-            api("io.github.devatrii:warp-ui:0.1.1")
-            api("io.github.devatrii:warp-widget:0.1.1")
+            api(libs.warp.runtime)
+            api(libs.warp.ui)
+            api(libs.warp.widget)
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.compose.runtime)
         }

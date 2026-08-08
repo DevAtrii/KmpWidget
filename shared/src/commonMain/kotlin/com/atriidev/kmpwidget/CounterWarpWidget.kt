@@ -55,7 +55,7 @@ sealed class CounterActions {
     @Serializable
     data class SwitchMode(val mode: WidgetMode) : CounterActions()
 
-    /** Toggle done state for [todoId]. */
+    /** Toggle done state for [todo]. */
     @Serializable
     data class ToggleTodo(val todo: TodoItem) : CounterActions()
 }
@@ -228,7 +228,7 @@ private fun ModeSwitcher(
             label = "Count",
             asset = CounterAssets.NumberCircle,
             selected = mode == WidgetMode.Counter,
-            targetMode = WidgetMode.Counter,
+            action = CounterActions.SwitchMode(WidgetMode.Counter),
             compact = compact,
         )
         WarpSpacer(modifier = WarpModifier.width(if (compact) 6 else 8))
@@ -236,7 +236,7 @@ private fun ModeSwitcher(
             label = "Todo",
             asset = CounterAssets.Checklist,
             selected = mode == WidgetMode.Todo,
-            targetMode = WidgetMode.Todo,
+            action = CounterActions.SwitchMode(WidgetMode.Todo),
             compact = compact,
         )
         WarpSpacer(modifier = WarpModifier.weight())
@@ -271,7 +271,7 @@ private fun ModeChip(
     label: String,
     asset: WarpAssetId,
     selected: Boolean,
-    targetMode: WidgetMode,
+    action: CounterActions,
     compact: Boolean = false,
 ) {
     val colors = WarpTheme.colors
@@ -286,7 +286,7 @@ private fun ModeChip(
             .background(bg)
             .cornerRadius(20)
             .padding(horizontal = chipPaddingH, vertical = chipPaddingV)
-            .clickable(CounterActions.SwitchMode(targetMode)),
+            .clickable(action.asClickAction()),
         verticalAlignment = WarpVerticalAlignment.Center,
     ) {
         WarpImage(
@@ -351,7 +351,7 @@ private fun CounterBody(
                 modifier = WarpModifier
                     .weight()
                     .padding(horizontal = 8, vertical = 0)
-                    .clickable(CounterActions.Reset),
+                    .clickable(CounterActions.Reset.asClickAction()),
                 style = WarpTextStyle(
                     color = colors.onSurface,
                     fontSize = countFontSize,
@@ -466,7 +466,7 @@ private fun TodoRow(
             .background(colors.surfaceVariant)
             .cornerRadius(10)
             .padding(horizontal = 10, vertical = rowPaddingV)
-            .clickable(CounterActions.ToggleTodo(todo)),
+            .clickable(CounterActions.ToggleTodo(todo).asClickAction()),
         verticalAlignment = WarpVerticalAlignment.Center,
     ) {
         WarpImage(

@@ -10,9 +10,6 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.decodeFromJsonElement
-import kotlinx.serialization.json.encodeToJsonElement
-import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.serializer
 
@@ -61,14 +58,18 @@ fun <A : Any> warpActionFamily(baseSerializer: KSerializer<A>): WarpActionFamily
 
 /** Encode typed action → serializable [ClickAction] for the WARP tree. */
 inline fun <reified A : Any> A.asClickAction(): ClickAction =
-    encodeWarpAction(this, serializer())
+    if (this is ClickAction) this else encodeWarpAction(this, serializer())
 
 /** Encode [action] using its concrete kotlinx.serialization serializer. */
 fun <A : Any> encodeWarpAction(action: A, concreteSerializer: KSerializer<A>): ClickAction {
     val jsonElement = warpActionJson.encodeToJsonElement(concreteSerializer, action)
-    val wireId = wireActionId(concreteSerializer.descriptor.serialName)
+    val polymorphicType = (jsonElement as? JsonObject)?.get("type")?.jsonPrimitive?.content
+    val serialName = polymorphicType ?: concreteSerializer.descriptor.serialName
+    val wireId = wireActionId(serialName)
     val parameters = when (jsonElement) {
-        is JsonObject -> jsonElement.mapValues { (_, element) -> element.toParameterString() }
+        is JsonObject -> jsonElement
+            .filterKeys { it != "type" }
+            .mapValues { (_, element) -> element.toParameterString() }
         else -> emptyMap()
     }
     return ClickAction(actionId = wireId, parameters = parameters)
@@ -94,7 +95,10 @@ class SerializableWarpActionFamily<A : Any>(
 
     override fun decode(actionId: String, parameters: WarpActionParameters): A? {
         val serialName = wireIdToSerialName[actionId] ?: run {
-            WarpLogger.w("WarpActionFamily", "Unknown actionId=$actionId (registered: ${wireIdToSerialName.keys})")
+            WarpLogger.w(
+                "WarpActionFamily",
+                "Unknown actionId=$actionId (registered: ${wireIdToSerialName.keys})"
+            )
             return null
         }
         val json = buildJsonObject {
@@ -117,7 +121,10 @@ class SerializableWarpActionFamily<A : Any>(
         }
         return try {
             val decoded = warpActionJson.decodeFromJsonElement(sealedSerializer, json)
-            WarpLogger.d("WarpActionFamily", "Successfully decoded action $decoded (actionId=$actionId)")
+            WarpLogger.d(
+                "WarpActionFamily",
+                "Successfully decoded action $decoded (actionId=$actionId)"
+            )
             decoded
         } catch (e: Exception) {
             WarpLogger.e("WarpActionFamily", "Failed to decode action $actionId with json=$json", e)

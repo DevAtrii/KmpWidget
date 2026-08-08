@@ -1,0 +1,15 @@
+{
+  "originHash" : "ccae6f759381eab1511c85647df542faf0de6760778ddd0c7cb00b28a6a08c63",
+  "pins" : [
+    {
+      "identity" : "warp",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/DevAtrii/Warp.git",
+      "state" : {
+        "revision" : "23c407ef732c6a87dc050f18c755530596e33680",
+        "version" : "0.1.1"
+      }
+    }
+  ],
+  "version" : 3
+}

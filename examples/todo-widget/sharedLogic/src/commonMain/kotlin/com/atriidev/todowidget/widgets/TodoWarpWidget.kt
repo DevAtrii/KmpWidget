@@ -10,6 +10,11 @@ import com.atriidev.warp_runtime.compose.WarpProgressIndicator
 import com.atriidev.warp_runtime.compose.WarpRow
 import com.atriidev.warp_runtime.compose.WarpSpacer
 import com.atriidev.warp_runtime.compose.WarpText
+import com.atriidev.warp_runtime.log.WarpLogger
+import com.atriidev.warp_runtime.log.WarpLoggerLevel
+import com.atriidev.warp_runtime.nodes.actions.WarpAction
+import com.atriidev.warp_runtime.nodes.actions.asClickAction
+import com.atriidev.warp_runtime.nodes.assets.WarpAsset
 import com.atriidev.warp_runtime.nodes.assets.WarpAssetId
 import com.atriidev.warp_runtime.nodes.modifiers.WarpModifier
 import com.atriidev.warp_runtime.nodes.style.WarpContentAlignment
@@ -33,6 +38,9 @@ import kotlinx.serialization.Serializable
 
 /** Type-safe asset keys — share with GlanceWidgets Assets. */
 object TodoAssets {
+    val Plus = WarpAssetId("plus")
+    val Trash = WarpAssetId("trash")
+
     val Circle = WarpAssetId("circle")
     val CheckCircle = WarpAssetId("checkmark.circle.fill")
 }
@@ -41,6 +49,12 @@ object TodoAssets {
 sealed interface TodoActions {
     @Serializable
     data class Toggle(val todoId: Int) : TodoActions
+
+    @Serializable
+    data object Clear : TodoActions
+
+    @Serializable
+    data object AddSample : TodoActions
 }
 
 val sampleTodoWidgetState = TodoWidgetState(
@@ -107,6 +121,7 @@ object TodoWarpWidget :
         env: WidgetEnvironment,
         state: TodoWidgetState,
     ) {
+        WarpLogger.level = WarpLoggerLevel.Debug
         WarpTheme(
             environment = env,
             darkTheme = false.takeIf { env.platform.isAndroid }
@@ -130,7 +145,7 @@ object TodoWarpWidget :
 private class TodoClickHandler(
     private val session: WarpWidgetSession,
 ) : WarpClickHandler<TodoActions>(serializer = TodoActions.serializer()) {
-    override suspend fun onClick(action: TodoActions) {
+    override suspend fun onAction(action: TodoActions) {
         when (action) {
             is TodoActions.Toggle -> updateWarpWidgetState(session, TodoWarpWidget) { state ->
                 state.copy(
@@ -139,6 +154,16 @@ private class TodoClickHandler(
                             todo.copy(done = !todo.done)
                         else todo
                     }
+                )
+            }
+
+           is TodoActions.AddSample -> updateWarpWidgetState(session, TodoWarpWidget) { state ->
+                sampleTodoWidgetState
+            }
+
+           is  TodoActions.Clear -> updateWarpWidgetState(session, TodoWarpWidget) { state ->
+                state.copy(
+                    todos = emptyList()
                 )
             }
         }
@@ -174,13 +199,38 @@ private fun TodoWidgetContent(
         WarpColumn(
             modifier = WarpModifier.fillMaxWidth(),
         ) {
-            WarpText(
-                text = "Your Todos",
-                style = WarpTextStyle(
-                    fontSize = 16f
+            WarpRow(
+                modifier = WarpModifier
+                    .fillMaxWidth()
+            ) {
+                WarpText(
+                    text = "Your Todos",
+                    modifier = WarpModifier.weight(1f),
+                    style = WarpTextStyle(
+                        fontSize = when {
+                            spacious -> 18f
+                            isMedium -> 14f
+                            else -> 10f
+                        }
+                    )
                 )
-            )
 
+                // reset & sample
+                IconButton(
+                    asset = TodoAssets.Trash.asSystem(),
+                    action = TodoActions.Clear ,
+                    compact = compact
+                )
+                WarpSpacer(modifier = WarpModifier.width(if (compact) 4 else 6))
+
+                IconButton(
+                    asset = TodoAssets.Plus.asSystem(),
+                    action = TodoActions.AddSample ,
+                    compact = compact
+                )
+
+
+            }
             WarpSpacer(modifier = WarpModifier.height(if (compact) 4 else 6))
 
             WarpDivider(
@@ -207,6 +257,36 @@ private fun TodoWidgetContent(
             )
 
         }
+    }
+}
+
+
+@Composable
+private fun IconButton(
+    asset: WarpAsset,
+    action: TodoActions,
+    compact: Boolean,
+) {
+    val colors = WarpTheme.colors
+    val bg = colors.surfaceVariant
+    val fg = colors.primary
+    val chipPaddingH = if (compact) 8 else 10
+    val chipPaddingV = if (compact) 4 else 6
+    val iconSize = if (compact) 12 else 14
+    WarpRow(
+        modifier = WarpModifier
+            .background(bg)
+            .cornerRadius(20)
+            .padding(horizontal = chipPaddingH, vertical = chipPaddingV)
+            .clickable(action),
+        verticalAlignment = WarpVerticalAlignment.Center,
+    ) {
+        WarpImage(
+            asset = asset,
+            contentDescription = "Icon Button",
+            modifier = WarpModifier.size(iconSize),
+            tint = fg,
+        )
     }
 }
 

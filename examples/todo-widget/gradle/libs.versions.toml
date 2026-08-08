@@ -16,7 +16,12 @@ material3 = "1.11.0-alpha07"
 kotlinx-serialization-json = "1.11.0"
 glanceAppwidget = "1.1.1"
 
+warp = "0.1.2"
+
 [libraries]
+warp-ui = { group = "io.github.devatrii", name = "warp-ui",version.ref="warp" }
+warp-widget = { group = "io.github.devatrii", name = "warp-widget",version.ref="warp" }
+warp-runtime = { group = "io.github.devatrii", name = "warp-runtime",version.ref="warp" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlin-testJunit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
 junit = { module = "junit:junit", version.ref = "junit" }

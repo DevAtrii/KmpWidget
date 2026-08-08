@@ -9,17 +9,20 @@ import com.atriidev.warp_widget.WarpWidgetHostApi
 
 class TodoWarpGlanceWidgetReceiver : WarpGlanceWidgetReceiver() {
 
-    override val widget: WarpWidgetHostApi get() = TodoWarpWidget
 
-    override fun createGlanceWidget(): WarpGlanceWidget = TodoWarpGlanceWidget()
+    override fun createGlanceWidget(): WarpGlanceWidget = TodoWarpGlanceWidget(createWarpWidget())
+    override fun createWarpWidget(): WarpWidgetHostApi = TodoWarpWidget
 
 }
 
-class TodoWarpGlanceWidget : WarpGlanceWidget() {
-    override val widget: WarpWidgetHostApi
-        get() = TodoWarpWidget
+class TodoWarpGlanceWidget(
+    private val widget: WarpWidgetHostApi,
+) : WarpGlanceWidget() {
+    override fun createWarpWidget(): WarpWidgetHostApi = widget
 
     override fun assets(): List<WarpDrawableAsset> = listOf(
+        WarpDrawableAsset(TodoAssets.Trash, R.drawable.ic_trash),
+        WarpDrawableAsset(TodoAssets.Plus, R.drawable.ic_add),
         WarpDrawableAsset(TodoAssets.Circle, R.drawable.ic_circle),
         WarpDrawableAsset(TodoAssets.CheckCircle, R.drawable.ic_check_circle),
     )

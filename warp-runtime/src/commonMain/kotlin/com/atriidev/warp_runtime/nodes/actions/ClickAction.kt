@@ -38,7 +38,7 @@ data class ClickAction(
  * WarpButton(text = "+", onClick = actionClick(CounterActions.Increment))
  * ```
  */
-fun actionClick(actionId: WarpActionId): ClickAction =
+internal fun actionClick(actionId: WarpActionId): ClickAction =
     ClickAction(actionId = actionId.actionId)
 
 /**
@@ -51,7 +51,7 @@ fun actionClick(actionId: WarpActionId): ClickAction =
  * )
  * ```
  */
-fun actionClick(
+internal fun actionClick(
     actionId: WarpActionId,
     vararg parameters: Pair<String, String>,
 ): ClickAction = ClickAction(
@@ -62,7 +62,7 @@ fun actionClick(
 /**
  * Creates a [ClickAction] from a pre-built parameter map.
  */
-fun actionClick(actionId: WarpActionId, parameters: WarpActionParameters): ClickAction =
+internal fun actionClick(actionId: WarpActionId, parameters: WarpActionParameters): ClickAction =
     ClickAction(actionId = actionId.actionId, parameters = parameters)
 
 /**
@@ -97,7 +97,7 @@ fun WarpActionId.asClickAction(vararg parameters: Pair<String, String>): ClickAc
  * @throws IllegalArgumentException when [actionId] is unknown to [A].
  */
 fun <A> decodeActionId(actionId: String, idClass: KClass<A>): A
-    where A : Enum<A>, A : WarpActionId {
+        where A : Enum<A>, A : WarpActionId {
     @Suppress("UNCHECKED_CAST")
     val constants = platformEnumConstants(idClass)
     return constants.firstOrNull { it.actionId == actionId }
@@ -120,7 +120,7 @@ fun <A> decodeActionId(actionId: String, idClass: KClass<A>): A
  * @throws IllegalArgumentException when [actionId] is unknown to [A].
  */
 inline fun <reified A> ClickAction.actionIdAs(): A
-    where A : Enum<A>, A : WarpActionId =
+        where A : Enum<A>, A : WarpActionId =
     decodeActionId(actionId, A::class)
 
 /**

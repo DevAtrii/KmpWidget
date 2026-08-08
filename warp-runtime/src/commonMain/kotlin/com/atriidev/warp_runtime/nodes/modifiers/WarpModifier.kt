@@ -62,9 +62,9 @@ data class WarpModifier(
         fun clickable(action: ClickAction): WarpModifier = Default.clickable(action)
 
         fun clickable(actionId: WarpActionId): WarpModifier =
-            Default.clickable(actionId)
+            Default.clickable(actionId.asClickAction())
 
-        inline fun <reified A : Any> clickable(action: A): WarpModifier =
+        inline fun <reified A : WarpAction> clickable(action: A): WarpModifier =
             Default.clickable(action)
 
         fun visibility(visibility: WarpVisibility): WarpModifier =
@@ -142,14 +142,23 @@ data class WarpModifier(
     fun border(width: Int, hex: String): WarpModifier =
         border(width, WarpColor(hex))
 
-    fun clickable(action: ClickAction): WarpModifier =
+    @Deprecated(
+        message = "Use clickable(action: Any) instead.",
+        level = DeprecationLevel.WARNING,
+    )
+    private fun clickable(action: ClickAction): WarpModifier =
         then(WarpClickableElement(action))
 
+    @Deprecated(
+        message = "Use clickable(action: Any) instead.",
+        replaceWith = ReplaceWith("clickable(actionId.asClickAction())"),
+        level = DeprecationLevel.ERROR,
+    )
     fun clickable(actionId: WarpActionId): WarpModifier =
         clickable(actionId.asClickAction())
 
-    inline fun <reified A : Any> clickable(action: A): WarpModifier =
-        clickable(action.asClickAction())
+    inline fun <reified A : WarpAction> clickable(action: A): WarpModifier =
+        then(WarpClickableElement(action.asClickAction()))
 
     fun visibility(visibility: WarpVisibility): WarpModifier =
         then(WarpVisibilityElement(visibility))

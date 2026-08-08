@@ -10,6 +10,7 @@
 		3E4547CC302739AB00EA2073 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3E4547CB302739AB00EA2073 /* WidgetKit.framework */; };
 		3E4547CE302739AB00EA2073 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3E4547CD302739AB00EA2073 /* SwiftUI.framework */; };
 		3E4547D9302739AC00EA2073 /* TodoWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 3E4547C9302739AB00EA2073 /* TodoWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		3E4547FF30274D3F00EA2073 /* warpWidgetKit in Frameworks */ = {isa = PBXBuildFile; productRef = 3E4547FE30274D3F00EA2073 /* warpWidgetKit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -97,6 +98,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3E4547FF30274D3F00EA2073 /* warpWidgetKit in Frameworks */,
 				3E4547CE302739AB00EA2073 /* SwiftUI.framework in Frameworks */,
 				3E4547CC302739AB00EA2073 /* WidgetKit.framework in Frameworks */,
 			);
@@ -167,6 +169,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 3E4547DD302739AC00EA2073 /* Build configuration list for PBXNativeTarget "TodoWidgetExtension" */;
 			buildPhases = (
+				3E454801302751C200EA2073 /* Compile Kotlin Framework */,
 				3E4547C5302739AB00EA2073 /* Sources */,
 				3E4547C6302739AB00EA2073 /* Frameworks */,
 				3E4547C7302739AB00EA2073 /* Resources */,
@@ -180,6 +183,7 @@
 			);
 			name = TodoWidgetExtension;
 			packageProductDependencies = (
+				3E4547FE30274D3F00EA2073 /* warpWidgetKit */,
 			);
 			productName = TodoWidgetExtension;
 			productReference = 3E4547C9302739AB00EA2073 /* TodoWidgetExtension.appex */;
@@ -212,6 +216,9 @@
 			);
 			mainGroup = EC49B8030D9ADB4BBEE0F05D;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				3E4547FD30274D3F00EA2073 /* XCRemoteSwiftPackageReference "Warp" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = DC4D13CE4899C92EF8649929 /* Products */;
 			projectDirPath = "";
@@ -241,6 +248,25 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		3E454801302751C200EA2073 /* Compile Kotlin Framework */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Compile Kotlin Framework";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [ \"YES\" = \"$OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED\" ]; then\n  echo \"Skipping Gradle build task invocation due to OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED environment variable set to \\\"YES\\\"\"\n  exit 0\nfi\ncd \"$SRCROOT/..\"\n./gradlew :sharedLogic:embedAndSignAppleFrameworkForXcode\n";
+		};
 		C4DA7BD37335124B6F92B0F0 /* Compile Kotlin Framework */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
@@ -421,7 +447,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 64YCM9969C;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TodoWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = TodoWidget;
@@ -455,7 +481,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 64YCM9969C;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TodoWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = TodoWidget;
@@ -568,6 +594,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		3E4547FD30274D3F00EA2073 /* XCRemoteSwiftPackageReference "Warp" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/DevAtrii/Warp.git";
+			requirement = {
+				kind = exactVersion;
+				version = 0.1.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		3E4547FE30274D3F00EA2073 /* warpWidgetKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3E4547FD30274D3F00EA2073 /* XCRemoteSwiftPackageReference "Warp" */;
+			productName = warpWidgetKit;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 902A129738AE808C8ADB414A /* Project object */;
 }
