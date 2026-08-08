@@ -1,5 +1,6 @@
 package com.atriidev.warp_runtime.nodes.modifiers
 
+import com.atriidev.warp_runtime.unit.Dp
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -7,6 +8,6 @@ import kotlinx.serialization.Serializable
 @Serializable
 @SerialName("border")
 data class WarpBorderElement(
-    val width: Int,
+    val width: Dp,
     val color: WarpColor,
 ) : WarpModifierElement

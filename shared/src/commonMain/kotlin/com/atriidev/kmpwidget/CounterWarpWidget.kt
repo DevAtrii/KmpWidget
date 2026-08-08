@@ -23,6 +23,8 @@ import com.atriidev.warp_runtime.nodes.style.WarpHorizontalAlignment
 import com.atriidev.warp_runtime.nodes.style.WarpProgressIndicatorStyle
 import com.atriidev.warp_runtime.nodes.style.WarpTextStyle
 import com.atriidev.warp_runtime.nodes.style.WarpVerticalAlignment
+import com.atriidev.warp_runtime.unit.dp
+import com.atriidev.warp_runtime.unit.sp
 import com.atriidev.warp_ui.WarpClickHandler
 import com.atriidev.warp_widget.WarpWidget
 import com.atriidev.warp_widget.WarpWidgetSession
@@ -181,7 +183,7 @@ private fun CounterWidgetContent(
 
             WarpDivider(
                 modifier = WarpModifier.fillMaxWidth(),
-                thickness = 1,
+                thickness = 0.5.dp,
                 color = colors.outline,
             )
 
@@ -249,7 +251,7 @@ private fun AdaptiveSizeLabel(
         text = label,
         style = WarpTextStyle(
             color = colors.onSurfaceVariant,
-            fontSize = if (compact) 10f else 11f,
+            fontSize = if (compact) 10.sp else 11.sp,
             fontWeight = WarpFontWeight.Medium,
         ),
         maxLines = 1,
@@ -267,14 +269,14 @@ private fun ModeChip(
     val colors = WarpTheme.colors
     val bg = if (selected) colors.primary else colors.surfaceVariant
     val fg = if (selected) colors.onPrimary else colors.onSurfaceVariant
-    val chipPaddingH = if (compact) 8 else 10
-    val chipPaddingV = if (compact) 4 else 6
-    val iconSize = if (compact) 12 else 14
-    val fontSize = if (compact) 11f else 12f
+    val chipPaddingH = if (compact) 8.dp else 10.dp
+    val chipPaddingV = if (compact) 4.dp else 6.dp
+    val iconSize = if (compact) 12.dp else 14.dp
+    val fontSize = if (compact) 11.sp else 12.sp
     WarpRow(
         modifier = WarpModifier
             .background(bg)
-            .cornerRadius(20)
+            .cornerRadius(20.dp)
             .padding(horizontal = chipPaddingH, vertical = chipPaddingV)
             .clickable(action.asClickAction()),
         verticalAlignment = WarpVerticalAlignment.Center,
@@ -285,7 +287,7 @@ private fun ModeChip(
             modifier = WarpModifier.size(iconSize),
             tint = fg,
         )
-        WarpSpacer(modifier = WarpModifier.width(4))
+        WarpSpacer(modifier = WarpModifier.width(4.dp))
         WarpText(
             text = label,
             style = WarpTextStyle(
@@ -305,9 +307,9 @@ private fun CounterBody(
     spacious: Boolean = false,
 ) {
     val colors = WarpTheme.colors
-    val buttonSize = env.adaptiveValue(small = 36, medium = 40, large = 48)
-    val countFontSize = env.adaptiveValue(small = 22f, medium = 26f, large = 32f)
-    val cardPadding = if (spacious) 12 else 8
+    val buttonSize = env.adaptiveValue(small = 36.dp, medium = 40.dp, large = 48.dp)
+    val countFontSize = env.adaptiveValue(small = 22.sp, medium = 26.sp, large = 32.sp)
+    val cardPadding = if (spacious) 12.dp else 8.dp
     // Nested column — Glance allows max 10 children per Column/Row.
     WarpColumn(modifier = WarpModifier.fillMaxWidth()) {
         val count = state.count
@@ -317,7 +319,7 @@ private fun CounterBody(
             modifier = WarpModifier
                 .fillMaxWidth()
                 .background(colors.surfaceVariant)
-                .cornerRadius(12)
+                .cornerRadius(12.dp)
                 .padding(cardPadding),
             verticalAlignment = WarpVerticalAlignment.Center,
         ) {
@@ -326,9 +328,9 @@ private fun CounterBody(
                 onClick = CounterActions.Decrement.asClickAction(),
                 modifier = WarpModifier
                     .size(buttonSize)
-                    .cornerRadius(buttonSize / 2),
+                    .cornerRadius(buttonSize.value / 2),
                 style = WarpTextStyle(
-                    fontSize = if (spacious) 20f else 18f,
+                    fontSize = if (spacious) 20.sp else 18.sp,
                     fontWeight = WarpFontWeight.Bold,
                 ),
                 colors = WarpButtonColors.of(
@@ -340,7 +342,7 @@ private fun CounterBody(
                 text = count.toString(),
                 modifier = WarpModifier
                     .weight()
-                    .padding(horizontal = 8, vertical = 0)
+                    .padding(horizontal = 8.dp, vertical = 0.dp)
                     .clickable(CounterActions.Reset.asClickAction()),
                 style = WarpTextStyle(
                     color = colors.onSurface,
@@ -354,9 +356,9 @@ private fun CounterBody(
                 onClick = CounterActions.Increment.asClickAction(),
                 modifier = WarpModifier
                     .size(buttonSize)
-                    .cornerRadius(buttonSize / 2),
+                    .cornerRadius(buttonSize.value / 2),
                 style = WarpTextStyle(
-                    fontSize = if (spacious) 20f else 18f,
+                    fontSize = if (spacious) 20.sp else 18.sp,
                     fontWeight = WarpFontWeight.Bold,
                 ),
                 colors = WarpButtonColors.of(
@@ -400,7 +402,7 @@ private fun TodoBody(
                 text = "$doneCount / $total done",
                 style = WarpTextStyle(
                     color = colors.onSurfaceVariant,
-                    fontSize = 12f,
+                    fontSize = 12.sp,
                     fontWeight = WarpFontWeight.Medium,
                 ),
                 maxLines = 1,
@@ -420,12 +422,12 @@ private fun TodoBody(
             }
 
             if (visibleTodos.size < total) {
-                WarpSpacer(modifier = WarpModifier.height(4))
+                WarpSpacer(modifier = WarpModifier.height(4.dp))
                 WarpText(
                     text = "+${total - visibleTodos.size} more",
                     style = WarpTextStyle(
                         color = colors.onSurfaceVariant,
-                        fontSize = 11f,
+                        fontSize = 11.sp,
                         fontWeight = WarpFontWeight.Medium,
                     ),
                     maxLines = 1,
@@ -470,18 +472,18 @@ private fun EmptyTodoBody() {
             WarpText(
                 text = "No todos",
                 style = WarpTextStyle(
-                    fontSize = 16f,
+                    fontSize = 16.sp,
                     fontWeight = WarpFontWeight.Semibold,
                     color = colors.onSurface,
                 ),
             )
 
-            WarpSpacer(modifier = WarpModifier.height(4))
+            WarpSpacer(modifier = WarpModifier.height(4.dp))
 
             WarpText(
                 text = "Tap + to add a sample task",
                 style = WarpTextStyle(
-                    fontSize = 12f,
+                    fontSize = 12.sp,
                     color = colors.onSurfaceVariant,
                 ),
                 maxLines = 2,
@@ -498,15 +500,15 @@ private fun TodoRow(
     val colors = WarpTheme.colors
     val icon = if (todo.done) CounterAssets.CheckCircle else CounterAssets.Circle
     val titleColor = if (todo.done) colors.onSurfaceVariant else colors.onSurface
-    val iconSize = if (compact) 18 else 20
-    val titleSize = if (compact) 13f else 14f
-    val rowPaddingV = if (compact) 6 else 8
+    val iconSize = if (compact) 18.dp else 20.dp
+    val titleSize = if (compact) 13.sp else 14.sp
+    val rowPaddingV = if (compact) 6.dp else 8.dp
     WarpRow(
         modifier = WarpModifier
             .fillMaxWidth()
             .background(colors.surfaceVariant)
-            .cornerRadius(10)
-            .padding(horizontal = 10, vertical = rowPaddingV)
+            .cornerRadius(10.dp)
+            .padding(horizontal = 10.dp, vertical = rowPaddingV)
             .clickable(CounterActions.ToggleTodo(todo).asClickAction()),
         verticalAlignment = WarpVerticalAlignment.Center,
     ) {

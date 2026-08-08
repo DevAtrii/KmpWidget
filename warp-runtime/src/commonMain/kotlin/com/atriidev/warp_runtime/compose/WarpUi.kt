@@ -31,6 +31,8 @@ import com.atriidev.warp_runtime.nodes.style.WarpHorizontalAlignment
 import com.atriidev.warp_runtime.nodes.style.WarpProgressIndicatorStyle
 import com.atriidev.warp_runtime.nodes.style.WarpTextStyle
 import com.atriidev.warp_runtime.nodes.style.WarpVerticalAlignment
+import com.atriidev.warp_runtime.unit.Dp
+import com.atriidev.warp_runtime.unit.dp
 
 /**
  * Arranges child nodes vertically — Glance `Column`-shaped API.
@@ -208,7 +210,7 @@ fun WarpSpacer(
 @Composable
 fun WarpDivider(
     modifier: WarpModifier = WarpModifier(),
-    thickness: Int = 1,
+    thickness: Dp = 1.dp,
     color: WarpColor? = null,
 ) {
     WarpDividerComposable(

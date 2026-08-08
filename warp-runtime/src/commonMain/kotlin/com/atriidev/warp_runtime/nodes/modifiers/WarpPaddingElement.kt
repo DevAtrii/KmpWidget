@@ -1,5 +1,6 @@
 package com.atriidev.warp_runtime.nodes.modifiers
 
+import com.atriidev.warp_runtime.unit.Dp
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -7,10 +8,10 @@ import kotlinx.serialization.Serializable
 @Serializable
 @SerialName("padding")
 data class WarpPaddingElement(
-    val start: Int,
-    val end: Int,
-    val top: Int,
-    val bottom: Int,
+    val start: Dp,
+    val end: Dp,
+    val top: Dp,
+    val bottom: Dp,
 ) : WarpModifierElement {
     constructor(values: WarpPadding) : this(
         start = values.start,

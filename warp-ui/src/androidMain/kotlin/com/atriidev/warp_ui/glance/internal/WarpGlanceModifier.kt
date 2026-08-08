@@ -55,17 +55,17 @@ internal fun WarpModifier.toGlanceModifier(
     for (element in elements) {
         result = when (element) {
             is WarpPaddingElement -> result.padding(
-                start = element.start.dp,
-                end = element.end.dp,
-                top = element.top.dp,
-                bottom = element.bottom.dp,
+                start = element.start.value.dp,
+                end = element.end.value.dp,
+                top = element.top.value.dp,
+                bottom = element.bottom.value.dp,
             )
 
             is WarpBackgroundElement ->
                 result.background(element.color.toComposeColor())
 
             is WarpCornerRadiusElement ->
-                result.cornerRadius(element.radius.dp)
+                result.cornerRadius(element.radius.value.dp)
 
             is WarpClickableElement ->
                 if (applyClickable && clickAction != null) {
@@ -80,9 +80,9 @@ internal fun WarpModifier.toGlanceModifier(
             is WarpFillMaxWidthElement -> result.fillMaxWidth()
             is WarpFillMaxHeightElement -> result.fillMaxHeight()
             is WarpFillMaxSizeElement -> result.fillMaxSize()
-            is WarpWidthElement -> result.width(element.width.dp)
-            is WarpHeightElement -> result.height(element.height.dp)
-            is WarpSizeElement -> result.size(element.width.dp, element.height.dp)
+            is WarpWidthElement -> result.width(element.width.value.dp)
+            is WarpHeightElement -> result.height(element.height.value.dp)
+            is WarpSizeElement -> result.size(element.width.value.dp, element.height.value.dp)
             is WarpWrapContentWidthElement -> result.wrapContentWidth()
             is WarpWrapContentHeightElement -> result.wrapContentHeight()
             is WarpWrapContentSizeElement -> result.wrapContentSize()

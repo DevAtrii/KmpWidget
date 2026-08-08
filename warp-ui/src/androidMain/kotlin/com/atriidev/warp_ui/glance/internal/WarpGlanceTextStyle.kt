@@ -17,7 +17,7 @@ internal fun WarpTextStyle.toGlanceTextStyle(): TextStyle {
         textStyle = textStyle.copy(color = ColorProvider(it.toComposeColor()))
     }
     fontSize?.let {
-        textStyle = textStyle.copy(fontSize = it.sp)
+        textStyle = textStyle.copy(fontSize = it.value.sp)
     }
     fontWeight?.let {
         textStyle = textStyle.copy(fontWeight = it.toGlanceFontWeight())

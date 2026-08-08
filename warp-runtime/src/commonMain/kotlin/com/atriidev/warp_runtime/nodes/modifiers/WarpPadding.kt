@@ -1,5 +1,7 @@
 package com.atriidev.warp_runtime.nodes.modifiers
 
+import com.atriidev.warp_runtime.unit.Dp
+import com.atriidev.warp_runtime.unit.dp
 import kotlinx.serialization.Serializable
 
 /**
@@ -12,19 +14,19 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 data class WarpPadding(
-    val start: Int,
-    val end: Int,
-    val top: Int,
-    val bottom: Int,
+    val start: Dp = 0.dp,
+    val end: Dp = 0.dp,
+    val top: Dp = 0.dp,
+    val bottom: Dp = 0.dp,
 ) {
     companion object {
-        val Zero: WarpPadding = WarpPadding(0, 0, 0, 0)
+        val Zero: WarpPadding = WarpPadding(0.dp, 0.dp, 0.dp, 0.dp)
     }
 
     operator fun plus(other: WarpPadding): WarpPadding = WarpPadding(
-        start = start + other.start,
-        end = end + other.end,
-        top = top + other.top,
-        bottom = bottom + other.bottom,
+        start = (start.value + other.start.value).dp,
+        end = (end.value + other.end.value).dp,
+        top = (top.value + other.top.value).dp,
+        bottom = (bottom.value + other.bottom.value).dp,
     )
 }

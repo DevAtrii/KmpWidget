@@ -21,6 +21,7 @@ import com.atriidev.warp_runtime.nodes.style.WarpHorizontalAlignment
 import com.atriidev.warp_runtime.nodes.style.WarpProgressIndicatorStyle
 import com.atriidev.warp_runtime.nodes.style.WarpTextStyle
 import com.atriidev.warp_runtime.nodes.style.WarpVerticalAlignment
+import com.atriidev.warp_runtime.unit.Dp
 
 /**
  * Holds the root [RootHolder] for the active [composeWarp][com.atriidev.warp_runtime.compose.composeWarp] call.
@@ -191,7 +192,7 @@ internal fun WarpSpacerComposable(modifier: WarpModifier) {
 @Composable
 internal fun WarpDividerComposable(
     modifier: WarpModifier,
-    thickness: Int,
+    thickness: Dp,
     color: WarpColor?,
 ) {
     WarpLeaf(

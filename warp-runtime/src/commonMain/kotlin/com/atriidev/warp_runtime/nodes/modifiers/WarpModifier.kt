@@ -13,6 +13,8 @@ import com.atriidev.warp_runtime.nodes.actions.ClickAction
 import com.atriidev.warp_runtime.nodes.actions.WarpAction
 import com.atriidev.warp_runtime.nodes.actions.WarpActionId
 import com.atriidev.warp_runtime.nodes.actions.asClickAction
+import com.atriidev.warp_runtime.unit.Dp
+import com.atriidev.warp_runtime.unit.dp
 import kotlinx.serialization.Serializable
 
 /**
@@ -28,19 +30,32 @@ data class WarpModifier(
     companion object {
         val Default: WarpModifier = WarpModifier()
 
-        fun padding(all: Int): WarpModifier = Default.padding(all)
+        fun padding(all: Dp): WarpModifier = Default.padding(all)
+        fun padding(all: Number): WarpModifier = Default.padding(all.toFloat().dp)
 
         fun padding(
-            start: Int,
-            end: Int,
-            top: Int,
-            bottom: Int,
+            start: Dp = 0.dp,
+            end: Dp = 0.dp,
+            top: Dp = 0.dp,
+            bottom: Dp = 0.dp,
         ): WarpModifier = Default.padding(start, end, top, bottom)
 
         fun padding(
-            horizontal: Int,
-            vertical: Int,
+            start: Number,
+            end: Number,
+            top: Number,
+            bottom: Number,
+        ): WarpModifier = Default.padding(start.toFloat().dp, end.toFloat().dp, top.toFloat().dp, bottom.toFloat().dp)
+
+        fun padding(
+            horizontal: Dp = 0.dp,
+            vertical: Dp = 0.dp,
         ): WarpModifier = Default.padding(horizontal, vertical)
+
+        fun padding(
+            horizontal: Number,
+            vertical: Number,
+        ): WarpModifier = Default.padding(horizontal.toFloat().dp, vertical.toFloat().dp)
 
         fun padding(paddingValues: WarpPadding): WarpModifier =
             Default.padding(paddingValues)
@@ -49,15 +64,20 @@ data class WarpModifier(
 
         fun background(hex: String): WarpModifier = Default.background(hex)
 
-        fun cornerRadius(radius: Int): WarpModifier = Default.cornerRadius(radius)
+        fun cornerRadius(radius: Dp): WarpModifier = Default.cornerRadius(radius)
+        fun cornerRadius(radius: Number): WarpModifier = Default.cornerRadius(radius.toFloat().dp)
 
         fun alpha(alpha: Float): WarpModifier = Default.alpha(alpha)
 
-        fun border(width: Int, color: WarpColor): WarpModifier =
+        fun border(width: Dp, color: WarpColor): WarpModifier =
             Default.border(width, color)
+        fun border(width: Number, color: WarpColor): WarpModifier =
+            Default.border(width.toFloat().dp, color)
 
-        fun border(width: Int, hex: String): WarpModifier =
+        fun border(width: Dp, hex: String): WarpModifier =
             Default.border(width, hex)
+        fun border(width: Number, hex: String): WarpModifier =
+            Default.border(width.toFloat().dp, hex)
 
         fun clickable(action: Any): WarpModifier = Default.clickable(action)
 
@@ -76,13 +96,17 @@ data class WarpModifier(
 
         fun fillMaxSize(): WarpModifier = Default.fillMaxSize()
 
-        fun width(width: Int): WarpModifier = Default.width(width)
+        fun width(width: Dp): WarpModifier = Default.width(width)
+        fun width(width: Number): WarpModifier = Default.width(width.toFloat().dp)
 
-        fun height(height: Int): WarpModifier = Default.height(height)
+        fun height(height: Dp): WarpModifier = Default.height(height)
+        fun height(height: Number): WarpModifier = Default.height(height.toFloat().dp)
 
-        fun size(size: Int): WarpModifier = Default.size(size)
+        fun size(size: Dp): WarpModifier = Default.size(size)
+        fun size(size: Number): WarpModifier = Default.size(size.toFloat().dp)
 
-        fun size(width: Int, height: Int): WarpModifier = Default.size(width, height)
+        fun size(width: Dp, height: Dp): WarpModifier = Default.size(width, height)
+        fun size(width: Number, height: Number): WarpModifier = Default.size(width.toFloat().dp, height.toFloat().dp)
 
         fun weight(weight: Float = 1f): WarpModifier = Default.weight(weight)
 
@@ -104,19 +128,29 @@ data class WarpModifier(
     fun padding(paddingValues: WarpPadding): WarpModifier =
         then(WarpPaddingElement(paddingValues))
 
-    fun padding(all: Int): WarpModifier =
+    fun padding(all: Dp): WarpModifier =
         padding(WarpPadding(all, all, all, all))
 
+    fun padding(all: Number): WarpModifier =
+        padding(all.toFloat().dp)
+
     fun padding(
-        start: Int,
-        end: Int,
-        top: Int,
-        bottom: Int,
+        start: Dp = 0.dp,
+        end: Dp = 0.dp,
+        top: Dp = 0.dp,
+        bottom: Dp = 0.dp,
     ): WarpModifier = then(WarpPaddingElement(start, end, top, bottom))
 
     fun padding(
-        horizontal: Int,
-        vertical: Int,
+        start: Number,
+        end: Number,
+        top: Number,
+        bottom: Number,
+    ): WarpModifier = padding(start.toFloat().dp, end.toFloat().dp, top.toFloat().dp, bottom.toFloat().dp)
+
+    fun padding(
+        horizontal: Dp = 0.dp,
+        vertical: Dp = 0.dp,
     ): WarpModifier = padding(
         start = horizontal,
         end = horizontal,
@@ -124,23 +158,37 @@ data class WarpModifier(
         bottom = vertical,
     )
 
+    fun padding(
+        horizontal: Number,
+        vertical: Number,
+    ): WarpModifier = padding(horizontal.toFloat().dp, vertical.toFloat().dp)
+
     fun background(color: WarpColor): WarpModifier =
         then(WarpBackgroundElement(color))
 
     fun background(hex: String): WarpModifier =
         background(WarpColor(hex))
 
-    fun cornerRadius(radius: Int): WarpModifier =
+    fun cornerRadius(radius: Dp): WarpModifier =
         then(WarpCornerRadiusElement(radius))
+
+    fun cornerRadius(radius: Number): WarpModifier =
+        cornerRadius(radius.toFloat().dp)
 
     fun alpha(alpha: Float): WarpModifier =
         then(WarpAlphaElement(alpha))
 
-    fun border(width: Int, color: WarpColor): WarpModifier =
+    fun border(width: Dp, color: WarpColor): WarpModifier =
         then(WarpBorderElement(width, color))
 
-    fun border(width: Int, hex: String): WarpModifier =
+    fun border(width: Number, color: WarpColor): WarpModifier =
+        border(width.toFloat().dp, color)
+
+    fun border(width: Dp, hex: String): WarpModifier =
         border(width, WarpColor(hex))
+
+    fun border(width: Number, hex: String): WarpModifier =
+        border(width.toFloat().dp, hex)
 
     fun clickable(action: Any): WarpModifier =
         then(WarpClickableElement(action.asClickAction()))
@@ -169,14 +217,20 @@ data class WarpModifier(
 
     fun fillMaxSize(): WarpModifier = then(WarpFillMaxSizeElement)
 
-    fun width(width: Int): WarpModifier = then(WarpWidthElement(width))
+    fun width(width: Dp): WarpModifier = then(WarpWidthElement(width))
+    fun width(width: Number): WarpModifier = width(width.toFloat().dp)
 
-    fun height(height: Int): WarpModifier = then(WarpHeightElement(height))
+    fun height(height: Dp): WarpModifier = then(WarpHeightElement(height))
+    fun height(height: Number): WarpModifier = height(height.toFloat().dp)
 
-    fun size(size: Int): WarpModifier = size(size, size)
+    fun size(size: Dp): WarpModifier = size(size, size)
+    fun size(size: Number): WarpModifier = size(size.toFloat().dp)
 
-    fun size(width: Int, height: Int): WarpModifier =
+    fun size(width: Dp, height: Dp): WarpModifier =
         then(WarpSizeElement(width, height))
+
+    fun size(width: Number, height: Number): WarpModifier =
+        size(width.toFloat().dp, height.toFloat().dp)
 
     fun weight(weight: Float = 1f): WarpModifier =
         then(WarpWeightElement(weight))
@@ -191,7 +245,7 @@ data class WarpModifier(
 
     // region Resolved (for renderers)
 
-    fun resolvedPadding(): WarpPadding =
+   internal fun resolvedPadding(): WarpPadding =
         elements.filterIsInstance<WarpPaddingElement>()
             .fold(WarpPadding.Zero) { acc, pad ->
                 acc + WarpPadding(pad.start, pad.end, pad.top, pad.bottom)
@@ -217,7 +271,7 @@ data class WarpModifier(
     fun resolvedBackground(): WarpColor? =
         elements.filterIsInstance<WarpBackgroundElement>().lastOrNull()?.color
 
-    fun resolvedCornerRadius(): Int? =
+    fun resolvedCornerRadius(): Dp? =
         elements.filterIsInstance<WarpCornerRadiusElement>().lastOrNull()?.radius
 
     fun resolvedAlpha(): Float? =

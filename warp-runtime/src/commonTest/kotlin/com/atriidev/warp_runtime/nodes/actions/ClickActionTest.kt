@@ -11,15 +11,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-/** Legacy enum fixture for [WarpActionId] / [decodeActionId] tests. */
-private enum class LegacyCounterActions(
-    override val actionId: String,
-) : WarpActionId {
-    Increment("increment"),
-    Decrement("decrement"),
-    Reset("reset"),
-}
-
 /** Parameterized fixture for auto-codec round-trip tests. */
 @Serializable
 private sealed class ParamCounterActions {
@@ -118,29 +109,5 @@ class ClickActionTest {
         assertEquals("set_step", wire.actionId)
         assertEquals("3", wire.parameters["step"])
         assertEquals(action, paramCounterActionsFamily.decode(wire.actionId, wire.parameters))
-    }
-
-    @Test
-    fun decodeActionId_decodesLegacyEnumForExhaustiveWhen() {
-        val result = when (decodeActionId("increment", LegacyCounterActions::class)) {
-            LegacyCounterActions.Increment -> "incremented"
-            LegacyCounterActions.Decrement -> "decremented"
-            LegacyCounterActions.Reset -> "reset"
-        }
-
-        assertEquals("incremented", result)
-    }
-
-    @Test
-    fun actionIdAs_decodesLegacyEnumForExhaustiveWhen() {
-        val action = actionClick(LegacyCounterActions.Increment)
-
-        val result = when (action.actionIdAs<LegacyCounterActions>()) {
-            LegacyCounterActions.Increment -> "incremented"
-            LegacyCounterActions.Decrement -> "decremented"
-            LegacyCounterActions.Reset -> "reset"
-        }
-
-        assertEquals("incremented", result)
     }
 }

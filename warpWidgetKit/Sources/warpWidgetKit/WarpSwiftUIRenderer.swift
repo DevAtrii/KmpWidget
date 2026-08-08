@@ -490,7 +490,7 @@ enum WarpParsedVisibility {
 }
 
 struct WarpParsedBorder {
-    let width: Int
+    let width: CGFloat
     let color: Color
 }
 
@@ -498,15 +498,15 @@ struct WarpParsedBorder {
 struct WarpParsedStyle {
     var padding: EdgeInsets = EdgeInsets()
     var background: Color?
-    var cornerRadius: Int?
+    var cornerRadius: CGFloat?
     var alpha: Float?
     var border: WarpParsedBorder?
     var visibility: WarpParsedVisibility?
     var fillMaxWidth = false
     var fillMaxHeight = false
     var fillMaxSize = false
-    var width: Int?
-    var height: Int?
+    var width: CGFloat?
+    var height: CGFloat?
     var weight: Float?
     var wrapContentWidth = false
     var wrapContentHeight = false
@@ -578,7 +578,7 @@ struct WarpParsedNode {
     let verticalAlignment: WarpParsedVerticalAlignment
     /// Glance Box `contentAlignment`.
     let contentAlignment: Alignment
-    let dividerThickness: Int
+    let dividerThickness: CGFloat
     let dividerColor: Color?
     let progressStyle: WarpParsedProgressStyle
     let progress: Float?
@@ -653,7 +653,7 @@ struct WarpParsedNode {
         enabled: Bool = true,
         textArgs: WarpParsedTextArgs = WarpParsedTextArgs(),
         contentAlignment: Alignment = .topLeading,
-        dividerThickness: Int = 1,
+        dividerThickness: CGFloat = 1,
         dividerColor: Color? = nil,
         progressStyle: WarpParsedProgressStyle = .circular,
         progress: Float? = nil,
@@ -835,7 +835,7 @@ enum WarpNodeParser {
                 modifierActionId: modActionId,
                 modifierParametersJson: modParams,
                 style: style,
-                dividerThickness: object["thickness"] as? Int ?? 1,
+                dividerThickness: parseCGFloat(object["thickness"]) ?? 1,
                 dividerColor: parseColorValue(object["color"])
             )
         case "progress_indicator":
@@ -933,10 +933,8 @@ enum WarpNodeParser {
         var args = WarpParsedTextArgs()
         guard let object else { return args }
         args.color = parseColorValue(object["color"])
-        if let size = object["fontSize"] as? Double {
-            args.fontSize = CGFloat(size)
-        } else if let size = object["fontSize"] as? Int {
-            args.fontSize = CGFloat(size)
+        if let size = parseCGFloat(object["fontSize"]) {
+            args.fontSize = size
         }
         switch object["fontWeight"] as? String {
         case "medium": args.fontWeight = .medium
@@ -998,6 +996,15 @@ enum WarpNodeParser {
         return out
     }
 
+    private static func parseCGFloat(_ value: Any?) -> CGFloat? {
+        if let d = value as? Double { return CGFloat(d) }
+        if let i = value as? Int { return CGFloat(i) }
+        if let dict = value as? [String: Any], let v = dict["value"] {
+            return parseCGFloat(v)
+        }
+        return nil
+    }
+
     private static func parseStyle(_ modifier: [String: Any]?) -> WarpParsedStyle {
         var style = WarpParsedStyle()
         guard let modifier else { return style }
@@ -1007,10 +1014,10 @@ enum WarpNodeParser {
                 guard let type = element["type"] as? String else { continue }
                 switch type {
                 case "padding":
-                    style.padding.top += CGFloat(element["top"] as? Int ?? 0)
-                    style.padding.leading += CGFloat(element["start"] as? Int ?? 0)
-                    style.padding.bottom += CGFloat(element["bottom"] as? Int ?? 0)
-                    style.padding.trailing += CGFloat(element["end"] as? Int ?? 0)
+                    style.padding.top += parseCGFloat(element["top"]) ?? 0
+                    style.padding.leading += parseCGFloat(element["start"]) ?? 0
+                    style.padding.bottom += parseCGFloat(element["bottom"]) ?? 0
+                    style.padding.trailing += parseCGFloat(element["end"]) ?? 0
                 case "background":
                     if let colorObj = element["color"] as? [String: Any],
                        let hex = colorObj["hex"] as? String {
@@ -1019,7 +1026,7 @@ enum WarpNodeParser {
                         style.background = color(from: hex)
                     }
                 case "cornerRadius":
-                    style.cornerRadius = element["radius"] as? Int
+                    style.cornerRadius = parseCGFloat(element["radius"])
                 case "alpha":
                     if let a = element["alpha"] as? Double {
                         style.alpha = Float(a)
@@ -1027,7 +1034,7 @@ enum WarpNodeParser {
                         style.alpha = Float(a)
                     }
                 case "border":
-                    let width = element["width"] as? Int ?? 1
+                    let width = parseCGFloat(element["width"]) ?? 1
                     let hex: String? = {
                         if let c = element["color"] as? [String: Any] {
                             return c["hex"] as? String
@@ -1050,12 +1057,12 @@ enum WarpNodeParser {
                 case "fillMaxSize":
                     style.fillMaxSize = true
                 case "width":
-                    style.width = element["width"] as? Int
+                    style.width = parseCGFloat(element["width"])
                 case "height":
-                    style.height = element["height"] as? Int
+                    style.height = parseCGFloat(element["height"])
                 case "size":
-                    style.width = element["width"] as? Int
-                    style.height = element["height"] as? Int
+                    style.width = parseCGFloat(element["width"])
+                    style.height = parseCGFloat(element["height"])
                 case "weight":
                     if let w = element["weight"] as? Double {
                         style.weight = Float(w)
@@ -1080,10 +1087,10 @@ enum WarpNodeParser {
         // Legacy flat shape: modifier.padding { start, end, top, bottom }
         if let padding = modifier["padding"] as? [String: Any] {
             style.padding = EdgeInsets(
-                top: CGFloat(padding["top"] as? Int ?? 0),
-                leading: CGFloat(padding["start"] as? Int ?? 0),
-                bottom: CGFloat(padding["bottom"] as? Int ?? 0),
-                trailing: CGFloat(padding["end"] as? Int ?? 0)
+                top: parseCGFloat(padding["top"]) ?? 0,
+                leading: parseCGFloat(padding["start"]) ?? 0,
+                bottom: parseCGFloat(padding["bottom"]) ?? 0,
+                trailing: parseCGFloat(padding["end"]) ?? 0
             )
         }
         return style

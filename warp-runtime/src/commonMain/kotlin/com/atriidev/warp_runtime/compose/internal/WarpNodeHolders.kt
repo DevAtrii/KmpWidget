@@ -27,6 +27,8 @@ import com.atriidev.warp_runtime.nodes.style.WarpHorizontalAlignment
 import com.atriidev.warp_runtime.nodes.style.WarpProgressIndicatorStyle
 import com.atriidev.warp_runtime.nodes.style.WarpTextStyle
 import com.atriidev.warp_runtime.nodes.style.WarpVerticalAlignment
+import com.atriidev.warp_runtime.unit.Dp
+import com.atriidev.warp_runtime.unit.dp
 
 /**
  * Something that can be converted to a serializable [WarpNode] after composition ends.
@@ -150,7 +152,7 @@ internal class WarpSpacerHolder(
 
 internal class WarpDividerHolder(
     var modifier: WarpModifier = WarpModifier(),
-    var thickness: Int = 1,
+    var thickness: Dp = 1.dp,
     var color: WarpColor? = null,
 ) : WarpNodeHolder {
     override fun toWarpNode(): WarpNode = WarpDivider(

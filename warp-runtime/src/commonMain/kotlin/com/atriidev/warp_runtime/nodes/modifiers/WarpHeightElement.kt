@@ -1,5 +1,6 @@
 package com.atriidev.warp_runtime.nodes.modifiers
 
+import com.atriidev.warp_runtime.unit.Dp
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -7,5 +8,5 @@ import kotlinx.serialization.Serializable
 @Serializable
 @SerialName("height")
 data class WarpHeightElement(
-    val height: Int,
+    val height: Dp,
 ) : WarpModifierElement

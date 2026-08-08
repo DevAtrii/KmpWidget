@@ -197,7 +197,7 @@ private fun RenderDivider(
             .toGlanceModifier(clickAction)
             .then(extraModifier)
             .fillMaxWidth()
-            .height(node.thickness.dp)
+            .height(node.thickness.value.dp)
             .background(color),
     )
 }

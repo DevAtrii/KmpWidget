@@ -1,6 +1,7 @@
 package com.atriidev.warp_runtime.nodes.modifiers
 
 import com.atriidev.warp_runtime.nodes.actions.ClickAction
+import com.atriidev.warp_runtime.unit.dp
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -17,10 +18,10 @@ class WarpModifierTest {
         assertEquals(2, modifier.elements.size)
 
         val resolved = modifier.resolvedPadding()
-        assertEquals(12, resolved.start)
-        assertEquals(12, resolved.end)
-        assertEquals(10, resolved.top)
-        assertEquals(10, resolved.bottom)
+        assertEquals(12.dp, resolved.start)
+        assertEquals(12.dp, resolved.end)
+        assertEquals(10.dp, resolved.top)
+        assertEquals(10.dp, resolved.bottom)
     }
 
     @Test
@@ -30,7 +31,7 @@ class WarpModifierTest {
         val combined = a.then(b)
 
         assertEquals(2, combined.elements.size)
-        assertEquals(3, combined.resolvedPadding().start)
+        assertEquals(3.dp, combined.resolvedPadding().start)
     }
 
     @Test
